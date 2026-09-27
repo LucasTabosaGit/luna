@@ -25,8 +25,8 @@ ENV = config.RAIZ / ".env"
 
 SERVICOS = {
     "hermes": {
-        "nome": "Claude (via Hermes Agent)",
-        "papel": "Modo Expert e tarefas no PC (arquivos, apps, memória). Opcional.",
+        "nome": "Expert: Claude ou ChatGPT (via Hermes Agent)",
+        "papel": "Modo Expert e tarefas no PC (arquivos, apps, memória), com a sua assinatura do Claude ou do ChatGPT. Opcional.",
         "campos": [
             {"var": "HERMES_URL", "rotulo": "Endereço", "segredo": False,
              "exemplo": "http://127.0.0.1:8642/p/assistente/v1"},

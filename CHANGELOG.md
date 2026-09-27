@@ -14,6 +14,7 @@
 - Funciona **sem placa de vídeo**: a fala pode ser transcrita na nuvem (Groq, OpenAI ou Gemini).
 - Ajustes reorganizados em abas: Voz, Escuta, Inteligência, Uso e gastos, Requisitos e dicas, Atalhos e Sistema.
 - Tela inicial com exemplos para clicar; o guia de Primeiros passos termina ensinando como falar, como parar e os três modos.
+- Modo Expert também com o **ChatGPT** (assinatura Plus/Pro pelo Hermes): GPT-6 Astra, GPT-5.6 Sol e GPT-5.6 Luna. A lista mostra só as assinaturas conectadas.
 - "Luna, o que você sabe fazer?" responde com a lista real de comandos (conferida pelos testes) e os atalhos que ela aprendeu.
 - Microfone bloqueado, ausente ou ocupado abre uma janela explicando onde clicar para liberar.
 - README destaca o aprendizado com o Hermes (memória, habilidades e atalhos, com trava de aprovação).

@@ -675,7 +675,7 @@
             <path d="M12 3l1.9 4.3L18 9l-4.1 1.7L12 15l-1.9-4.3L6 9l4.1-1.7z"/><path d="M18.5 15.5l.8 1.8 1.7.7-1.7.7-.8 1.8-.8-1.8-1.7-.7 1.7-.7z"/></svg>
           <span>Auto</span>
         </button>
-        <button data-modo="hermes" aria-pressed="false" title="Expert: tudo direto para o Claude — sem atalhos nem cérebro rápido. Mais lento, mais capaz.">
+        <button data-modo="hermes" aria-pressed="false" title="Expert: tudo direto para o Claude ou o ChatGPT (escolha em Ajustes → Inteligência), sem atalhos nem cérebro rápido. Mais lento, mais capaz.">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
           <span>Expert</span>
@@ -799,9 +799,10 @@
         <p class="aj-desc">As IAs que ouvem e respondem. As chaves ficam só no seu PC (arquivo <code>.env</code>) e nunca aparecem aqui inteiras.</p>
         <div class="conexoes" id="cxAjustes"></div>
         <div class="aj-bloco">
-          <label class="aj-campo">Modelo do Claude <small>(modo Expert, via Hermes)</small>
-            <select id="modeloClaude" aria-label="Modelo do Claude" disabled></select>
+          <label class="aj-campo">Modelo do Expert <small>(via Hermes: Claude ou ChatGPT, com a sua assinatura)</small>
+            <select id="modeloClaude" aria-label="Modelo do Expert" disabled></select>
           </label>
+          <small class="leg" id="expertDica"></small>
         </div>
       </section>
 
@@ -1464,7 +1465,7 @@ function tratar(m) {
         fecharTurno();
         mudarEstado(micLigado ? 'ouvindo' : 'desligado', micLigado ? rotuloOuvindo() : 'pronto');
       } else if (m.estado === 'pensando' && rotaAtual === 'hermes') {
-        mudarEstado('pensando', cerebro === 'hermes' ? 'expert pensando' : 'Claude pensando');
+        mudarEstado('pensando', cerebro === 'hermes' ? 'expert pensando' : nomeExpert() + ' pensando');
       } else {
         mudarEstado(m.estado);
       }
@@ -1721,7 +1722,7 @@ function ferramenta(m) {
     f.el.classList.add(m.status === 'completed' ? 'ok' : 'falhou');
     f.tempo.textContent = ((performance.now() - f.t0) / 1000).toFixed(1).replace('.', ',') + 's';
     ferramentas.delete(m.id);
-    if (!ferramentas.size && estadoAtual === 'executando') mudarEstado('pensando', 'Claude pensando');
+    if (!ferramentas.size && estadoAtual === 'executando') mudarEstado('pensando', nomeExpert() + ' pensando');
   }
 }
 
@@ -2781,13 +2782,27 @@ function montarModelosClaude(lista) {
   // mostrar uma setinha vazia.
   $modeloClaude.hidden = !(lista && lista.length);
   if (!lista || !lista.length || $modeloClaude.children.length) return;
+  // Agrupa por assinatura (Claude, ChatGPT). Só vêm os grupos que estão
+  // logados no Hermes; o resto a dica embaixo ensina a conectar.
+  const grupos = {};
   for (const mo of lista) {
     const op = document.createElement('option');
-    op.value = mo.id; op.textContent = mo.nome;
-    $modeloClaude.appendChild(op);
+    op.value = mo.id; op.textContent = mo.nome; op.dataset.grupo = mo.grupo || '';
+    if (!mo.grupo) { $modeloClaude.appendChild(op); continue; }
+    if (!grupos[mo.grupo]) { grupos[mo.grupo] = document.createElement('optgroup'); grupos[mo.grupo].label = mo.grupo; $modeloClaude.appendChild(grupos[mo.grupo]); }
+    grupos[mo.grupo].appendChild(op);
   }
+  const tem = g => lista.some(m => m.grupo === g);
+  $('expertDica').textContent = tem('ChatGPT') && tem('Claude') ? 'Claude e ChatGPT conectados: escolha qual responde no Expert.'
+    : tem('ChatGPT') ? 'Para usar também o Claude: rode  hermes -p assistente model  e escolha Anthropic.'
+    : 'Paga o ChatGPT Plus/Pro? Rode  hermes -p assistente model , escolha "ChatGPT or Codex Subscription", entre no navegador e reabra os Ajustes.';
   const salvo = localStorage.getItem('modeloClaude') || '';
   $modeloClaude.value = [...$modeloClaude.options].some(o => o.value === salvo) ? salvo : '';
+}
+
+function nomeExpert() {
+  const op = $modeloClaude.selectedOptions && $modeloClaude.selectedOptions[0];
+  return op && op.dataset.grupo === 'ChatGPT' ? 'ChatGPT' : 'Claude';
 }
 
 function aplicarModeloClaude() {

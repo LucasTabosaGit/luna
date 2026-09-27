@@ -594,7 +594,7 @@ async def estado_rapido():
     import custo
     return {"hermes": await asyncio.to_thread(_hermes_online),
             "modelo": config.LLM_MODELO,
-            "modelos_claude": config.HERMES_MODELOS,
+            "modelos_claude": config.modelos_expert(),
             "gemini": bool(config.chave_gemini()),
             "cerebro": bool(config.chave_cerebro()) and bool(config.LLM_URL),
             "cerebro_nome": config.LLM_NOME,
@@ -1371,7 +1371,7 @@ def _hermes_stream(mensagens: list, ao_ferramenta, cancelar: threading.Event,
     # então os dois andam sempre em par; vazio = padrão do perfil do Hermes.
     if modelo and config.modelo_claude_valido(modelo):
         corpo["model"] = modelo
-        corpo["provider"] = config.HERMES_PROVEDOR
+        corpo["provider"] = config.provedor_modelo(modelo)
     cab = {"Authorization": "Bearer %s" % config.chave_hermes(),
            "Content-Type": "application/json"}
     evento = None
@@ -2307,7 +2307,7 @@ async def ws_conversa(ws: WebSocket):
     await s.enviar(tipo="pronto", stt=ouvido.dispositivo,
                    modelo=config.LLM_MODELO, voz=s.voz,
                    velocidade=s.velocidade, vozes=config.vozes_disponiveis(),
-                   modelos_claude=config.HERMES_MODELOS,
+                   modelos_claude=config.modelos_expert(),
                    modelo_claude=s.modelo_claude,
                    conversa=s.conversa,
 

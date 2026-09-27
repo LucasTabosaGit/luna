@@ -7,7 +7,9 @@ ele já resolveu o caminho e passa a gravar em %USERPROFILE%\\.cache.
 """
 from __future__ import annotations
 
+import json
 import os
+import re
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -89,16 +91,57 @@ HERMES_MODELO = HERMES_PERFIL
 #
 # id vazio = usa o modelo configurado no perfil do Hermes (o padrão dele).
 HERMES_PROVEDOR = "anthropic"
+# O Expert pode rodar no Claude OU no ChatGPT: é a assinatura que a pessoa
+# conectou no Hermes (`hermes model` -> "ChatGPT or Codex Subscription").
+# Cada modelo leva o seu provider; a tela só mostra os grupos que estão
+# logados no Hermes (ver modelos_expert).
 HERMES_MODELOS = [
-    {"id": "", "nome": "Padrão do Hermes"},
-    # Todos conferidos respondendo pelo Hermes em 25/09 (o "model" da resposta
-    # bate com o pedido). Ids com ponto: o Hermes normaliza para hífen.
-    {"id": "claude-opus-5.5", "nome": "Opus 5.5 (mais forte)"},
-    {"id": "claude-opus-5", "nome": "Opus 5"},
-    {"id": "claude-fable-5.1", "nome": "Fable 5.1"},
-    {"id": "claude-sonnet-5", "nome": "Sonnet 5 (equilibrado)"},
-    {"id": "claude-haiku-4.5", "nome": "Haiku 4.5 (mais rápido e econômico)"},
+    {"id": "", "nome": "Padrão do Hermes", "provedor": "", "grupo": ""},
+    # Claude: conferidos respondendo pelo Hermes em 25/09 (o "model" da
+    # resposta bate com o pedido). Ids com ponto: o Hermes normaliza.
+    {"id": "claude-opus-5.5", "nome": "Opus 5.5 (mais forte)", "provedor": "anthropic", "grupo": "Claude"},
+    {"id": "claude-opus-5", "nome": "Opus 5", "provedor": "anthropic", "grupo": "Claude"},
+    {"id": "claude-fable-5.1", "nome": "Fable 5.1", "provedor": "anthropic", "grupo": "Claude"},
+    {"id": "claude-sonnet-5", "nome": "Sonnet 5 (equilibrado)", "provedor": "anthropic", "grupo": "Claude"},
+    {"id": "claude-haiku-4.5", "nome": "Haiku 4.5 (mais rápido e econômico)", "provedor": "anthropic", "grupo": "Claude"},
+    # ChatGPT (assinatura Plus/Pro via Hermes): conferidos em 27/09.
+    {"id": "gpt-6-astra", "nome": "GPT-6 Astra", "provedor": "openai-codex", "grupo": "ChatGPT"},
+    {"id": "gpt-5.6-sol", "nome": "GPT-5.6 Sol", "provedor": "openai-codex", "grupo": "ChatGPT"},
+    {"id": "gpt-5.6-luna", "nome": "GPT-5.6 Luna (mais rápido)", "provedor": "openai-codex", "grupo": "ChatGPT"},
 ]
+
+
+def _hermes_logados() -> set[str]:
+    """Providers com login no Hermes (só os NOMES, lidos dos auth.json;
+    nenhum token é lido) + o provider padrão do perfil."""
+    base = Path(os.environ.get("LOCALAPPDATA", "")) / "hermes"
+    achados: set[str] = set()
+    for arq in (base / "auth.json", base / "profiles" / HERMES_PERFIL / "auth.json"):
+        try:
+            d = json.loads(arq.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        for k in ("providers", "credential_pool"):
+            if isinstance(d.get(k), dict):
+                achados.update(d[k].keys())
+    try:
+        cfg = (base / "profiles" / HERMES_PERFIL / "config.yaml").read_text(encoding="utf-8")
+        m = re.search(r"^model:\s*\n(?:\s+.*\n)*?\s+provider:\s*(\S+)", cfg, re.M)
+        if m:
+            achados.add(m.group(1).strip("'\""))
+    except OSError:
+        pass
+    return achados
+
+
+def modelos_expert() -> list[dict]:
+    """Modelos do Expert que dá para usar AGORA (grupo logado no Hermes)."""
+    logados = _hermes_logados()
+    return [m for m in HERMES_MODELOS if not m["provedor"] or m["provedor"] in logados]
+
+
+def provedor_modelo(ident: str) -> str:
+    return next((m["provedor"] for m in HERMES_MODELOS if m["id"] == ident), "") or HERMES_PROVEDOR
 HERMES_MODELO_PADRAO = os.environ.get("HERMES_MODELO_CLAUDE", "").strip()
 
 

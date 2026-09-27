@@ -57,7 +57,8 @@ microfone → portão "Luna" (openWakeWord) → Whisper large-v3-turbo (placa de
 
 **Os três modos** (botões ao lado do microfone):
 - **Auto**: o normal. Escolhe sozinho entre comando, IA rápida ou Claude.
-- **Expert**: tudo direto para o Claude. Mais lento, mais capaz.
+- **Expert**: tudo direto para o **Claude ou o ChatGPT** (com a assinatura que você já paga, pelo Hermes). Mais lento, mais capaz.
+  Escolha qual em Ajustes → Inteligência → *Modelo do Expert*.
 - **Live**: conversa falada de ida e volta com o Gemini.
 
 **Atalhos de teclado**: `Ctrl+Alt+L` chama a Luna de qualquer programa · `Ctrl+K` busca qualquer ação ·
@@ -101,12 +102,15 @@ Ele fica em **Ajustes → Primeiros passos** (ou Ctrl+K). Para desligar: **Ajust
 
 Permita o microfone e diga "**Luna**, …".
 
-### Ligar o Claude (opcional)
+### Ligar o Expert: Claude ou ChatGPT (opcional)
 
 1. Instale o Hermes Agent e crie um perfil (ex.: `hermes profile create assistente`).
 2. No `.env` do perfil: `API_SERVER_ENABLED=true` e anote a `API_SERVER_KEY`.
 3. Rode `hermes gateway run`.
-4. Na Luna: Ajustes → Inteligência → Claude: endereço `http://127.0.0.1:8642/p/assistente/v1` e a chave.
+4. Na Luna: Ajustes → Inteligência → Expert: endereço `http://127.0.0.1:8642/p/assistente/v1` e a chave.
+5. Entre com a sua assinatura: `hermes -p assistente model` e escolha **Anthropic** (Claude) ou
+   **ChatGPT or Codex Subscription** (ChatGPT Plus/Pro). Pode conectar os dois; em *Modelo do Expert* aparecem
+   só os que estão conectados.
 
 ### Meu Hoje (opcional)
 
