@@ -13,7 +13,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Sintaxe
-        run: python -m compileall -q src
+        run: python -m compileall -q src instalar.py
       - name: Comandos prontos (sem rede, sem GPU)
         env:
           PYTHONIOENCODING: utf-8

@@ -84,7 +84,7 @@ def _precisa_reiniciar() -> list[str]:
             nome = f[4:-3]
             if nome not in RECARREGA_SOZINHO and not nome.startswith(("teste_", "testa_")):
                 mudou.append(f)
-        elif f in ("requirements.txt", "iniciar.ps1"):
+        elif f in ("requirements.txt", "iniciar.ps1", "instalar.py"):
             mudou.append(f)
     return mudou
 

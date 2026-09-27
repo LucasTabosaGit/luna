@@ -132,10 +132,11 @@ Crie a conta em https://meuhoje.com.br/cadastro e clique em **Conectar conta** n
 - **`git@github.com: Permission denied (publickey)`**: você usou o endereço **SSH**
   (`git@github.com:...`), que exige uma chave SSH cadastrada no seu GitHub. Não é vírus nem falta de acesso:
   use o endereço HTTPS acima ou baixe o ZIP.
-- **Windows ou antivírus avisando do `Luna.bat` / `.ps1`**: acontece com todo script baixado da internet.
-  O código está todo aberto aqui para conferir: o `Luna.bat` só chama o `instalar.ps1` (cria o ambiente Python
-  e instala as dependências do `requirements.txt`) e depois o `iniciar.ps1`. No aviso azul do Windows, clique
-  em **Mais informações → Executar assim mesmo**.
+- **Aviso azul do Windows ao abrir o `Luna.bat`** ("O Windows protegeu o computador"): aparece com todo arquivo
+  baixado da internet que ainda não é conhecido. Clique em **Mais informações → Executar assim mesmo**.
+  O projeto não tem nenhum programa `.exe` nem script PowerShell: o `Luna.bat` só procura o Python e roda o
+  `instalar.py` (cria o ambiente e instala o `requirements.txt`) e depois o `src/abrir.py`. Tudo em texto aberto,
+  para conferir. Na dúvida, envie o ZIP ao [VirusTotal](https://www.virustotal.com).
 
 ## Detector do nome
 
@@ -148,8 +149,9 @@ e passa a ter prioridade.
 
 ```
 Luna.bat              abrir (instala na primeira vez)
-iniciar.ps1           liga Hermes (se houver), vozes e servidor; abre a janela
-instalar.ps1          .venv + dependências + .env + atalho
+instalar.py           .venv + dependências + .env + atalho
+src/abrir.py          liga Hermes (se houver) e o servidor; abre a janela (é o que o atalho chama)
+src/criar_atalho.py   atalho "Luna" na área de trabalho e no menu Iniciar
 src/                  servidor e módulos (ver CONTRIBUTING.md)
 web/index.html        interface
 recursos/detector/    detector genérico do nome "Luna"
