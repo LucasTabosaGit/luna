@@ -16,6 +16,14 @@ microfone → portão "Luna" (openWakeWord) → Whisper large-v3-turbo (placa de
 
 - **Fala português do Brasil de verdade.** Tudo foi feito e testado em PT-BR: a escuta, os comandos, as vozes e as respostas.
   Entende "abaixa o som", "pula essa", "me lembra do bolo em 40 minutos" e até nomes mal pronunciados ("abre o espotifai").
+- **Aprende com você (com o Hermes).** Por trás dela roda o [Hermes Agent](https://hermes-agent.nousresearch.com/docs),
+  e isso faz a Luna melhorar com o uso:
+  - **lembra de você entre conversas**: preferências, nomes, o jeito que você gosta das coisas (memória do Hermes);
+  - **cria habilidades**: quando o Claude resolve uma tarefa nova, ele guarda o passo a passo e da próxima vez já sabe fazer;
+  - **transforma repetição em atalho**: o que você pede várias vezes passa a rodar em segundos, sem nem chamar o Claude.
+
+  Tudo aparece na aba **Aprendizado**, e nada muda sozinho: mudanças nela mesma passam por uma **trava de aprovação**
+  (ela propõe, testa e só vale depois que você aprova). Sem o Hermes, a Luna funciona normalmente, só não aprende.
 - **Só atende quando ouve "Luna".** Um detector do nome roda no seu PC antes de qualquer coisa. TV, música e conversa
   da sala são descartadas antes de virar texto e não saem do computador.
 - **É rápida onde dá e inteligente onde precisa.** Hora, volume, timer, contas, abrir apps e sites respondem na hora,
@@ -24,8 +32,6 @@ microfone → portão "Luna" (openWakeWord) → Whisper large-v3-turbo (placa de
 - **Você escolhe as peças.** A IA principal pode ser DeepSeek, Gemini, OpenAI, Groq, OpenRouter, Ollama (no seu PC)
   ou **a assinatura que você já paga** (ChatGPT Plus/Pro e outras, pelo Hermes). O ouvido pode rodar na placa de
   vídeo (grátis, sem internet) ou na nuvem (sem placa). Tudo se troca em Ajustes, sem reiniciar.
-- **Aprende com você, mas não muda sozinha.** O que você pede muitas vezes vira atalho, com uma **trava de aprovação**:
-  ela propõe, testa e só passa a valer depois que você aprova.
 - **Mostra quanto custa.** Ajustes → *Uso e gastos* mostra o gasto de hoje e do mês e quanto o seu uso custaria em
   cada IA. Com o DeepSeek, o uso normal fica em centavos por mês.
 - **É sua.** Código aberto (MIT), chaves só no seu PC, conversas salvas em arquivos seus.
