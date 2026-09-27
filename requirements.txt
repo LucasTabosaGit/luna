@@ -1,0 +1,27 @@
+# Luna - dependencias (Python 3.11, Windows).
+# O PyTorch com CUDA vem antes, pelo instalar.ps1:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu128
+faster-whisper==1.2.1
+ctranslate2==4.8.2
+kokoro==0.9.4
+misaki[pt]==0.9.4
+openwakeword==0.6.0
+onnxruntime==1.30.0
+scikit-learn==1.9.1
+numpy
+scipy
+soundfile==0.14.0
+sounddevice==0.5.6
+edge-tts==7.2.8
+fastapi==0.141.1
+uvicorn==0.53.0
+websockets==17.1
+httpx==0.28.1
+openai==3.19.2
+pypdf==6.19.0
+mss==10.2.0
+pillow==12.3.0
+psutil==7.2.2
+pycaw
+comtypes==1.4.17
+truststore

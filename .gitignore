@@ -1,0 +1,30 @@
+# Chaves e segredos: NUNCA versionar
+.env
+.env.*
+!.env.exemplo
+
+# Ambientes Python
+.venv/
+.venv-*/
+__pycache__/
+*.pyc
+
+# Modelos baixados (gigabytes; baixam sozinhos na primeira vez)
+modelos/
+cache/
+
+# Perfil da janela da Luna (cookies, permissao do microfone)
+navegador/
+
+# Logs, conversas, tokens e dados de cada usuario
+logs/
+dados/
+dados_luna/
+propostas/
+pessoal/
+
+# Editores e sistema
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

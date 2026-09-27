@@ -1,0 +1,2985 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16130f">
+<title>Luna</title>
+<style>
+  :root {
+    --fundo: oklch(0.16 0.008 70);
+    --palco: oklch(0.19 0.009 70);
+    --painel: oklch(0.22 0.01 70);
+    --linha: oklch(0.30 0.012 70);
+    --tinta: oklch(0.95 0.008 80);
+    --suave: oklch(0.72 0.015 75);
+    --fraco: oklch(0.56 0.015 75);
+    --ambar: oklch(0.82 0.15 75);
+    --ambar-esc: oklch(0.62 0.16 55);
+    --ouvir: oklch(0.80 0.11 175);
+    --erro: oklch(0.70 0.17 25);
+    --mono: "Cascadia Code", "Cascadia Mono", Consolas, ui-monospace, monospace;
+    --texto: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    --titulo: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--fundo); color: var(--tinta); font: 15px/1.55 var(--texto);
+         overflow: hidden; }
+  button, select, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--ambar); outline-offset: 2px; }
+  ::selection { background: oklch(0.82 0.15 75 / .28); }
+
+  /* Rolagem no tema: trilho invisível, polegar âmbar-acinzentado que acende
+     ao passar o mouse. Firefox usa scrollbar-color; Chromium/Edge o webkit. */
+  * { scrollbar-width: thin; scrollbar-color: oklch(0.36 0.014 70) transparent; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: oklch(0.34 0.013 70); border-radius: 10px;
+                              border: 3px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background-color: oklch(0.62 0.12 70); }
+  ::-webkit-scrollbar-corner { background: transparent; }
+  .kbd { font: 11px var(--mono); color: var(--fraco); border: 1px solid var(--linha);
+         border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+
+  .app { height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) 340px; }
+
+  /* ------------------------------------------------------------ palco */
+  .palco { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: var(--palco);
+           min-width: 0; }
+  .topo { display: flex; align-items: center; gap: 16px; padding: 14px 22px; font-size: 12.5px;
+          color: var(--suave); min-height: 52px; }
+  .topo b { color: var(--tinta); font-weight: 600; font-size: 14px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font: 11.5px var(--mono); color: var(--suave);
+          white-space: nowrap; }
+  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--fraco); }
+  .pill.on::before { background: var(--ouvir); }
+  .pill.off::before { background: var(--erro); }
+  .topo .dir { margin-left: auto; display: flex; gap: 14px; align-items: center; }
+  .icone { background: none; border: 1px solid transparent; border-radius: 8px; padding: 6px 10px;
+           color: var(--suave); font-size: 13px; }
+  .icone:hover { border-color: var(--linha); color: var(--tinta); }
+  #btnAtividade { display: none; }
+
+  .centro { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 36px; align-items: center;
+            padding: 0 40px; min-height: 0; }
+  /* A caixa acompanha a janela em vez de ser um quadrado fixo: assim a rede
+     nunca esbarra na borda quando a tela (ou o desenho) cresce. */
+  .orbe-caixa { width: min(400px, 46vh); aspect-ratio: 1; display: grid; place-items: center; }
+  #orbe { width: 100%; height: 100%; display: block; }
+  .legenda { min-width: 0; max-width: 600px; }
+  #estadoRotulo { font: 12px var(--mono); color: var(--fraco); text-transform: uppercase;
+                  letter-spacing: .07em; margin-bottom: 12px; min-height: 18px; }
+  #estadoRotulo.vivo { color: var(--ambar); }
+  /* Pedidos esperando a vez (feitos enquanto ela trabalhava). */
+  #fila[hidden] { display: none; }
+  /* ---- Conexões (Ajustes e primeiro uso) */
+  .conexoes { display: flex; flex-direction: column; gap: 10px; }
+  .cx { border: 1px solid var(--linha); border-radius: 10px; padding: 10px 12px; background: var(--fundo); }
+  .cx header { display: flex; align-items: center; gap: 8px; }
+  .cx header b { font-size: 13.5px; }
+  .cx .sit { margin-left: auto; font: 11px var(--mono); color: var(--suave); display: flex; align-items: center; gap: 6px; }
+  .cx .sit::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--linha); }
+  .cx .sit.ok { color: var(--ouvir); } .cx .sit.ok::before { background: var(--ouvir); }
+  .cx .sit.falha { color: var(--erro); } .cx .sit.falha::before { background: var(--erro); }
+  .cx p { margin: 4px 0 8px; font-size: 12px; color: var(--suave); }
+  .cx .campo[hidden] { display: none; }
+  #btnAtualizar { color: var(--ambar); border-color: color-mix(in oklch, var(--ambar) 45%, transparent); }
+  #btnAtualizar[hidden] { display: none; }
+  .ponto-att { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ambar);
+    margin-left: 4px; vertical-align: middle; animation: pulsoAtt 2s ease-in-out infinite; }
+  @keyframes pulsoAtt { 50% { opacity: .35; } }
+  #dlgAtualizar { width: min(480px, 92vw); }
+  .passo-a-passo { margin: 8px 0; padding: 8px 12px; border: 1px solid var(--linha); border-radius: 10px; }
+  .passo-a-passo summary { cursor: pointer; font-weight: 600; }
+  .passo-a-passo ol { margin: 8px 0; }
+  .cx .campo { display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; font-size: 11.5px; color: var(--suave); }
+  .cx input { background: var(--palco); color: var(--tinta); border: 1px solid var(--linha); border-radius: 7px;
+              padding: 6px 8px; font: 12px var(--mono); }
+  .cx input:focus { outline: none; border-color: var(--ambar-esc); }
+  .cx .rodape-cx { display: flex; align-items: center; gap: 10px; }
+  .cx .rodape-cx a { color: var(--suave); font-size: 11.5px; }
+  .cx .msg-cx { font-size: 11.5px; color: var(--suave); }
+  .cx.obrig:not(.pronto) { border-color: var(--ambar-esc); }
+  /* ---- Primeiros passos */
+  #dlgBoasVindas { width: min(580px, 94vw); max-height: 90vh; }
+  #dlgBoasVindas .dlg { display: block; width: auto; }
+  #dlgBoasVindas .dlg > * + * { margin-top: 12px; }
+  #dlgBoasVindas .guia pre, #dlgBoasVindas .guia code { overflow-wrap: anywhere; white-space: pre-wrap; }
+  #dlgBoasVindas .conexoes { margin-top: 10px; }
+  #dlgBoasVindas h3 { margin-bottom: 2px; }
+  #dlgBoasVindas .intro { color: var(--suave); font-size: 13px; margin: 0 0 12px; line-height: 1.5; }
+  .passos { display: flex; gap: 6px; margin: 2px 0 14px; }
+  .passos span { flex: 1; height: 3px; border-radius: 2px; background: var(--linha); }
+  .passos span.feito { background: var(--ambar-esc); } .passos span.atual { background: var(--ambar); }
+  .etapa[hidden] { display: none; }
+  .checks { list-style: none; margin: 0; padding: 0; border: 1px solid var(--linha); border-radius: 10px;
+            background: var(--fundo); overflow: hidden; }
+  .checks li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+               padding: 7px 12px; }
+  .checks li + li { border-top: 1px solid var(--linha); }
+  .checks li > span:nth-child(2) { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+  .checks li small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 !important; }
+  .checks .ic { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font-size: 10px;
+                background: var(--linha); color: var(--fundo); font-weight: 700; }
+  .checks li.ok .ic { background: var(--ouvir); } .checks li.falta.obrig .ic { background: var(--erro); }
+  .checks li.falta:not(.obrig) .ic { background: var(--ambar-esc); }
+  .checks b { font-size: 13px; font-weight: 600; } .checks small { display: block; color: var(--suave); font-size: 11.5px; margin-top: 1px; }
+  .checks .tag { font: 10px var(--mono); color: var(--suave); text-transform: uppercase; letter-spacing: .06em; }
+  .checks a, .guia a:not(.botao) { color: var(--ambar); }
+  a.botao { text-decoration: none; color: var(--tinta); display: inline-flex; align-items: center; }
+  .guia { font-size: 13px; line-height: 1.55; color: var(--tinta); }
+  .guia ol { padding-left: 20px; margin: 6px 0 10px; } .guia li { margin: 3px 0; }
+  .guia code { font: 12px var(--mono); background: var(--palco); padding: 1px 5px; border-radius: 4px; }
+  .guia pre { font: 12px var(--mono); background: var(--palco); padding: 8px 10px; border-radius: 7px; margin: 6px 0;
+              white-space: pre-wrap; word-break: break-all; position: relative; }
+  .guia .dica { color: var(--suave); font-size: 12px; }
+  .nav-etapas { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; gap: 8px; }
+  .nav-etapas .pular { background: none; border: 0; color: var(--suave); font-size: 12px; cursor: pointer; text-decoration: underline; }
+  /* aba Hoje sem conta */
+  .conectar-hoje { display: flex; flex-direction: column; gap: 10px; padding: 14px 4px; font-size: 13px; line-height: 1.5; }
+  .conectar-hoje h4 { margin: 0; font-size: 15px; }
+  .conectar-hoje p { margin: 0; color: var(--suave); }
+  .conectar-hoje ol { margin: 0; padding-left: 20px; } .conectar-hoje li { margin: 4px 0; }
+  .conectar-hoje .linha-b { display: flex; gap: 8px; flex-wrap: wrap; }
+  .conectar-hoje a.botao { text-decoration: none; }
+  #fila { margin: 14px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  #fila::before { content: "Na fila"; font: 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--fraco); }
+  #fila li { font-size: 13.5px; color: var(--suave); padding: 5px 10px; border: 1px solid var(--linha); border-radius: 8px; max-width: 52ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #falaAtual { font: 500 23px/1.42 var(--titulo); text-wrap: pretty; margin: 0;
+               max-height: 40vh; overflow-y: auto; }
+  #falaAtual:empty::before { content: attr(data-vazio); color: var(--fraco); font-weight: 400; }
+  #voceDisse { color: var(--suave); font-size: 14px; margin-top: 16px; min-height: 22px; }
+  #voceDisse span { color: var(--fraco); }
+
+  .doca { display: flex; align-items: center; gap: 14px; padding: 14px 22px calc(16px + env(safe-area-inset-bottom));
+          border-top: 1px solid var(--linha);
+          background: linear-gradient(to top, oklch(0.17 0.008 70), var(--palco)); }
+  .doca svg { width: 17px; height: 17px; flex: none; }
+  #btnMic { width: 52px; height: 52px; border-radius: 50%; border: 0; flex: none; position: relative;
+            background: var(--painel); color: var(--suave); display: grid; place-items: center;
+            box-shadow: inset 0 0 0 1px var(--linha);
+            transition: background .18s ease, color .18s ease, transform .12s ease, box-shadow .18s ease; }
+  #btnMic svg { width: 22px; height: 22px; }
+  #btnMic:hover { color: var(--tinta); box-shadow: inset 0 0 0 1px var(--suave); }
+  #btnMic:active { transform: scale(.94); }
+  #btnMic.on { background: var(--ambar); color: oklch(0.2 0.02 70);
+               box-shadow: 0 0 0 4px oklch(0.82 0.15 75 / .16), 0 6px 18px oklch(0.82 0.15 75 / .2); }
+  #btnMic.on::after { content: ""; position: absolute; inset: -6px; border-radius: 50%;
+                      border: 1px solid oklch(0.82 0.15 75 / .5); animation: pulso 2s ease-out infinite; }
+  @keyframes pulso { 0% { transform: scale(.92); opacity: .7; } 100% { transform: scale(1.18); opacity: 0; } }
+
+  .seg { display: inline-flex; gap: 2px; border: 1px solid var(--linha); border-radius: 13px; padding: 4px;
+         flex: none; background: var(--fundo); }
+  .seg button { display: inline-flex; align-items: center; gap: 7px; background: none; border: 0;
+                padding: 8px 13px; font-size: 13px; color: var(--fraco); border-radius: 9px;
+                transition: background .15s, color .15s; }
+  .seg button:hover:not(:disabled) { color: var(--tinta); background: oklch(1 0 0 / .045); }
+  .seg button svg { opacity: .85; }
+  .seg button[aria-pressed="true"] { background: var(--painel); color: var(--tinta);
+                                     box-shadow: inset 0 0 0 1px var(--linha), 0 1px 2px oklch(0 0 0 / .3); }
+  .seg button[aria-pressed="true"] svg { color: var(--ambar); opacity: 1; }
+  .seg button[data-modo="live"][aria-pressed="true"] svg { color: var(--ouvir); }
+  .seg button[data-modo="hermes"][aria-pressed="true"] { background: oklch(0.30 0.05 60);
+      box-shadow: inset 0 0 0 1px oklch(0.62 0.16 55 / .7), 0 1px 2px oklch(0 0 0 / .3); }
+  .seg button:disabled { opacity: .35; cursor: not-allowed; }
+
+  /* Campo de texto: cresce para baixo quando a linha acaba, até três linhas. */
+  form.campo { flex: 1; min-width: 0; display: flex; align-items: flex-end; gap: 10px; min-height: 46px;
+               border: 1px solid var(--linha); border-radius: 13px; padding: 6px 8px 6px 14px; background: var(--fundo);
+               transition: border-color .15s, box-shadow .15s; }
+  form.campo .lupa { display: none; }
+  form.campo .kbd { align-self: flex-end; margin-bottom: 9px; }
+  form.campo:focus-within { border-color: var(--ambar); box-shadow: 0 0 0 3px oklch(0.82 0.15 75 / .13); }
+  form.campo:focus-within .lupa { color: var(--ambar); }
+  form.campo textarea { flex: 1; min-width: 0; background: none; border: 0; outline: 0; font: 14px/22px var(--texto);
+                        resize: none; overflow-y: auto; height: 34px; max-height: 78px; padding: 6px 0;
+                        scrollbar-width: thin; }
+  form.campo textarea::placeholder { color: var(--fraco); }
+  form.campo { flex-wrap: wrap; position: relative; }
+  form.campo.arrastando { border-color: var(--ambar); border-style: dashed;
+                          background: oklch(0.82 0.15 75 / .06); }
+  #anexos { flex-basis: 100%; display: flex; gap: 8px; flex-wrap: wrap; padding: 4px 0 2px; }
+  #anexos:empty { display: none; }
+  .anexo { position: relative; width: 58px; height: 58px; border-radius: 9px; overflow: hidden;
+           box-shadow: inset 0 0 0 1px var(--linha); background: var(--painel); }
+  .anexo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .anexo button { position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%;
+                  border: 0; background: oklch(0.12 0 0 / .78); color: var(--tinta); font-size: 13px;
+                  line-height: 20px; padding: 0; display: grid; place-items: center; }
+  .anexo button:hover { background: var(--erro); }
+  #btnAnexar { flex: none; width: 34px; height: 34px; border-radius: 9px; border: 0; background: none;
+               color: var(--fraco); display: grid; place-items: center; transition: background .15s, color .15s; }
+  #btnAnexar:hover { color: var(--tinta); background: oklch(1 0 0 / .06); }
+  #btnEnviar { flex: none; width: 34px; height: 34px; border-radius: 9px; border: 0; background: none;
+               color: var(--fraco); display: grid; place-items: center; transition: background .15s, color .15s; }
+  #btnEnviar:hover { background: var(--ambar); color: oklch(0.2 0.02 70); }
+  #btnParar { flex: none; height: 46px; border-radius: 13px; border: 1px solid var(--linha);
+              background: none; color: var(--suave); padding: 0 14px; display: none; gap: 8px; align-items: center;
+              font-size: 13.5px; transition: border-color .15s, color .15s, background .15s; }
+  #btnParar.visivel { display: inline-flex; }
+  #btnParar:hover { border-color: var(--erro); color: var(--erro); background: oklch(0.70 0.17 25 / .08); }
+
+  /* ------------------------------------------------------------ lateral */
+  .lado { border-left: 1px solid var(--linha); background: var(--fundo); display: grid;
+          grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; }
+  .abas { display: flex; gap: 4px; padding: 12px 14px 0; border-bottom: 1px solid var(--linha); }
+  .abas button { background: none; border: 0; padding: 8px 10px 10px; font-size: 13px; color: var(--fraco);
+                 border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .abas button[aria-selected="true"] { color: var(--tinta); border-bottom-color: var(--ambar); }
+  .abas .cont { font: 11px var(--mono); color: var(--fraco); margin-left: 4px; }
+  .abas .fechar { margin-left: auto; display: none; }
+  .lista { overflow-y: auto; padding: 0 18px 18px; }
+  .vazio { color: var(--fraco); font-size: 13px; padding: 22px 0; text-wrap: pretty; }
+  .turno { font: 11px var(--mono); color: var(--fraco); padding: 16px 0 4px; text-transform: uppercase;
+           letter-spacing: .06em; }
+  .tarefa { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 10px; padding: 10px 0;
+            border-bottom: 1px solid var(--linha); align-items: start; }
+  .tarefa .st { width: 12px; height: 12px; border-radius: 50%; margin-top: 4px; border: 2px solid var(--ambar);
+                border-right-color: transparent; animation: gira .8s linear infinite; }
+  .tarefa.ok .st { background: var(--ouvir); border-color: var(--ouvir); animation: none; }
+  .tarefa.falhou .st { background: var(--erro); border-color: var(--erro); animation: none; }
+  .tarefa.parou .st { background: var(--fraco); border-color: var(--fraco); animation: none; }
+  .tarefa .nome { font: 11.5px var(--mono); color: var(--fraco); }
+  .tarefa .rot { font-size: 13.5px; overflow-wrap: anywhere; }
+  .tarefa .t { font: 11.5px var(--mono); color: var(--fraco); font-variant-numeric: tabular-nums; }
+  @keyframes gira { to { transform: rotate(360deg); } }
+
+  #listaConv { display: flex; flex-direction: column; gap: 10px; }
+  .lista[hidden] { display: none !important; }
+  .msg { font-size: 14px; max-width: 92%; overflow-wrap: anywhere; }
+  .msg .quem { font: 10.5px var(--mono); color: var(--fraco); text-transform: uppercase;
+               letter-spacing: .06em; margin-bottom: 3px; }
+  .msg.voce { align-self: flex-end; background: var(--painel); border: 1px solid var(--linha);
+              border-radius: 14px 14px 4px 14px; padding: 8px 12px; }
+  .msg.voce .quem { display: none; }
+  .msg.bot { align-self: flex-start; padding: 2px 2px; }
+  .msg.bot .quem { color: var(--ambar); }
+  .msg.bot.claude .quem::after { content: " · claude"; color: var(--ambar-esc); }
+  .msg .fotos { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .msg .fotos img { max-width: 132px; max-height: 110px; border-radius: 8px; display: block;
+                    box-shadow: inset 0 0 0 1px var(--linha); cursor: zoom-in; }
+  .msg.sistema { align-self: center; max-width: 100%; color: var(--fraco); font-size: 12.5px;
+                 text-align: center; text-wrap: pretty; }
+  .msg.proposta { align-self: stretch; text-align: left; color: var(--tinta); background: var(--painel);
+                  border: 1px solid var(--ambar-esc); border-radius: 12px; padding: 12px 14px; font-size: 13.5px; }
+  .msg.proposta small { color: var(--suave); }
+  .msg.proposta button { margin-top: 8px; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--linha);
+                         background: none; color: var(--suave); }
+  .msg.proposta button.aprovar { background: var(--ambar); border-color: var(--ambar);
+                                 color: oklch(0.2 0.02 70); font-weight: 600; }
+  /* Markdown das respostas (o Claude manda listas, código, links). */
+  .md > :first-child { margin-top: 0; } .md > :last-child { margin-bottom: 0; }
+  .md p { margin: 0 0 8px; }
+  .md ul, .md ol { margin: 4px 0 8px; padding-left: 20px; }
+  .md li { margin: 2px 0; }
+  .md h1, .md h2, .md h3, .md h4 { font: 600 14.5px/1.4 var(--titulo); margin: 12px 0 6px; }
+  .md a { color: var(--ambar); text-underline-offset: 2px; }
+  .md code { font: 12.5px var(--mono); background: oklch(1 0 0 / .06); border-radius: 5px; padding: 1px 5px; }
+  .md pre { position: relative; background: var(--fundo); border: 1px solid var(--linha); border-radius: 9px;
+            padding: 10px 12px; margin: 6px 0 10px; overflow-x: auto; }
+  .md pre code { background: none; padding: 0; font-size: 12px; line-height: 1.55; white-space: pre; }
+  .md pre .copiar { position: absolute; top: 6px; right: 6px; opacity: 0; transition: opacity .15s; }
+  .md pre:hover .copiar { opacity: 1; }
+  .md blockquote { margin: 6px 0; padding-left: 10px; border-left: 2px solid var(--linha); color: var(--suave); }
+  .md table { border-collapse: collapse; margin: 6px 0 10px; font-size: 13px; display: block; overflow-x: auto; }
+  .md th, .md td { border: 1px solid var(--linha); padding: 4px 8px; text-align: left; }
+  .md th { background: var(--painel); font-weight: 600; }
+  .md hr { border: 0; border-top: 1px solid var(--linha); margin: 10px 0; }
+
+  /* Ações de cada resposta: aparecem ao passar o mouse (sempre no toque). */
+  .msg .acoes-msg { display: flex; gap: 2px; margin-top: 4px; opacity: 0; transition: opacity .15s; }
+  .msg:hover .acoes-msg, .msg:focus-within .acoes-msg { opacity: 1; }
+  @media (hover: none) { .msg .acoes-msg { opacity: 1; } }
+  .mini-btn { background: none; border: 1px solid transparent; border-radius: 7px; padding: 3px 7px;
+              font: 11.5px var(--texto); color: var(--fraco); display: inline-flex; gap: 5px; align-items: center; }
+  .mini-btn:hover { color: var(--tinta); border-color: var(--linha); background: oklch(1 0 0 / .03); }
+  .mini-btn svg { width: 13px; height: 13px; }
+  .mini-btn.feito { color: var(--ouvir); }
+
+  /* Cabeçalho da conversa: título + histórico + nova. */
+  .conv-topo { display: flex; align-items: center; gap: 6px; padding: 10px 0 8px; position: sticky; top: 0;
+               background: var(--fundo); z-index: 2; border-bottom: 1px solid var(--linha); margin-bottom: 4px; }
+  .conv-topo .titulo { flex: 1; min-width: 0; font-size: 12.5px; color: var(--suave); white-space: nowrap;
+                       overflow: hidden; text-overflow: ellipsis; }
+  #painelConversas { position: absolute; inset: 0; background: var(--fundo); z-index: 5; display: grid;
+                     grid-template-rows: auto minmax(0, 1fr); }
+  #painelConversas[hidden] { display: none; }
+  #painelConversas header { display: flex; align-items: center; gap: 8px; padding: 12px 18px;
+                            border-bottom: 1px solid var(--linha); font-size: 13px; }
+  #painelConversas header b { flex: 1; font-weight: 600; }
+  #listaConversas { overflow-y: auto; padding: 6px 10px 18px; }
+  .conv-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center;
+               padding: 9px 10px; border-radius: 9px; cursor: pointer; }
+  .conv-item:hover { background: var(--painel); }
+  .conv-item.atual { background: var(--painel); box-shadow: inset 2px 0 0 var(--ambar); }
+  .conv-item .t { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conv-item .q { font: 11px var(--mono); color: var(--fraco); }
+  .conv-item .apagar { opacity: 0; }
+  .conv-item:hover .apagar { opacity: 1; }
+  .conv-dia { font: 10.5px var(--mono); color: var(--fraco); text-transform: uppercase; letter-spacing: .07em;
+              padding: 12px 10px 4px; }
+  .lado { position: relative; }
+  .abas { overflow-x: auto; scrollbar-width: none; }
+  .abas::-webkit-scrollbar { display: none; }
+  .abas button { white-space: nowrap; }
+  .abas .ponto { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ambar);
+                 margin-left: 5px; vertical-align: 1px; }
+  .abas .ponto[hidden] { display: none; }
+
+  /* Seções das abas Hoje / Aprendizado */
+  .secao { padding: 14px 0 4px; }
+  .secao h4 { font: 10.5px var(--mono); color: var(--fraco); text-transform: uppercase; letter-spacing: .08em;
+              margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; }
+  .cartao { background: var(--painel); border: 1px solid var(--linha); border-radius: 12px; padding: 12px 14px; }
+  .dia-topo { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .dia-topo b { font: 600 17px var(--titulo); }
+  .dia-topo b::first-letter { text-transform: uppercase; }
+  .nivel { white-space: nowrap; flex: none; font: 11px var(--mono); padding: 2px 8px; border-radius: 20px; border: 1px solid var(--linha); color: var(--suave); }
+  .nivel.baixa { color: var(--erro); border-color: oklch(0.70 0.17 25 / .5); }
+  .nivel.alta { color: var(--ouvir); border-color: oklch(0.80 0.11 175 / .5); }
+  .comece { margin-top: 8px; font-size: 13px; color: var(--suave); }
+  .comece b { color: var(--ambar); font-weight: 600; }
+  .item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start;
+          padding: 9px 0; border-bottom: 1px solid var(--linha); font-size: 13.5px; }
+  .item:last-child { border-bottom: 0; }
+  .item .sub { font-size: 12px; color: var(--fraco); margin-top: 2px; text-wrap: pretty; }
+  .item .quando { font: 11px var(--mono); color: var(--fraco); white-space: nowrap; }
+  .check { width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid var(--suave); background: none;
+           margin-top: 1px; padding: 0; display: grid; place-items: center; color: transparent; }
+  .check:hover { border-color: var(--ouvir); color: var(--ouvir); }
+  .check.feito { background: var(--ouvir); border-color: var(--ouvir); color: oklch(0.2 0.02 70); }
+  .item.feito .t { color: var(--fraco); text-decoration: line-through; }
+  .hora { font: 12px var(--mono); color: var(--ambar); min-width: 42px; font-variant-numeric: tabular-nums; }
+  .add-tarefa { display: flex; gap: 8px; margin-top: 10px; }
+  .add-tarefa input { flex: 1; min-width: 0; background: var(--fundo); border: 1px solid var(--linha); border-radius: 9px;
+                      padding: 7px 10px; font-size: 13px; outline: 0; }
+  .add-tarefa input:focus { border-color: var(--ambar); }
+  .chip { display: inline-block; font: 10.5px var(--mono); color: var(--fraco); border: 1px solid var(--linha);
+          border-radius: 20px; padding: 1px 7px; margin-left: 6px; }
+  .chip.forte { color: var(--ambar); border-color: oklch(0.82 0.15 75 / .45); }
+  .troca { position: relative; width: 34px; height: 20px; flex: none; }
+  .troca input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .troca span { position: absolute; inset: 0; background: var(--linha); border-radius: 20px; transition: background .15s; cursor: pointer; }
+  .troca span::after { content: ""; position: absolute; left: 3px; top: 3px; width: 14px; height: 14px; border-radius: 50%;
+                       background: var(--tinta); transition: transform .15s; }
+  .troca input:checked + span { background: var(--ambar-esc); }
+  .troca input:checked + span::after { transform: translateX(14px); }
+  .troca input:focus-visible + span { outline: 2px solid var(--ambar); outline-offset: 2px; }
+  .dica { font-size: 12.5px; color: var(--fraco); text-wrap: pretty; margin: 4px 0 0; }
+
+  /* Barra de status: um lugar só para "está tudo no ar?" e o gasto do dia. */
+  .status { display: flex; align-items: center; gap: 4px; }
+  .st-item { display: inline-flex; align-items: center; gap: 6px; font: 11.5px var(--mono); color: var(--suave);
+             padding: 4px 8px; border-radius: 8px; white-space: nowrap; }
+  .st-item::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--fraco); flex: none; }
+  .st-item.on::before { background: var(--ouvir); }
+  .st-item.off::before { background: var(--erro); }
+  .st-item.off { color: var(--erro); }
+  .st-sep { width: 1px; height: 14px; background: var(--linha); margin: 0 2px; }
+  #stCusto { color: var(--fraco); }
+  #stCusto::before { display: none; }
+  /* O status detalhado mora em Ajustes -> Uso. No topo só aparece o que
+     está com problema (servidor caiu, IA sem chave, Claude fora do ar). */
+  .topo .status .st-item:not(.off), .topo .status .st-sep, .topo #stCusto { display: none; }
+
+  /* Erros em linguagem de gente, com o detalhe técnico recolhido. */
+  .msg.erro { align-self: stretch; max-width: 100%; background: oklch(0.70 0.17 25 / .08);
+              border: 1px solid oklch(0.70 0.17 25 / .35); border-radius: 10px; padding: 9px 12px;
+              font-size: 13px; color: var(--tinta); }
+  .msg.erro b { color: var(--erro); font-weight: 600; }
+  .msg.erro details { margin-top: 4px; color: var(--fraco); font: 11px var(--mono); }
+  .msg.erro summary { cursor: pointer; }
+
+  /* Chips de arquivo (PDF/texto) no campo e nos balões. */
+  .anexo.arq { width: auto; max-width: 190px; height: 58px; display: flex; align-items: center; gap: 8px;
+               padding: 0 30px 0 10px; font-size: 12px; }
+  .anexo.arq .ext { font: 600 10px var(--mono); color: oklch(0.2 0.02 70); background: var(--ambar);
+                    border-radius: 5px; padding: 3px 5px; text-transform: uppercase; flex: none; }
+  .anexo.arq .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .msg .arqs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .msg .arqs span { font: 11.5px var(--mono); background: var(--fundo); border: 1px solid var(--linha);
+                    border-radius: 7px; padding: 3px 8px; }
+
+  /* Paleta de comandos (Ctrl+K) */
+  #paleta { padding: 0; width: min(560px, calc(100vw - 32px)); margin-top: 14vh; }
+  #paleta input { width: 100%; background: none; border: 0; border-bottom: 1px solid var(--linha);
+                  padding: 15px 18px; font-size: 15px; outline: 0; }
+  #paleta ul { list-style: none; margin: 0; padding: 6px; max-height: 50vh; overflow-y: auto; }
+  #paleta li { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px;
+               font-size: 14px; cursor: pointer; }
+  #paleta li .g { font: 10.5px var(--mono); color: var(--fraco); text-transform: uppercase; letter-spacing: .06em;
+                  margin-left: auto; }
+  #paleta li[aria-selected="true"] { background: oklch(0.82 0.15 75 / .12); color: var(--tinta); }
+  #paleta li[aria-selected="true"] .g { color: var(--ambar); }
+  #paleta .vazio { padding: 14px 12px; }
+  #paleta footer { display: flex; gap: 14px; padding: 8px 14px; border-top: 1px solid var(--linha);
+                   font-size: 11.5px; color: var(--fraco); }
+
+  #zoom { padding: 0; background: none; border: 0; max-width: 92vw; max-height: 92vh; }
+  #zoom img { max-width: 92vw; max-height: 88vh; border-radius: 12px; display: block; }
+  .lado footer { padding: 11px 18px; border-top: 1px solid var(--linha); font: 11.5px var(--mono);
+                 color: var(--fraco); min-height: 40px; font-variant-numeric: tabular-nums; }
+
+  /* ------------------------------------------------------------ ajustes */
+  dialog { background: var(--painel); color: var(--tinta); border: 1px solid var(--linha); border-radius: 14px;
+           padding: 0; width: min(440px, calc(100vw - 32px)); }
+  dialog::backdrop { background: oklch(0.1 0 0 / .55); }
+  .dlg { padding: 20px 22px; display: grid; gap: 16px; }
+  .dlg h3 { margin: 0; font: 600 16px var(--titulo); }
+  .dlg label { display: grid; gap: 6px; font-size: 12.5px; color: var(--suave); }
+  .dlg label.chave { grid-template-columns: auto 1fr; align-items: start; gap: 10px; color: var(--texto, inherit); cursor: pointer; }
+  .dlg label.chave input { margin-top: 3px; accent-color: oklch(0.82 0.15 75); width: 16px; height: 16px; }
+  .dlg select option { background: var(--painel); }
+  .dlg select:disabled { opacity: .5; }
+  .dlg select { background: var(--fundo); border: 1px solid var(--linha); border-radius: 9px; padding: 9px 10px;
+                font-size: 14px; }
+  .dlg .linha { display: flex; gap: 10px; align-items: center; }
+  .dlg input[type=range] { flex: 1; accent-color: var(--ambar); }
+  .dlg .val { font: 12px var(--mono); min-width: 42px; text-align: right; }
+  .dlg .acoes { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; }
+  .botao { background: none; border: 1px solid var(--linha); border-radius: 9px; padding: 8px 14px; font-size: 13.5px;
+           color: var(--suave); }
+  .botao:hover { color: var(--tinta); border-color: var(--suave); }
+  .botao.forte { background: var(--ambar); border-color: var(--ambar); color: oklch(0.2 0.02 70); font-weight: 600; }
+  /* Ajustes em abas: navegação à esquerda, painel rolável à direita. */
+  #dlgAjustes { width: min(980px, calc(100vw - 32px)); max-height: min(700px, calc(100vh - 40px)); }
+  #dlgAjustes[open] { display: flex; }
+  .aj { display: grid; grid-template-columns: 196px 1fr; grid-template-rows: auto 1fr; width: 100%;
+        height: min(680px, calc(100vh - 40px)); }
+  .cx select { width: 100%; background: var(--palco); color: var(--tinta); border: 1px solid var(--linha);
+               border-radius: 7px; padding: 7px 9px; font-size: 13px; }
+  .cx select option { background: var(--painel); }
+  .cx select:focus { outline: none; border-color: var(--ambar-esc); }
+  .aj-topo { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between;
+             padding: 14px 16px 12px 20px; border-bottom: 1px solid var(--linha); }
+  .aj-topo h3 { margin: 0; font: 600 16px var(--titulo); }
+  .aj-fechar { background: none; border: 0; color: var(--suave); font-size: 15px; width: 30px; height: 30px;
+               border-radius: 8px; cursor: pointer; }
+  .aj-fechar:hover { background: var(--fundo); color: var(--tinta); }
+  .aj-nav { display: flex; flex-direction: column; gap: 2px; padding: 12px 8px; border-right: 1px solid var(--linha); }
+  .aj-nav button { display: flex; align-items: center; gap: 10px; background: none; border: 0; color: var(--suave);
+                   text-align: left; padding: 9px 12px; border-radius: 8px; font-size: 13.5px; cursor: pointer; position: relative; }
+  .aj-nav button:hover { background: var(--fundo); color: var(--tinta); }
+  .aj-nav button[aria-selected="true"] { background: var(--fundo); color: var(--tinta); font-weight: 600; }
+  .aj-nav button[aria-selected="true"]::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px;
+                   width: 3px; border-radius: 2px; background: var(--ambar); }
+  .ic-aj { width: 16px; text-align: center; opacity: .75; font-size: 13px; }
+  .aj-alerta { margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: var(--ambar); }
+  .aj-alerta[hidden] { display: none; }
+  .aj-corpo { overflow-y: auto; padding: 16px 22px 22px; min-width: 0; }
+  .aj-painel { display: grid; gap: 14px; align-content: start; }
+  .aj-painel[hidden] { display: none; }
+  .aj-desc { margin: 0; color: var(--suave); font-size: 12.5px; line-height: 1.5; }
+  .aj-desc code { font: 11.5px var(--mono); }
+  .uso-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+  .uso-st { border: 1px solid var(--linha); border-radius: 10px; padding: 10px 12px; background: var(--fundo);
+            display: grid; gap: 2px; font-size: 13px; }
+  .uso-st small { color: var(--suave); font-size: 11.5px; }
+  .uso-st b { display: flex; align-items: center; gap: 7px; font-weight: 600; }
+  .uso-st b::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--fraco); flex: none; }
+  .uso-st.on b::before { background: var(--ouvir); } .uso-st.off b::before { background: var(--erro); }
+  .uso-st.off { border-color: color-mix(in oklch, var(--erro) 45%, transparent); }
+  .uso-grade { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .uso-num { border: 1px solid var(--linha); border-radius: 10px; padding: 12px 14px; background: var(--fundo); display: grid; gap: 2px; }
+  .uso-num small { color: var(--suave); font-size: 11.5px; }
+  .uso-num b { font: 600 22px var(--titulo); font-variant-numeric: tabular-nums; }
+  .uso-num span { color: var(--fraco); font-size: 11.5px; }
+  .uso-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 13px; }
+  .uso-cab small { color: var(--fraco); font-size: 11.5px; }
+  .grafico { display: flex; align-items: flex-end; gap: 3px; height: 96px; padding-top: 6px; }
+  .grafico i { flex: 1; min-height: 2px; background: color-mix(in oklch, var(--ambar) 55%, transparent);
+               border-radius: 3px 3px 0 0; position: relative; }
+  .grafico i.hoje { background: var(--ambar); }
+  .grafico i.zero { background: var(--linha); }
+  .grafico i:hover { background: var(--ambar); }
+  .tab-est, .tab-req { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tab-est td, .tab-req td, .tab-req th { padding: 8px 6px; border-top: 1px solid var(--linha); text-align: left; vertical-align: top; }
+  .tab-est tr:first-child td { border-top: 0; }
+  .tab-req th { border-top: 0; color: var(--fraco); font: 10.5px var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+  .tab-est td:last-child { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tab-est tr.atual td { color: var(--ambar); }
+  .tab-est .selo, .tab-req .selo { font: 10px var(--mono); color: var(--ouvir); margin-left: 6px; text-transform: uppercase; }
+  .tab-req td small { display: block; color: var(--suave); font-size: 11.5px; }
+  .tab-req tr.seu td { background: color-mix(in oklch, var(--ambar) 7%, transparent); }
+  .tab-req tr.seu td:first-child b::after { content: " · o seu"; font: 10px var(--mono); color: var(--ambar); }
+  .barra-uso { display: grid; gap: 6px; }
+  .barra-rot { display: flex; justify-content: space-between; font-size: 13px; }
+  .barra-rot span:last-child { color: var(--suave); font-variant-numeric: tabular-nums; }
+  .barra { display: flex; height: 10px; border-radius: 6px; background: var(--linha); overflow: hidden; }
+  .barra i { display: block; height: 100%; background: var(--ambar); }
+  .barra i.outros { background: color-mix(in oklch, var(--suave) 55%, transparent); }
+  .leg { color: var(--fraco); font-size: 11.5px; line-height: 1.5; }
+  .leg .pt { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin: 0 4px 0 8px; background: var(--ambar); }
+  .leg .pt:first-child { margin-left: 0; }
+  .leg .pt.outros { background: color-mix(in oklch, var(--suave) 55%, transparent); }
+  .partes { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12.5px; color: var(--suave); }
+  .partes li { display: flex; justify-content: space-between; }
+  .req-linha { display: flex; justify-content: space-between; font-size: 13px; padding-top: 10px; border-top: 1px solid var(--linha); }
+  .req-linha b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .dicas { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+  .dica-c { border: 1px solid var(--linha); border-radius: 10px; padding: 11px 13px; background: var(--fundo);
+            display: grid; gap: 4px; align-content: start; font-size: 12.5px; color: var(--suave); line-height: 1.45; }
+  .dica-c b { color: var(--tinta); font-size: 13px; }
+  .dica-c .tp { font: 10px var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+  .dica-c.leve .tp { color: var(--ouvir); } .dica-c.barato .tp { color: var(--ambar); }
+  .dica-c button { justify-self: start; margin-top: 4px; background: none; border: 0; padding: 0; color: var(--ambar);
+                   font-size: 12.5px; cursor: pointer; }
+  .dica-c button:hover { text-decoration: underline; }
+  @media (max-width: 760px) { .uso-grade { grid-template-columns: 1fr; } .tab-req th:nth-child(3), .tab-req td:nth-child(3) { display: none; } }
+  .aj-nota { margin: -6px 0 0; font-size: 12px; line-height: 1.45; color: var(--suave); }
+  .aj-nota[hidden] { display: none; }
+  .aj-bloco { display: grid; gap: 14px; border: 1px solid var(--linha); border-radius: 10px; padding: 14px; background: var(--fundo); }
+  .aj-campo { display: grid; gap: 6px; font-size: 12.5px; color: var(--suave); }
+  .aj-campo small { color: var(--fraco); }
+  .aj-campo .linha { display: flex; gap: 10px; align-items: center; }
+  .aj-campo select { flex: 1; min-width: 0; background: var(--palco); border: 1px solid var(--linha); border-radius: 9px;
+                     padding: 8px 10px; font-size: 13.5px; color: var(--tinta); }
+  .aj-campo select option { background: var(--painel); }
+  .aj-campo select:disabled { opacity: .5; }
+  .aj input[type=range] { flex: 1; accent-color: var(--ambar); }
+  .aj .val { font: 12px var(--mono); min-width: 46px; text-align: right; color: var(--suave); }
+  .aj label.chave { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 12px; cursor: pointer; font-size: 13.5px; }
+  .aj label.chave input { margin-top: 3px; accent-color: var(--ambar); width: 16px; height: 16px; }
+  .aj label.chave small { display: block; margin-top: 3px; color: var(--suave); font-size: 12px; line-height: 1.45; }
+  .aj label.chave + label.chave { border-top: 1px solid var(--linha); padding-top: 14px; }
+  .aj-lista { display: grid; border: 1px solid var(--linha); border-radius: 10px; background: var(--fundo); }
+  .aj-item { display: flex; align-items: center; gap: 14px; padding: 12px 14px; }
+  .aj-item + .aj-item { border-top: 1px solid var(--linha); }
+  .aj-item > span { flex: 1; min-width: 0; font-size: 13.5px; }
+  .aj-item small { display: block; color: var(--suave); font-size: 12px; margin-top: 2px; }
+  .aj-item .botao { white-space: nowrap; text-decoration: none; }
+  .aj-item.perigo .botao:hover { color: var(--erro); border-color: var(--erro); }
+  .aj .atalhos { border: 1px solid var(--linha); border-radius: 10px; padding: 6px 14px; background: var(--fundo); gap: 0; }
+  .aj .atalhos div { padding: 9px 0; font-size: 13px; color: var(--suave); align-items: center; }
+  .aj .atalhos div + div { border-top: 1px solid var(--linha); }
+  .cx .opcoes-stt { display: grid; gap: 6px; margin-bottom: 8px; }
+  .cx .op-stt { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 9px 10px;
+                border: 1px solid var(--linha); border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--tinta); }
+  .cx .op-stt:has(input:checked) { border-color: var(--ambar-esc); background: color-mix(in oklch, var(--ambar) 7%, transparent); }
+  .cx .op-stt input { margin-top: 2px; accent-color: var(--ambar); }
+  .cx .op-stt small { display: block; color: var(--suave); font-size: 11.5px; margin-top: 2px; line-height: 1.4; }
+  .cx .op-stt .rec { font: 10px var(--mono); color: var(--ambar); margin-left: 6px; text-transform: uppercase; letter-spacing: .05em; }
+  @media (max-width: 620px) {
+    .aj { grid-template-columns: 1fr; }
+    .aj-nav { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--linha); padding: 8px; }
+    .aj-nav button { white-space: nowrap; padding: 8px 10px; }
+    .aj-nav button[aria-selected="true"]::before { left: 10px; right: 10px; top: auto; bottom: 0; width: auto; height: 2px; }
+    .ic-aj { display: none; }
+  }
+  .dlg .grupo { font: 10.5px var(--mono); color: var(--fraco); text-transform: uppercase;
+                letter-spacing: .08em; margin: 4px 0 -8px; }
+  .atalhos { font-size: 12.5px; color: var(--fraco); display: grid; gap: 6px; }
+  .atalhos div { display: flex; justify-content: space-between; }
+
+  /* ------------------------------------------------------------ responsivo */
+  @media (max-width: 1000px) {
+    .app { grid-template-columns: 1fr; }
+    .lado { position: fixed; left: 0; right: 0; bottom: 0; height: 72dvh; border-left: 0;
+            border-top: 1px solid var(--linha); border-radius: 18px 18px 0 0; z-index: 10;
+            transform: translateY(105%); transition: transform .25s ease; box-shadow: 0 -20px 50px oklch(0 0 0 / .4); }
+    .lado.aberto { transform: none; }
+    .abas .fechar { display: block; }
+    #btnAtividade { display: inline-flex; gap: 6px; }
+    .centro { grid-template-columns: 1fr; justify-items: center; align-content: center; text-align: center;
+              gap: 22px; padding: 0 22px; }
+    .orbe-caixa { width: min(300px, 34vh); height: auto; }
+    #falaAtual { font-size: 19px; max-height: 32vh; }
+  }
+  @media (max-width: 640px) {
+    .topo { padding: 12px 14px; gap: 10px; }
+    .topo .dir { gap: 2px; }
+    .topo .icone { padding: 6px 7px; }
+    .topo .so-largo { display: none; }
+    .doca { flex-wrap: wrap; padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); gap: 10px; }
+    .seg { order: -1; width: 100%; }
+    .seg button { flex: 1; justify-content: center; padding: 8px 6px; }
+    .orbe-caixa { width: min(240px, 30vh); height: auto; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tarefa .st { animation: none; }
+    .lado { transition: none; }
+    #btnMic.on::after { animation: none; opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <main class="palco">
+    <div class="topo">
+      <b>Luna</b>
+      <div class="status" role="status" aria-label="Status">
+        <span class="st-item" id="pillConexao" title="Servidor da Luna (voz, transcrição)">servidor</span>
+        <span class="st-item" id="pillHermes" title="Claude via Hermes: modo Expert e tarefas no PC">Claude</span>
+        <span class="st-item so-largo" id="pillDeepseek" title="A IA principal (cérebro do modo Auto)">IA</span>
+        <span class="st-sep so-largo"></span>
+        <span class="st-item so-largo" id="stCusto" title="Gasto estimado de hoje na IA principal (o Claude usa sua assinatura)">R$ 0,00 hoje</span>
+      </div>
+      <div class="dir">
+        <span class="so-largo" id="rotuloVoz" style="font-size:12.5px"></span>
+        <button class="icone" id="btnAtualizar" hidden title="Há atualização pendente">Atualização <span class="ponto-att" aria-hidden="true"></span></button>
+        <button class="icone" id="btnAtividade" aria-controls="lado">Atividade <span id="contAtiv" class="kbd">0</span></button>
+        <button class="icone" id="btnMini" title="Só o globo, sempre por cima (2 cliques nele volta)">Mini</button>
+        <button class="icone" id="btnAjustes" title="Voz, velocidade e atalhos">Ajustes</button>
+      </div>
+    </div>
+
+    <div class="centro">
+      <div class="orbe-caixa"><canvas id="orbe" aria-hidden="true"></canvas></div>
+      <div class="legenda" aria-live="polite">
+        <div id="estadoRotulo">desligado</div>
+        <p id="falaAtual" data-vazio="Ligue o microfone e fale, ou digite um comando abaixo."></p>
+        <ol id="fila" hidden></ol>
+        <div id="voceDisse"></div>
+      </div>
+    </div>
+
+    <div class="doca">
+      <button id="btnMic" title="Ligar microfone (Espaço)" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      </button>
+      <div class="seg" role="group" aria-label="Cérebro">
+        <button data-modo="auto" aria-pressed="true" title="Auto (padrão): comandos prontos e conversa rápida na hora; tarefas no PC e raciocínio vão sozinhos para o Claude">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3l1.9 4.3L18 9l-4.1 1.7L12 15l-1.9-4.3L6 9l4.1-1.7z"/><path d="M18.5 15.5l.8 1.8 1.7.7-1.7.7-.8 1.8-.8-1.8-1.7-.7 1.7-.7z"/></svg>
+          <span>Auto</span>
+        </button>
+        <button data-modo="hermes" aria-pressed="false" title="Expert: tudo direto para o Claude — sem atalhos nem cérebro rápido. Mais lento, mais capaz.">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          <span>Expert</span>
+        </button>
+        <button data-modo="live" aria-pressed="false" title="Gemini áudio nativo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 10v4M8 6.5v11M12 3.5v17M16 6.5v11M20 10v4"/></svg>
+          <span>Live</span>
+        </button>
+      </div>
+      <form class="campo" id="formTexto" autocomplete="off">
+        <svg class="lupa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 9h8M8 13h5"/><path d="M21 12a8 8 0 0 1-8 8H8l-5 3 1.2-4.2A8 8 0 1 1 21 12z"/></svg>
+        <div id="anexos" aria-label="Imagens anexadas"></div>
+        <button type="button" id="btnAnexar" title="Anexar imagem, PDF ou texto (ou cole com Ctrl+V / arraste para cá)" aria-label="Anexar arquivo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/></svg>
+        </button>
+        <input type="file" id="arquivo" accept="image/*,.pdf,.txt,.md,.csv,.json,.py,.js,.ts,.html,.css,.xml,.yaml,.yml,.log,.ini,.toml,.sql,.ps1,.bat" multiple hidden>
+        <textarea id="entrada" rows="1" placeholder="Pergunte, peça algo ou cole uma imagem…" aria-label="Mensagem"></textarea>
+        <span class="kbd">/</span>
+        <button type="submit" id="btnEnviar" title="Enviar" aria-label="Enviar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </form>
+      <button id="btnParar" title="Interromper (Esc)">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>
+        Parar <span class="kbd">Esc</span>
+      </button>
+    </div>
+  </main>
+
+  <aside class="lado" id="lado">
+    <div class="abas" role="tablist">
+      <button role="tab" aria-selected="true" data-aba="conv">Conversa</button>
+      <button role="tab" aria-selected="false" data-aba="hoje">Hoje</button>
+      <button role="tab" aria-selected="false" data-aba="ativ">Atividade <span class="cont" id="contAtiv2">0</span></button>
+      <button role="tab" aria-selected="false" data-aba="apr">Aprendizado<span class="ponto" id="pontoApr" hidden></span></button>
+      <button class="icone fechar" id="btnFecharLado">Fechar</button>
+    </div>
+    <div class="lista" id="listaAtiv" hidden>
+      <div class="vazio" id="vazioAtiv">Quando o Claude trabalha (sozinho no Auto ou sempre no Expert), cada
+        ferramenta aparece aqui enquanto roda — comandos, arquivos, buscas.</div>
+    </div>
+    <div class="lista" id="listaConv">
+      <div class="conv-topo">
+        <span class="titulo" id="tituloConv">Nova conversa</span>
+        <button class="mini-btn" id="btnHistorico" title="Conversas anteriores">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>Histórico</button>
+        <button class="mini-btn" id="btnNovaConv" title="Começar uma conversa nova">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nova</button>
+      </div>
+      <div id="mensagens" style="display:contents"></div>
+    </div>
+    <div class="lista" id="listaHoje" hidden></div>
+    <div class="lista" id="listaApr" hidden></div>
+    <section id="painelConversas" hidden aria-label="Conversas anteriores">
+      <header><b>Conversas</b>
+        <button class="mini-btn" id="btnFecharHist">Fechar</button></header>
+      <div id="listaConversas"></div>
+    </section>
+    <footer id="rodape">—</footer>
+  </aside>
+</div>
+
+<dialog id="dlgAjustes" aria-labelledby="ajTitulo">
+  <form method="dialog" class="aj">
+    <header class="aj-topo">
+      <h3 id="ajTitulo">Ajustes</h3>
+      <button class="aj-fechar" value="ok" aria-label="Fechar" title="Fechar (Esc)">✕</button>
+    </header>
+    <nav class="aj-nav" role="tablist" aria-label="Seções dos ajustes">
+      <button type="button" role="tab" data-aba="voz" aria-selected="true"><span class="ic-aj">◐</span>Voz</button>
+      <button type="button" role="tab" data-aba="escuta"><span class="ic-aj">◎</span>Escuta</button>
+      <button type="button" role="tab" data-aba="ia"><span class="ic-aj">✦</span>Inteligência<span class="aj-alerta" id="ajAlertaIa" hidden></span></button>
+      <button type="button" role="tab" data-aba="uso"><span class="ic-aj">◔</span>Uso e gastos</button>
+      <button type="button" role="tab" data-aba="req"><span class="ic-aj">▤</span>Requisitos e dicas<span class="aj-alerta" id="ajAlertaReq" hidden></span></button>
+      <button type="button" role="tab" data-aba="atalhos"><span class="ic-aj">⌘</span>Atalhos</button>
+      <button type="button" role="tab" data-aba="sistema"><span class="ic-aj">⚙</span>Sistema</button>
+    </nav>
+
+    <div class="aj-corpo">
+      <section class="aj-painel" data-painel="voz" role="tabpanel">
+        <p class="aj-desc">Como a Luna fala com você.</p>
+        <div class="aj-bloco">
+          <label class="aj-campo">Voz
+            <div class="linha"><select id="voz"></select><button type="button" class="botao" id="btnProvar">Ouvir</button></div>
+          </label>
+          <p class="aj-nota" id="notaRvc" hidden>As vozes <b>convertidas (RVC)</b> são opcionais e mais pesadas:
+            usam cerca de 0,7 GB da placa de vídeo e levam uns 20 s para ligar. Só ligam enquanto uma delas
+            estiver escolhida. As da Microsoft e o JARVIS não usam a placa.</p>
+          <label class="aj-campo">Velocidade
+            <div class="linha"><input type="range" id="vel" min="0.8" max="1.4" step="0.05" value="1.0"><span class="val" id="velValor">1.00x</span></div>
+          </label>
+          <label class="aj-campo">Volume
+            <div class="linha"><input type="range" id="vol" min="0" max="1" step="0.05" value="1" aria-label="Volume da voz"><span class="val" id="volValor">100%</span></div>
+          </label>
+        </div>
+      </section>
+
+      <section class="aj-painel" data-painel="escuta" role="tabpanel" hidden>
+        <p class="aj-desc">Quando a Luna presta atenção no que você diz.</p>
+        <div class="aj-bloco">
+          <label class="chave">
+            <input type="checkbox" id="chkAtivacao">
+            <span><b>Chamar por “Luna”</b><small>Microfone sempre aberto; só responde a frases com “Luna”. O resto (TV, conversa na sala) é descartado antes de transcrever.</small></span>
+          </label>
+          <label class="chave">
+            <input type="checkbox" id="chkContinua">
+            <span><b>Conversa contínua</b><small>Depois de uma resposta, aceita o próximo pedido sem dizer “Luna” por alguns segundos. Deixe desligado se a TV ou a caixa de som ficarem ativando ela.</small></span>
+          </label>
+          <label class="chave">
+            <input type="checkbox" id="chkBarge">
+            <span><b>Interromper falando</b><small>Se você falar enquanto ela fala, ela se cala e escuta. Desligue se o som alto ficar cortando a resposta.</small></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="aj-painel" data-painel="ia" role="tabpanel" hidden>
+        <p class="aj-desc">As IAs que ouvem e respondem. As chaves ficam só no seu PC (arquivo <code>.env</code>) e nunca aparecem aqui inteiras.</p>
+        <div class="conexoes" id="cxAjustes"></div>
+        <div class="aj-bloco">
+          <label class="aj-campo">Modelo do Claude <small>(modo Expert, via Hermes)</small>
+            <select id="modeloClaude" aria-label="Modelo do Claude" disabled></select>
+          </label>
+        </div>
+      </section>
+
+      <section class="aj-painel" data-painel="uso" role="tabpanel" hidden>
+        <p class="aj-desc">O que está no ar e quanto a Luna gastou. O Claude (modo Expert) usa a sua assinatura e não entra na conta.</p>
+        <div class="uso-status" id="usoStatus"></div>
+        <div class="uso-grade">
+          <div class="uso-num"><small>Hoje</small><b id="usoHoje">—</b><span id="usoHojeCh"></span></div>
+          <div class="uso-num"><small>Este mês</small><b id="usoMes">—</b><span id="usoMesMedia"></span></div>
+          <div class="uso-num"><small>Previsão do mês</small><b id="usoPrev">—</b><span>no ritmo atual</span></div>
+        </div>
+        <div class="aj-bloco">
+          <div class="uso-cab"><b>Últimos 30 dias</b><small id="usoGrafLeg"></small></div>
+          <div class="grafico" id="usoGraf" role="img" aria-label="Gasto por dia nos últimos 30 dias"></div>
+        </div>
+        <div class="aj-bloco">
+          <div class="uso-cab"><b>O seu uso em outras IAs</b><small id="usoEstLeg"></small></div>
+          <table class="tab-est" id="usoEst"></table>
+        </div>
+      </section>
+
+      <section class="aj-painel" data-painel="req" role="tabpanel" hidden>
+        <p class="aj-desc">Do que a Luna precisa, o que ela está usando agora no seu PC e como deixar mais leve ou mais barata.</p>
+        <div class="dicas" id="reqDicas"></div>
+        <div class="aj-bloco">
+          <div class="uso-cab"><b>Este PC agora</b><small id="reqPcNome"></small></div>
+          <div class="barra-uso"><div class="barra-rot"><span>Placa de vídeo</span><span id="reqVramTxt">—</span></div>
+            <div class="barra"><i id="reqVramLuna"></i><i id="reqVramOutros" class="outros"></i></div>
+            <small class="leg"><span class="pt luna"></span>Luna <span class="pt outros"></span>outros programas</small></div>
+          <ul class="partes" id="reqPartes"></ul>
+          <div class="req-linha"><span>Memória (RAM) da Luna</span><b id="reqRam">—</b></div>
+          <div class="req-linha"><span>Espaço livre no disco</span><b id="reqDisco">—</b></div>
+        </div>
+        <div class="aj-bloco">
+          <div class="uso-cab"><b>Qual jeito combina com o seu PC</b><small>valores aproximados</small></div>
+          <table class="tab-req">
+            <thead><tr><th></th><th>Placa de vídeo</th><th>RAM</th><th>Internet</th><th>Custo</th></tr></thead>
+            <tbody>
+              <tr data-perfil="leve"><td><b>Leve</b><small>ouvido na nuvem</small></td><td>não precisa</td><td>4 GB</td><td>sim</td><td>IA + ouvido (Groq: cota grátis)</td></tr>
+              <tr data-perfil="completo"><td><b>Completo</b><small>ouvido na placa</small></td><td>NVIDIA, 4 GB+</td><td>8 GB</td><td>sim</td><td>só a IA</td></tr>
+              <tr data-perfil="offline"><td><b>Sem internet</b><small>Ollama + ouvido na placa</small></td><td>NVIDIA, 8 GB+</td><td>16 GB</td><td>só para as vozes</td><td>grátis</td></tr>
+            </tbody>
+          </table>
+          <small class="leg">Todos: Windows 10/11, Python 3.11, ffmpeg e ~8 GB de disco. As vozes da Microsoft e o JARVIS
+            precisam de internet; sem ela a Luna fala com a voz de reserva (Kokoro).</small>
+        </div>
+      </section>
+
+      <section class="aj-painel" data-painel="atalhos" role="tabpanel" hidden>
+        <p class="aj-desc">Teclas que funcionam com esta janela aberta.</p>
+        <div class="atalhos">
+          <div><span>Ligar / desligar microfone</span><span class="kbd">Espaço</span></div>
+          <div><span>Interromper</span><span class="kbd">Esc</span></div>
+          <div><span>Digitar</span><span class="kbd">/</span></div>
+          <div><span>Colar imagem ou arquivo</span><span class="kbd">Ctrl+V</span></div>
+          <div><span>Comandos</span><span class="kbd">Ctrl+K</span></div>
+          <div><span>Chamar a Luna de qualquer lugar</span><span class="kbd">Ctrl+Alt+L</span></div>
+        </div>
+      </section>
+
+      <section class="aj-painel" data-painel="sistema" role="tabpanel" hidden>
+        <p class="aj-desc">Guia, atualizações e a própria Luna.</p>
+        <div class="aj-lista">
+          <div class="aj-item"><span><b>Primeiros passos</b><small>Guia de configuração e checagem do que está instalado.</small></span>
+            <button type="button" class="botao" id="btnTutorial">Abrir guia</button></div>
+          <div class="aj-item"><span><b>Atualizações</b><small id="ajAttResumo">Procura versão nova e mudanças pendentes.</small></span>
+            <button type="button" class="botao" id="ajAtt">Verificar</button></div>
+          <div class="aj-item"><span><b>Nova conversa</b><small>Apaga o histórico da conversa atual.</small></span>
+            <button type="button" class="botao" id="btnLimpar">Limpar</button></div>
+          <div class="aj-item"><span><b>Interface antiga</b><small>A tela clássica, para comparar.</small></span>
+            <a class="botao" href="/web/classico.html">Abrir</a></div>
+          <div class="aj-item perigo"><span><b>Desligar a Luna</b><small>Fecha tudo. Para abrir de novo, use o atalho “Luna”.</small></span>
+            <button type="button" class="botao" id="btnDesligar">Desligar</button></div>
+        </div>
+      </section>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgBoasVindas" onclose="localStorage.setItem('tutorialVisto','1')">
+  <form method="dialog" class="dlg">
+    <div class="passos" id="passos"><span></span><span></span><span></span><span></span><span></span></div>
+
+    <section class="etapa" data-etapa="0">
+      <h3>Oi, eu sou a Luna</h3>
+      <p class="intro">Um assistente de voz em português. Você me chama pelo nome — “<b>Luna</b>, que horas são?” — e eu
+        abro programas, respondo, leio imagens e, com o Claude conectado, mexo no computador por você.
+        Vamos conferir se está tudo pronto: leva dois minutos.</p>
+      <ul class="checks" id="checksLista"><li><span class="ic">…</span><span>Conferindo o sistema…</span></li></ul>
+    </section>
+
+    <section class="etapa" data-etapa="1" hidden>
+      <h3>1. O cérebro: escolha a IA</h3>
+      <div class="guia">
+        <p>É a IA que entende os pedidos e conversa. Use a que você já tem, ou:</p>
+        <ul>
+          <li><b>DeepSeek</b> (recomendado): centavos por dia. Conta em
+            <a href="https://platform.deepseek.com" target="_blank" rel="noopener">platform.deepseek.com</a>, crédito de US$ 2 dura meses.</li>
+          <li><b>Google Gemini</b>: tem cota grátis. Chave em
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com</a>.</li>
+          <li><b>Minha assinatura</b> (ChatGPT Plus/Pro e outras): sem chave, pelo Hermes — veja abaixo.</li>
+          <li><b>OpenAI, Groq, OpenRouter</b>, ou <b>Ollama</b> no seu PC (grátis e sem internet, mas mais fraco).</li>
+        </ul>
+        <details class="passo-a-passo">
+          <summary>Nunca pegou uma chave? Passo a passo com o Gemini (grátis, 2 minutos)</summary>
+          <ol>
+            <li>Abra <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>
+              e entre com a sua conta do Google (a mesma do Gmail).</li>
+            <li>Na primeira vez ele pede para aceitar os termos: marque e clique em <b>Continuar</b>.</li>
+            <li>Clique no botão azul <b>Criar chave de API</b> (<i>Create API key</i>).
+              Se perguntar o projeto, deixe o que aparecer e confirme.</li>
+            <li>Aparece um texto comprido começando com <code>AIza…</code>: clique em <b>Copiar</b>.</li>
+            <li>Aqui embaixo, em <b>Qual IA</b>, escolha <b>Google Gemini</b>, cole a chave e clique em <b>Salvar e testar</b>.</li>
+          </ol>
+          <p>Não pede cartão. A cota grátis dá para o uso do dia a dia; se acabar, a Luna avisa.
+            A chave é como uma senha: não mande para ninguém.</p>
+        </details>
+        <details class="passo-a-passo">
+          <summary>Usar a minha assinatura (ChatGPT etc.) em vez de chave</summary>
+          <ol>
+            <li>Siga a <b>próxima etapa</b> (Hermes) até ele estar conectado.</li>
+            <li>No terminal, rode <code>hermes -p assistente model</code> e escolha
+              <b>ChatGPT or Codex Subscription</b> (ou a sua assinatura). Ele abre o navegador para você entrar.</li>
+            <li>Volte aqui, escolha <b>Minha assinatura (via Hermes)</b> e clique em <b>Salvar e testar</b>.</li>
+          </ol>
+          <p>Funciona com ChatGPT Plus/Pro, Claude <b>Max</b> (só com créditos extras comprados) e SuperGrok.
+            <b>Não</b> funciona com Claude Pro nem com o plano do Gemini/Google One.
+            <a href="https://hermes-agent.nousresearch.com/docs/integrations/providers#subscription-plans-what-your-plan-pays-for" target="_blank" rel="noopener">Detalhes</a>.
+            É mais lenta (3 a 8 s por resposta) porque passa pelo Hermes.</p>
+        </details>
+        <p>Escolha abaixo, cole a chave e clique em <b>Salvar e testar</b>.</p>
+      </div>
+      <div class="conexoes" id="cxDeepseek"></div>
+      <div class="guia" style="margin-top:14px">
+        <p><b>E o ouvido?</b> A fala vira texto na placa de vídeo (grátis). Se o seu PC <b>não tem placa NVIDIA</b>
+          ou tem uma fraca, escolha <b>Na nuvem: Groq</b> — a chave é grátis em
+          <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com</a>
+          (entre com o Google e clique em <i>Create API Key</i>).</p>
+      </div>
+      <div class="conexoes" id="cxOuvidoTut"></div>
+    </section>
+
+    <section class="etapa" data-etapa="2" hidden>
+      <h3>2. As mãos: Claude via Hermes <small style="color:var(--suave);font-weight:400">(opcional)</small></h3>
+      <div class="guia">
+        <p>Com o <b>Hermes Agent</b>, a Luna passa tarefas de verdade para o Claude: arquivos, programas, pesquisa, memória
+          do que você gosta. Sem ele, ela conversa e faz comandos simples.</p>
+        <ol>
+          <li>Baixe e instale o Hermes em <a href="https://hermes-agent.nousresearch.com/" target="_blank" rel="noopener">hermes-agent.nousresearch.com</a>
+            (ou no PowerShell: <code>iex (irm https://hermes-agent.nousresearch.com/install.ps1)</code>).</li>
+          <li>Conecte um modelo (o Claude): <code>hermes setup</code> — siga o guia
+            (<a href="https://hermes-agent.nousresearch.com/docs/getting-started/quickstart" target="_blank" rel="noopener">passo a passo</a>).</li>
+          <li>Crie um perfil só para a Luna: <code>hermes profile create assistente</code>
+            (a memória e as habilidades dela ficam separadas das suas).</li>
+          <li>Ligue a API do perfil: abra o <code>.env</code> dele (<code>hermes -p assistente config env-path</code> mostra onde)
+            e acrescente, inventando uma senha longa (16+ caracteres):
+            <pre>API_SERVER_ENABLED=true
+API_SERVER_KEY=&lt;invente uma senha longa&gt;</pre></li>
+          <li>Suba o Hermes: <code>hermes gateway run</code> (<a href="https://hermes-agent.nousresearch.com/docs/user-guide/features/api-server" target="_blank" rel="noopener">detalhes</a>).</li>
+          <li>Cole abaixo o endereço e a mesma senha.</li>
+        </ol>
+      </div>
+      <div class="conexoes" id="cxHermes"></div>
+    </section>
+
+    <section class="etapa" data-etapa="3" hidden>
+      <h3>3. Extras <small style="color:var(--suave);font-weight:400">(opcionais)</small></h3>
+      <div class="guia">
+        <p><b>Meu Hoje</b> — tarefas, agenda e diário. Com ele a aba <b>Hoje</b> mostra o seu dia, e você fala
+          “Luna, anota comprar pão” ou “o que tenho hoje?”.</p>
+        <ol>
+          <li>Crie a conta grátis em <a href="https://meuhoje.com.br/cadastro" target="_blank" rel="noopener">meuhoje.com.br</a>.</li>
+          <li>Volte aqui e clique em <b>Conectar conta</b> (abre o login do Meu Hoje; é só autorizar).</li>
+        </ol>
+        <div class="linha" style="gap:8px;margin-bottom:12px">
+          <a class="botao" href="https://meuhoje.com.br/cadastro" target="_blank" rel="noopener">Criar conta</a>
+          <button type="button" class="botao" data-conectar-hoje>Conectar conta</button>
+          <span class="msg-cx" id="mhStatusTut"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="etapa" data-etapa="4" hidden>
+      <h3>Pronto!</h3>
+      <div class="guia">
+        <ol>
+          <li>Clique no <b>microfone</b> e permita o acesso quando o navegador pedir.</li>
+          <li>Diga “<b>Luna</b>, que horas são?” — ela só responde quando ouve o nome.</li>
+          <li>Experimente: “Luna, abre o YouTube”, “Luna, aumenta o volume”, ou cole um print e pergunte.</li>
+        </ol>
+        <p class="dica">Atalhos: <span class="kbd">Ctrl+Alt+L</span> chama a Luna de qualquer programa ·
+          <span class="kbd">Ctrl+K</span> comandos · <span class="kbd">Espaço</span> liga o microfone.
+          Este guia fica em Ajustes → <b>Primeiros passos</b>.</p>
+      </div>
+    </section>
+
+    <div class="nav-etapas">
+      <button type="button" class="pular" id="tutPular">pular</button>
+      <div class="linha" style="gap:8px">
+        <button type="button" class="botao" id="tutVoltar">Voltar</button>
+        <button type="button" class="botao forte" id="tutProximo">Começar</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="zoom"><img alt=""></dialog>
+<dialog id="dlgAtualizar" aria-label="Atualizações">
+  <div class="dlg">
+    <h3 style="margin:0 0 4px">Atualizações</h3>
+    <p style="margin:0 0 12px;color:var(--suave);font-size:12.5px" id="attVersao"></p>
+    <div id="attLista" class="conexoes"></div>
+    <div class="linha" style="justify-content:space-between;margin-top:12px;gap:8px">
+      <button type="button" class="mini-btn" id="attChecar">Procurar de novo</button>
+      <button type="button" class="botao" onclick="this.closest('dialog').close()">Fechar</button>
+    </div>
+  </div>
+</dialog>
+<dialog id="paleta" aria-label="Comandos">
+  <input id="paletaBusca" placeholder="Buscar comando, conversa ou tarefa…" autocomplete="off" aria-label="Buscar">
+  <ul id="paletaLista" role="listbox"></ul>
+  <footer><span><span class="kbd">↑↓</span> navegar</span><span><span class="kbd">Enter</span> executar</span><span><span class="kbd">Esc</span> fechar</span></footer>
+</dialog>
+
+<script>
+const TAXA_ENVIO = 16000;   // Whisper e Silero trabalham em 16 kHz
+const TAXA_SAIDA = 24000;   // Kokoro/Edge devolvem 24 kHz
+
+const $ = (id) => document.getElementById(id);
+const $mic = $('btnMic'), $entrada = $('entrada'), $parar = $('btnParar');
+const $fala = $('falaAtual'), $voce = $('voceDisse'), $rot = $('estadoRotulo');
+const $listaAtiv = $('listaAtiv'), $listaConv = $('listaConv'), $rodape = $('rodape');
+const $voz = $('voz'), $vel = $('vel'), $velValor = $('velValor');
+const $vol = $('vol'), $volValor = $('volValor');
+const $modeloClaude = $('modeloClaude');
+const $lado = $('lado');
+
+let ws = null, conectado = false;
+let ctxEntrada = null, ctxSaida = null, fonte = null, processador = null, stream = null;
+let micLigado = false;
+let proximoInicio = 0, tocando = [], taxaAtual = TAXA_SAIDA;
+let analisadorSaida = null, bufSaida = null;
+// Volume da voz: um único ganho no fim da cadeia, então vale para a fala e
+// para os bipes. Lido do localStorage antes do AudioContext existir.
+let ganhoSaida = null;
+let volumeVoz = (() => { const v = parseFloat(localStorage.getItem('volume')); return isNaN(v) ? 1 : v; })();
+let nivelMic = 0, nivelSaida = 0;
+let estadoAtual = 'desligado';
+let cerebro = 'auto', rotaAtual = 'rapido', modoLive = false, hermesOnline = false;
+let turnoAberto = false, falaDoTurno = '';
+let conversaId = localStorage.getItem('conversa') || '';
+const $msgs = document.getElementById('mensagens');
+const ferramentas = new Map();   // toolCallId -> {el, t0}
+let totalFerramentas = 0;
+
+/* ================================================================ estado */
+
+const ROTULOS = {
+  desligado: 'desligado', ouvindo: 'ouvindo', gravando: 'ouvindo você',
+  transcrevendo: 'transcrevendo', pensando: 'pensando', falando: 'falando',
+  encerrado: 'encerrado', executando: 'executando',
+};
+
+// Palavra de ativação: com ela ligada o microfone fica sempre aberto e o
+// servidor só responde a falas com "Luna" (ou logo depois de uma resposta).
+let ativacao = localStorage.getItem('ativacao') !== '0', acordadoAte = 0;  // padrão: ligada
+function rotuloOuvindo() {
+  if (!ativacao) return null;
+  return Date.now() < acordadoAte ? 'pode falar' : 'diga “Luna”';
+}
+
+function mudarEstado(nome, extra) {
+  estadoAtual = nome;
+  $rot.textContent = extra || ROTULOS[nome] || nome;
+  $rot.classList.toggle('vivo', ['pensando', 'executando', 'falando', 'transcrevendo'].includes(nome));
+  const ocupado = ['transcrevendo', 'pensando', 'executando', 'falando'].includes(nome);
+  $parar.classList.toggle('visivel', ocupado || tocando.length > 0);
+}
+
+/* ================================================================ rede neural 3D */
+
+const cv = $('orbe'), g = cv.getContext('2d');
+const reduzir = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let fase = 0, raioSuave = 0, giro = 0, energiaSuave = 0, alertaSuave = 0;
+
+// Malha densa: camadas de neurônios em anéis ao longo do eixo X, com raio
+// maior no meio — de longe parece um núcleo de máquina. Cada camada tem o
+// próprio aro, e dois anéis externos formam a carcaça. Projeção em
+// perspectiva desenhada no mesmo canvas 2D (sem biblioteca externa).
+const CAMADAS = [4, 9, 13, 15, 13, 9, 4];
+const NOS = [];
+const LIGACOES = [];
+const ANEIS = [];
+(function montarRede() {
+  const n = CAMADAS.length;
+  CAMADAS.forEach((qtd, ci) => {
+    const t = n === 1 ? 0 : ci / (n - 1);          // 0..1
+    const x = (t - 0.5) * 1.75;
+    const raio = 0.24 + Math.sin(t * Math.PI) * 0.72;
+    const giroCamada = ci * 0.55;
+    const inicio = NOS.length;
+    for (let i = 0; i < qtd; i++) {
+      const a = giroCamada + (i / qtd) * Math.PI * 2;
+      NOS.push({
+        x, y: Math.sin(a) * raio, z: Math.cos(a) * raio,
+        camada: ci, semente: Math.random() * 6.28,
+      });
+    }
+    // Aro da própria camada: dá o aspecto de estrutura montada, não de nuvem.
+    if (qtd > 2) {
+      for (let i = 0; i < qtd; i++) {
+        LIGACOES.push({ a: inicio + i, b: inicio + (i + 1) % qtd, aro: true,
+                        semente: Math.random(), vel: 0.18 + Math.random() * 0.25 });
+      }
+    }
+  });
+  // Liga cada neurônio aos três vizinhos mais próximos da camada seguinte.
+  let base = 0;
+  for (let ci = 0; ci < n - 1; ci++) {
+    const a0 = base, a1 = base + CAMADAS[ci], b1 = a1 + CAMADAS[ci + 1];
+    for (let i = a0; i < a1; i++) {
+      const dists = [];
+      for (let j = a1; j < b1; j++) {
+        const dy = NOS[i].y - NOS[j].y, dz = NOS[i].z - NOS[j].z;
+        dists.push([dy * dy + dz * dz, j]);
+      }
+      dists.sort((p, q) => p[0] - q[0]);
+      dists.slice(0, 3).forEach(([, j]) => {
+        LIGACOES.push({ a: i, b: j, aro: false, semente: Math.random(), vel: 0.35 + Math.random() * 0.5 });
+      });
+    }
+    base = a1;
+  }
+  // Carcaça: dois anéis externos inclinados, girando em sentidos opostos.
+  [0.0, 1.15].forEach((incl, k) => {
+    const pts = [];
+    for (let i = 0; i < 80; i++) {
+      const a = (i / 80) * Math.PI * 2, R = 1.08;
+      const y0 = Math.cos(a) * R, z0 = Math.sin(a) * R;
+      pts.push({ x: -y0 * Math.sin(incl), y: y0 * Math.cos(incl), z: z0 });
+    }
+    ANEIS.push({ pts, vel: k ? -0.55 : 0.38 });
+  });
+})();
+
+function ajustarCanvas() {
+  const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1;
+  cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d);
+}
+addEventListener('resize', ajustarCanvas);
+// A caixa agora é fluida: reajusta o buffer sempre que ela muda de tamanho,
+// senão o desenho fica esticado ou cortado nas bordas.
+if (window.ResizeObserver) new ResizeObserver(ajustarCanvas).observe(cv);
+
+function medirSaida() {
+  if (!analisadorSaida) return 0;
+  analisadorSaida.getFloatTimeDomainData(bufSaida);
+  let s = 0;
+  for (let i = 0; i < bufSaida.length; i++) s += bufSaida[i] * bufSaida[i];
+  return Math.sqrt(s / bufSaida.length);
+}
+
+// Projeta um ponto 3D com giro em Y, inclinação em X e divisão de perspectiva.
+function projetar(p, T) {
+  const x1 = p.x * T.cosY + p.z * T.senY, z1 = -p.x * T.senY + p.z * T.cosY;
+  const y1 = p.y * T.cosX - z1 * T.senX, z2 = p.y * T.senX + z1 * T.cosX;
+  const k = T.dist / (T.dist - z2);
+  return { x: T.cx + x1 * T.esc * k, y: T.cy + y1 * T.esc * k, k, z: z2 };
+}
+
+function desenhar(t) {
+  const W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2;
+  g.clearRect(0, 0, W, H);
+  nivelSaida = medirSaida();
+  fase = t / 1000;
+
+  // Cores e energia por estado (energia = quanto a rede "dispara";
+  // alerta = quanto o vermelho de alarme aparece na estrutura).
+  let alvo = 0.70, cor2 = 'oklch(0.55 0.14 250)';
+  let matiz = 240, croma = 0.13, energia = 0.25, velGiro = 0.20, alerta = 0.12;
+  const e = estadoAtual;
+  if (e === 'desligado' || e === 'encerrado') {
+    cor2 = 'oklch(0.32 0.02 250)'; alvo = 0.64;
+    matiz = 250; croma = 0.015; energia = 0.05; velGiro = 0.05; alerta = 0.03;
+  } else if (e === 'ouvindo' || e === 'gravando') {
+    cor2 = 'oklch(0.52 0.15 230)';
+    matiz = 228; croma = 0.14;
+    // Esperando "Luna": quase não reage ao som ambiente (TV, caixa) - só
+    // depois de chamada o globo acompanha a sua voz.
+    const reage = (ativacao && Date.now() >= acordadoAte) ? 0.2 : 1;
+    alvo = 0.64 + (reduzir ? 0 : Math.sin(fase * 1.6) * 0.012) + Math.min(nivelMic * 2.2 * reage, 0.22);
+    energia = 0.22 + Math.min(nivelMic * 3.0 * reage, 0.55); velGiro = 0.22; alerta = 0.10;
+  } else if (e === 'transcrevendo' || e === 'pensando' || e === 'executando') {
+    cor2 = 'oklch(0.52 0.18 55)';
+    alvo = 0.66 + (reduzir ? 0 : Math.sin(fase * 3) * 0.01);
+    matiz = 62; croma = 0.19; energia = 0.98; velGiro = 0.80; alerta = 0.85;
+  } else if (e === 'falando') {
+    cor2 = 'oklch(0.56 0.16 75)';
+    alvo = 0.66 + Math.min(nivelSaida * 3.2, 0.22);
+    matiz = 78; croma = 0.17; energia = 0.35 + Math.min(nivelSaida * 4.0, 0.60);
+    velGiro = 0.35; alerta = 0.30;
+  }
+  if (tocando.length && e !== 'falando') {
+    alvo = Math.max(alvo, 0.66 + Math.min(nivelSaida * 3.2, 0.22));
+    energia = Math.max(energia, 0.35 + Math.min(nivelSaida * 4.0, 0.60));
+  }
+  raioSuave += (alvo - raioSuave) * 0.22;
+  energiaSuave += (energia - energiaSuave) * 0.12;
+  alertaSuave += (alerta - alertaSuave) * 0.08;
+  if (!reduzir) giro += velGiro * 0.016;
+  const r = R * raioSuave;
+
+  // ---- fundo: só o halo suave (sem grade, sem varredura de radar)
+  const halo = g.createRadialGradient(cx, cy, r * 0.75, cx, cy, R);
+  halo.addColorStop(0, cor2.replace(')', ' / .20)'));
+  halo.addColorStop(1, 'transparent');
+  g.fillStyle = halo; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
+
+  // esc/dist calibrados para o anel externo (raio 1.08) caber dentro do canvas
+  // mesmo no pico de perspectiva — é isso que evitava o corte nas bordas.
+  const T = { cx, cy, cosY: Math.cos(giro), senY: Math.sin(giro),
+              cosX: Math.cos(0.35), senX: Math.sin(0.35),
+              esc: r * 0.94, dist: 4.4 };
+
+  // ---- carcaça: anéis externos com giro próprio
+  ANEIS.forEach(anel => {
+    const ag = giro * anel.vel, ca = Math.cos(ag), sa = Math.sin(ag);
+    const Ta = Object.assign({}, T, {
+      cosY: T.cosY * ca - T.senY * sa,
+      senY: T.senY * ca + T.cosY * sa,
+    });
+    g.lineWidth = Math.max(0.6, R * 0.0045);
+    g.strokeStyle = `oklch(0.66 ${(croma * 0.5).toFixed(3)} ${matiz} / ${(0.14 + energiaSuave * 0.14).toFixed(3)})`;
+    g.beginPath();
+    anel.pts.forEach((p, i) => {
+      const q = projetar(p, Ta);
+      if (i === 0) g.moveTo(q.x, q.y); else g.lineTo(q.x, q.y);
+    });
+    g.closePath(); g.stroke();
+  });
+
+  // ---- neurônios projetados
+  const P = NOS.map(no => {
+    const pulso = reduzir ? 0 : Math.sin(fase * 2.2 + no.semente) * 0.035 * (0.3 + energiaSuave);
+    const q = projetar({ x: no.x * (1 + pulso), y: no.y * (1 + pulso), z: no.z * (1 + pulso) }, T);
+    q.no = no; return q;
+  });
+
+  // ---- sinapses, do fundo para a frente, com pulso de luz correndo nelas
+  const ordem = LIGACOES.map((l, i) => [(P[l.a].z + P[l.b].z) / 2, i]).sort((a, b) => a[0] - b[0]);
+  for (const [, i] of ordem) {
+    const l = LIGACOES[i], A = P[l.a], B = P[l.b];
+    const prof = Math.max(0, Math.min(1, (A.k + B.k) / 2 - 0.65));
+    const quente = alertaSuave > 0.2 && ((l.semente * 100) % 1) < alertaSuave * 0.35;
+    const h = quente ? 32 : matiz, c = quente ? 0.20 : croma * 0.7;
+    const op = (l.aro ? 0.04 : 0.06) + prof * 0.24 + energiaSuave * 0.16;
+    g.strokeStyle = `oklch(${quente ? 0.66 : 0.72} ${c.toFixed(3)} ${h} / ${op.toFixed(3)})`;
+    g.lineWidth = Math.max(0.5, R * (l.aro ? 0.0035 : 0.005) * (0.6 + prof));
+    g.beginPath(); g.moveTo(A.x, A.y); g.lineTo(B.x, B.y); g.stroke();
+
+    if (!reduzir && !l.aro && energiaSuave > 0.12) {
+      const u = (fase * l.vel + l.semente) % 1;
+      const px = A.x + (B.x - A.x) * u, py = A.y + (B.y - A.y) * u;
+      const raioP = Math.max(1, R * 0.010 * (0.6 + prof)) * (0.5 + energiaSuave);
+      g.strokeStyle = `oklch(0.95 ${c.toFixed(3)} ${h} / ${(0.10 + energiaSuave * 0.35).toFixed(3)})`;
+      g.lineWidth = raioP * 1.1;
+      const u0 = Math.max(0, u - 0.16);
+      g.beginPath();
+      g.moveTo(A.x + (B.x - A.x) * u0, A.y + (B.y - A.y) * u0);
+      g.lineTo(px, py); g.stroke();
+      g.fillStyle = `oklch(0.97 ${c.toFixed(3)} ${h} / ${(0.18 + energiaSuave * 0.6).toFixed(3)})`;
+      g.beginPath(); g.arc(px, py, raioP, 0, Math.PI * 2); g.fill();
+    }
+  }
+
+  // ---- neurônios: núcleo nítido + halo separado
+  const ordemNos = P.map((p, i) => [p.z, i]).sort((a, b) => a[0] - b[0]);
+  for (const [, i] of ordemNos) {
+    const p = P[i];
+    const prof = Math.max(0, Math.min(1, p.k - 0.65));
+    const cintila = reduzir ? 1 : (0.82 + 0.18 * Math.sin(fase * 5 + p.no.semente * 3));
+    const quente = alertaSuave > 0.25 && ((p.no.semente * 37) % 1) < alertaSuave * 0.30;
+    const h = quente ? 32 : matiz, c = quente ? 0.21 : croma;
+    const brilho = (0.60 + prof * 0.28) * cintila;
+    const rn = Math.max(1.1, R * 0.0125 * (0.55 + prof) * (1 + energiaSuave * 0.30));
+    const gr = g.createRadialGradient(p.x, p.y, rn * 0.6, p.x, p.y, rn * 3.4);
+    gr.addColorStop(0, `oklch(${brilho.toFixed(2)} ${c.toFixed(3)} ${h} / .42)`);
+    gr.addColorStop(1, `oklch(${brilho.toFixed(2)} ${c.toFixed(3)} ${h} / 0)`);
+    g.fillStyle = gr;
+    g.beginPath(); g.arc(p.x, p.y, rn * 3.4, 0, Math.PI * 2); g.fill();
+    g.fillStyle = `oklch(${Math.min(0.97, brilho + 0.28).toFixed(2)} ${c.toFixed(3)} ${h} / ${(0.55 + prof * 0.4).toFixed(2)})`;
+    g.beginPath(); g.arc(p.x, p.y, rn, 0, Math.PI * 2); g.fill();
+  }
+
+  requestAnimationFrame(desenhar);
+}
+
+/* ================================================================ áudio de saída */
+
+function garantirSaida() {
+  if (!ctxSaida) {
+    ctxSaida = new AudioContext({ sampleRate: TAXA_SAIDA });
+    analisadorSaida = ctxSaida.createAnalyser();
+    analisadorSaida.fftSize = 1024;
+    bufSaida = new Float32Array(analisadorSaida.fftSize);
+    // O ganho fica DEPOIS do analisador: baixar o volume não encolhe o globo,
+    // que continua acompanhando a intensidade real da fala.
+    ganhoSaida = ctxSaida.createGain();
+    ganhoSaida.gain.value = volumeVoz;
+    analisadorSaida.connect(ganhoSaida);
+    ganhoSaida.connect(ctxSaida.destination);
+  }
+  if (ctxSaida.state === 'suspended') {
+    return Promise.race([ctxSaida.resume().catch(() => {}), new Promise(r => setTimeout(r, 400))]);
+  }
+  return Promise.resolve();
+}
+
+// Onde os bipes e sons gerados na tela entram: no ganho de volume quando ele
+// existe, senão direto na saída (compatível com contexto ainda não montado).
+function destinoAudio() {
+  return ganhoSaida || ctxSaida.destination;
+}
+
+function tocar(int16, taxa) {
+  if (!ctxSaida) return;
+  const f32 = new Float32Array(int16.length);
+  for (let i = 0; i < int16.length; i++) f32[i] = int16[i] / 32768;
+  // A taxa vem do servidor (RVC 40/48 kHz, Kokoro/Edge 24 kHz): o
+  // AudioContext toca qualquer taxa sem reamostrar aqui.
+  const buf = ctxSaida.createBuffer(1, f32.length, taxa || TAXA_SAIDA);
+  buf.copyToChannel(f32, 0);
+  const src = ctxSaida.createBufferSource();
+  src.buffer = buf;
+  src.connect(analisadorSaida);
+  const agora = ctxSaida.currentTime;
+  if (proximoInicio < agora) proximoInicio = agora + 0.02;
+  src.start(proximoInicio);
+  proximoInicio += buf.duration;
+  // Primeiro pedaço da resposta: avisa o servidor, que passa a escutar
+  // se você fala por cima (interromper com a voz).
+  if (!tocando.length) enviar({ tipo: 'tocando' });
+  tocando.push(src);
+  $parar.classList.add('visivel');
+  src.onended = () => {
+    const i = tocando.indexOf(src);
+    if (i >= 0) tocando.splice(i, 1);
+    if (!tocando.length && !['pensando', 'executando', 'transcrevendo'].includes(estadoAtual)) {
+      $parar.classList.remove('visivel');
+    }
+    // Terminou de falar: o servidor abre a janela para emendar sem "Luna".
+    // (Parada por interrupção não conta: o servidor já sabe e está ouvindo.)
+    if (!tocando.length && !src._cortado) enviar({ tipo: 'fim_audio' });
+  };
+}
+
+function pararAudio() {
+  for (const src of tocando.slice()) { src._cortado = true; try { src.stop(); } catch (e) {} }
+  tocando.length = 0;
+  proximoInicio = 0;
+}
+
+/* ================================================================ conexão */
+
+function conectar() {
+  ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.binaryType = 'arraybuffer';
+  ws.onopen = () => { conectado = true; pill('pillConexao', 'on', 'servidor'); };
+  ws.onclose = () => {
+    conectado = false; pill('pillConexao', 'off', 'reconectando…');
+    if (micLigado) desligarMic();
+    mudarEstado('desligado');
+    setTimeout(conectar, 1500);
+  };
+  ws.onmessage = (ev) => {
+    if (typeof ev.data !== 'string') { tocar(new Int16Array(ev.data), taxaAtual); return; }
+    tratar(JSON.parse(ev.data));
+  };
+}
+
+function enviar(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) { ws.send(JSON.stringify(obj)); return true; }
+  return false;
+}
+
+function tratar(m) {
+  switch (m.tipo) {
+    case 'pronto':
+      // Retoma a última conversa (o servidor começa uma nova a cada conexão).
+      enviar({ tipo: 'conversa_abrir', id: localStorage.getItem('conversa') || '' });
+      montarVozes(m.vozes, localStorage.getItem('voz') || m.voz);
+      aplicarVoz();
+      montarModelosClaude(m.modelos_claude);
+      aplicarModeloClaude();
+      // Reaplica o cérebro escolhido (padrão: automático).
+      const quer = localStorage.getItem('cerebro') || 'auto';
+      if (quer === 'hermes' && hermesOnline) enviar({ tipo: 'cerebro', cerebro: 'hermes' });
+      else enviar({ tipo: 'cerebro', cerebro: 'auto' });
+      enviar({ tipo: 'ativacao', ligada: ativacao });
+      enviar({ tipo: 'barge', ligado: localStorage.getItem('barge') !== '0' });
+      enviar({ tipo: 'continua', ligada: localStorage.getItem('continua') === '1' });
+      if (ativacao && !micLigado) alternarMic();
+      if (!micLigado) mudarEstado('desligado');
+      break;
+    case 'ativacao':
+      ativacao = !!m.ligada; $('chkAtivacao').checked = ativacao;
+      localStorage.setItem('ativacao', ativacao ? '1' : '0');
+      if (estadoAtual === 'ouvindo') mudarEstado('ouvindo', rotuloOuvindo());
+      break;
+    case 'acordado':
+      // ate=0 fecha a conversa ("valeu"); sem ate = aberta enquanto responde.
+      acordadoAte = m.ate === 0 ? 0 : Date.now() + (m.ate ? m.ate * 1000 : 60000);
+      if (m.ate !== undefined) {
+        if (estadoAtual === 'ouvindo') mudarEstado('ouvindo', rotuloOuvindo());
+        setTimeout(() => { if (estadoAtual === 'ouvindo') mudarEstado('ouvindo', rotuloOuvindo()); },
+                   (m.ate || 0) * 1000 + 50);
+      }
+      break;
+    case 'ignorado':
+      break;   // fala sem "Luna": nada muda na tela (nem cor, nem texto)
+    case 'taxa': taxaAtual = m.hz || TAXA_SAIDA; break;
+    case 'voz': atualizarRotuloVoz(m.voz); break;
+    case 'cerebro':
+      cerebro = m.cerebro; localStorage.setItem('cerebro', cerebro); marcarModo(); break;
+    case 'modelo_claude':
+      // O servidor confirma o que aceitou: a tela segue o servidor, nunca
+      // o contrário (foi o que mordeu na troca de voz).
+      $modeloClaude.value = m.modelo || '';
+      localStorage.setItem('modeloClaude', m.modelo || '');
+      break;
+    case 'modo':
+      modoLive = (m.modo === 'live'); marcarModo();
+      sistema(modoLive ? 'Modo Live ligado: áudio direto com o Gemini.' : 'Modo Live desligado.');
+      break;
+    case 'rota': rotaAtual = m.rota; break;
+    case 'estado':
+      if (m.estado === 'ouvindo') {
+        fecharTurno();
+        mudarEstado(micLigado ? 'ouvindo' : 'desligado', micLigado ? rotuloOuvindo() : 'pronto');
+      } else if (m.estado === 'pensando' && rotaAtual === 'hermes') {
+        mudarEstado('pensando', cerebro === 'hermes' ? 'expert pensando' : 'Claude pensando');
+      } else {
+        mudarEstado(m.estado);
+      }
+      break;
+    case 'voce':
+      abrirTurno();
+      $voce.innerHTML = '';
+      const s1 = document.createElement('span');
+      s1.textContent = m.digitado ? 'Você digitou: ' : m.corrigido ? 'Você (corrigido): ' : 'Você: ';
+      $voce.append(s1, document.createTextNode('“' + m.texto + '”'));
+      if (m.corrigido && $msgs.lastElementChild?.dataset.quem === 'voce') {
+        $msgs.lastElementChild.querySelector('.txt').textContent = m.texto;
+      } else {
+        conversa('voce', m.texto, fotosPendentes.splice(0), false, m.arquivos);
+      }
+      break;
+    case 'aviso':
+      if (!falaDoTurno) $fala.textContent = m.texto;
+      if (m.som) somPensando();
+      break;
+    case 'proposta': mostrarProposta(m); break;
+    case 'bot':
+      if (!falaDoTurno) $fala.textContent = '';
+      falaDoTurno += (falaDoTurno ? ' ' : '') + m.texto;
+      $fala.textContent = falaDoTurno;
+      conversa('bot', m.texto);
+      break;
+    case 'bot_final': {
+      // Texto completo com markdown: troca as frases soltas pela resposta formatada.
+      let d = $msgs.lastElementChild;
+      if (!d || d.dataset.quem !== 'bot') d = conversa('bot', '', null, false);
+      finalizarResposta(d, m.texto, m.rota);
+      $fala.textContent = d.querySelector('.txt').innerText.replace(/\s+/g, ' ').replace(/Copiar/g, '').trim();
+      $listaConv.scrollTop = $listaConv.scrollHeight;
+      break;
+    }
+    case 'conversa':
+      conversaId = m.id; localStorage.setItem('conversa', m.id);
+      desenharConversa(m);
+      break;
+    case 'ferramenta': ferramenta(m); break;
+    case 'chamada':
+      // Ctrl+Alt+L: bipe curto para saber que ela está ouvindo.
+      garantirSaida().then(() => {
+        if (!ctxSaida) return;
+        const o = ctxSaida.createOscillator(), gg = ctxSaida.createGain(), t0 = ctxSaida.currentTime;
+        o.frequency.setValueAtTime(660, t0); o.frequency.linearRampToValueAtTime(990, t0 + 0.09);
+        gg.gain.setValueAtTime(0.0001, t0); gg.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02);
+        gg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+        o.connect(gg).connect(destinoAudio()); o.start(t0); o.stop(t0 + 0.2);
+      });
+      mudarEstado('ouvindo', 'pode falar');
+      break;
+    case 'ligar_mic':
+      if (!micLigado) alternarMic();
+      break;
+    case 'fila': {
+      const f = $('fila'); f.replaceChildren();
+      for (const t of (m.itens || [])) { const li = document.createElement('li'); li.textContent = t; f.appendChild(li); }
+      f.hidden = !(m.itens && m.itens.length);
+      break;
+    }
+    case 'interrompido':
+      pararAudio(); marcarFerramentasParadas();
+      if (m.voz) { $parar.classList.remove('visivel'); mudarEstado('ouvindo', 'pode falar'); }
+      break;
+    case 'metrica': metrica(m); setTimeout(checarHermes, 400); break;
+    case 'erro':
+      erro(m.texto);
+      $rot.textContent = 'erro'; $rot.classList.remove('vivo');
+      break;
+  }
+}
+
+/* ================================================================ microfone */
+
+async function ligarMic() {
+  await garantirSaida();
+  // echoCancellation: sem ele o microfone capta a própria resposta.
+  stream = await navigator.mediaDevices.getUserMedia({
+    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 }
+  });
+  ctxEntrada = new AudioContext();
+  fonte = ctxEntrada.createMediaStreamSource(stream);
+  processador = ctxEntrada.createScriptProcessor(1024, 1, 1);
+  processador.onaudioprocess = (ev) => {
+    const entrada = ev.inputBuffer.getChannelData(0);
+    let s = 0;
+    for (let i = 0; i < entrada.length; i++) s += entrada[i] * entrada[i];
+    nivelMic = nivelMic * 0.6 + Math.sqrt(s / entrada.length) * 0.4;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const pcm = paraDe16k(entrada, ctxEntrada.sampleRate);
+    const int16 = new Int16Array(pcm.length);
+    for (let i = 0; i < pcm.length; i++) int16[i] = Math.max(-1, Math.min(1, pcm[i])) * 32767;
+    ws.send(int16.buffer);
+  };
+  fonte.connect(processador);
+  processador.connect(ctxEntrada.destination);
+  micLigado = true;
+  $mic.classList.add('on'); $mic.setAttribute('aria-pressed', 'true');
+  $mic.title = 'Desligar microfone (Espaço)';
+  if (!['pensando', 'executando', 'falando', 'transcrevendo'].includes(estadoAtual)) mudarEstado('ouvindo', rotuloOuvindo());
+}
+
+function desligarMic() {
+  micLigado = false; nivelMic = 0;
+  $mic.classList.remove('on'); $mic.setAttribute('aria-pressed', 'false');
+  $mic.title = 'Ligar microfone (Espaço)';
+  try { processador && processador.disconnect(); } catch (e) {}
+  try { fonte && fonte.disconnect(); } catch (e) {}
+  try { stream && stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+  try { ctxEntrada && ctxEntrada.close(); } catch (e) {}
+  processador = fonte = stream = ctxEntrada = null;
+  if (estadoAtual === 'ouvindo' || estadoAtual === 'gravando') mudarEstado('desligado');
+  // Live precisa de microfone: sem ele, volta ao modo local.
+  if (modoLive) enviar({ tipo: 'modo', modo: 'pipeline' });
+}
+
+function paraDe16k(entrada, taxaOrigem) {
+  if (taxaOrigem === TAXA_ENVIO) return entrada;
+  const razao = taxaOrigem / TAXA_ENVIO;
+  const saida = new Float32Array(Math.floor(entrada.length / razao));
+  for (let i = 0; i < saida.length; i++) {
+    const pos = i * razao, j = Math.floor(pos), f = pos - j;
+    saida[i] = (entrada[j] || 0) * (1 - f) + (entrada[j + 1] || 0) * f;
+  }
+  return saida;
+}
+
+async function alternarMic() {
+  if (micLigado) { desligarMic(); return; }
+  $mic.disabled = true;
+  try { await ligarMic(); }
+  catch (e) { erro(e.name + ': ' + e.message); }
+  finally { $mic.disabled = false; }
+}
+
+/* ================================================================ turno / atividade */
+
+function abrirTurno() {
+  if (turnoAberto) return;
+  turnoAberto = true; falaDoTurno = '';
+  $fala.textContent = '';
+}
+
+function fecharTurno() { turnoAberto = false; }
+
+function hora() {
+  return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+let grupoAtual = null;
+function ferramenta(m) {
+  $('vazioAtiv') && $('vazioAtiv').remove();
+  if (m.status === 'running') {
+    if (!grupoAtual || !grupoAtual.isConnected || grupoAtual.dataset.turno !== String(turnoId)) {
+      grupoAtual = document.createElement('div');
+      grupoAtual.dataset.turno = String(turnoId);
+      const t = document.createElement('div'); t.className = 'turno'; t.textContent = hora();
+      grupoAtual.appendChild(t);
+      $listaAtiv.prepend(grupoAtual);
+    }
+    const el = document.createElement('div'); el.className = 'tarefa';
+    const st = document.createElement('div'); st.className = 'st';
+    const meio = document.createElement('div');
+    const nome = document.createElement('div'); nome.className = 'nome'; nome.textContent = m.ferramenta || 'ferramenta';
+    const rot = document.createElement('div'); rot.className = 'rot'; rot.textContent = m.rotulo || '—';
+    meio.append(nome, rot);
+    const tempo = document.createElement('div'); tempo.className = 't'; tempo.textContent = '…';
+    el.append(st, meio, tempo);
+    grupoAtual.appendChild(el);
+    ferramentas.set(m.id || Math.random(), { el, tempo, t0: performance.now() });
+    totalFerramentas++;
+    $('contAtiv').textContent = totalFerramentas; $('contAtiv2').textContent = totalFerramentas;
+    mudarEstado('executando', 'executando · ' + (m.ferramenta || 'ferramenta'));
+  } else {
+    const f = ferramentas.get(m.id);
+    if (!f) return;
+    f.el.classList.add(m.status === 'completed' ? 'ok' : 'falhou');
+    f.tempo.textContent = ((performance.now() - f.t0) / 1000).toFixed(1).replace('.', ',') + 's';
+    ferramentas.delete(m.id);
+    if (!ferramentas.size && estadoAtual === 'executando') mudarEstado('pensando', 'Claude pensando');
+  }
+}
+
+function marcarFerramentasParadas() {
+  for (const [, f] of ferramentas) { f.el.classList.add('parou'); f.tempo.textContent = 'parado'; }
+  ferramentas.clear();
+}
+
+let turnoId = 0;
+function conversa(quem, texto, fotos, historico, arqs) {
+  if (quem === 'voce') turnoId++;
+  const ultimo = $msgs.lastElementChild;
+  if (!historico && ultimo && ultimo.dataset.quem === quem && quem === 'bot' && !ultimo.dataset.bruto) {
+    ultimo.querySelector('.txt').textContent += ' ' + texto;
+  } else {
+    const d = document.createElement('div'); d.className = 'msg ' + quem; d.dataset.quem = quem;
+    if (quem === 'bot' && rotaAtual === 'hermes') d.classList.add('claude');
+    const q = document.createElement('div'); q.className = 'quem';
+    q.textContent = quem === 'voce' ? 'você' : 'luna';
+    d.appendChild(q);
+    if (fotos && fotos.length) {
+      const f = document.createElement('div'); f.className = 'fotos';
+      for (const u of fotos) {
+        const im = document.createElement('img'); im.src = u; im.alt = 'imagem enviada';
+        im.onclick = () => { $('zoom').querySelector('img').src = u; $('zoom').showModal(); };
+        f.appendChild(im);
+      }
+      d.appendChild(f);
+    }
+    if (arqs && arqs.length) {
+      const f = document.createElement('div'); f.className = 'arqs';
+      for (const n of arqs) { const sp = document.createElement('span'); sp.textContent = '📄 ' + n; f.appendChild(sp); }
+      d.appendChild(f);
+    }
+    const t = document.createElement('div'); t.className = 'txt'; t.textContent = texto;
+    d.appendChild(t); $msgs.appendChild(d);
+    if (quem === 'voce' && $('tituloConv').textContent === 'Nova conversa') $('tituloConv').textContent = texto.slice(0, 70);
+  }
+  if (!historico) $listaConv.scrollTop = $listaConv.scrollHeight;
+  return $msgs.lastElementChild;
+}
+
+const ERROS = [
+  [/NotAllowedError|Permission denied|permiss/i, 'O navegador bloqueou o microfone.', 'Clique no cadeado ao lado do endereço e permita o microfone.'],
+  [/NotFoundError|device not found|Requested device/i, 'Nenhum microfone encontrado.', 'Confira se ele está conectado e escolhido no Windows.'],
+  [/NotReadableError|Could not start/i, 'Outro programa está usando o microfone.', 'Feche o app que está com ele (Discord, OBS…) e tente de novo.'],
+  [/Insufficient Balance|402|quota/i, 'Acabou o saldo (ou a cota) da IA principal.', 'Recarregue a conta dela ou troque de IA em Ajustes → Conexões; enquanto isso use o modo Expert.'],
+  [/401|Unauthorized|api[_ ]?key|Authentication/i, 'Uma chave foi recusada.', 'Confira as chaves em Ajustes → Conexões.'],
+  [/429|rate.?limit|Too Many/i, 'Muitos pedidos seguidos.', 'Espere alguns segundos e tente de novo.'],
+  [/timed? ?out|Timeout|demorou/i, 'Demorou demais para responder.', 'Pode ter sido a internet. Tente de novo.'],
+  [/Hermes|8642|Claude fora|Expert indispon/i, 'O Claude não está respondendo.', 'O gateway do Hermes pode estar reiniciando. Espere uns segundos.'],
+  [/Connection|conex|ECONNREFUSED|getaddrinfo|Network/i, 'Sem conexão com um serviço.', 'Confira a internet. Comandos prontos continuam funcionando offline.'],
+  [/Live caiu/i, 'O modo Live caiu.', 'Volte ao Auto e tente ligar o Live de novo.'],
+];
+function erro(texto) {
+  const t = String(texto || '');
+  const [, titulo, dica] = ERROS.find(([re]) => re.test(t)) || [null, 'Algo deu errado.', 'Tente de novo; se repetir, veja o detalhe abaixo.'];
+  const d = document.createElement('div'); d.className = 'msg erro'; d.setAttribute('role', 'alert');
+  const b = document.createElement('b'); b.textContent = titulo;
+  d.append(b, ' ' + dica);
+  if (t) { const det = document.createElement('details'); const sm = document.createElement('summary'); sm.textContent = 'detalhe';
+           det.append(sm, t); d.append(det); }
+  $msgs.appendChild(d); $listaConv.scrollTop = $listaConv.scrollHeight;
+  $rot.textContent = 'erro'; $rot.classList.remove('vivo');
+  if (!falaDoTurno) $fala.textContent = titulo;
+}
+
+function sistema(texto) {
+  const d = document.createElement('div'); d.className = 'msg sistema'; d.textContent = texto;
+  $msgs.appendChild(d); $listaConv.scrollTop = $listaConv.scrollHeight;
+}
+
+// Trava de aprovação: a Luna propõe mudanças nela mesma (src/propostas.py);
+// só entram se passarem nos testes E você aprovar aqui.
+function mostrarProposta(m) {
+  if (m.estado === 'recusada_testes') {
+    sistema('A Luna tentou mudar “' + m.titulo + '”, mas os testes pioraram. Nada mudou. '
+            + (m.motivos || []).join('; '));
+    return;
+  }
+  if (m.estado !== 'aguardando') {       // aprovada/recusada: fecha o cartão
+    propostasPendentes.delete(m.id);
+    $('pontoApr').hidden = !propostasPendentes.size;
+    const c = document.getElementById('prop-' + m.id);
+    if (c) { c.remove(); if (m.texto) sistema(m.texto); }   // decidida em outra tela
+    return;
+  }
+  if (document.getElementById('prop-' + m.id)) return;
+  const d = document.createElement('div');
+  d.className = 'msg sistema proposta'; d.id = 'prop-' + m.id;
+  const testes = Object.entries(m.testes || {}).map(([k, v]) =>
+    k.replace('teste_', '').replace('.py', '') + ' ' + v).join(' · ');
+  d.innerHTML = '<b>A Luna quer aprender algo:</b> <span class="t"></span><br>'
+    + '<small class="a"></small><br><small>Testes: <span class="x"></span></small><br>'
+    + '<button class="aprovar">Aprovar</button> <button class="recusar">Recusar</button>';
+  d.querySelector('.t').textContent = m.titulo;
+  d.querySelector('.a').textContent = 'Muda: ' + (m.arquivos || []).join(', ');
+  d.querySelector('.x').textContent = testes;
+  const decidir = async (q) => {
+    d.querySelectorAll('button').forEach(b => b.disabled = true);
+    try {
+      const r = await fetch('/propostas/' + m.id + '/' + q, { method: 'POST' });
+      const j = await r.json();
+      propostasPendentes.delete(m.id); $('pontoApr').hidden = !propostasPendentes.size;
+      if (d.isConnected) { d.remove(); sistema(j.texto || 'Pronto.'); }
+    } catch (e) { sistema('Não consegui falar com o servidor.'); }
+  };
+  d.querySelector('.aprovar').onclick = () => decidir('aprovar');
+  d.querySelector('.recusar').onclick = () => decidir('recusar');
+  $msgs.appendChild(d); $listaConv.scrollTop = $listaConv.scrollHeight;
+  propostasPendentes.set(m.id, m);
+  $('pontoApr').hidden = false;
+  abrirAba('conv');
+  $lado.classList.add('aberto');
+  $fala.textContent = 'A Luna quer aprender algo. Aprove ou recuse no cartão ao lado.';
+}
+
+// Ao abrir a tela: mostra as propostas que chegaram enquanto estava fechada.
+fetch('/propostas').then(r => r.json()).then(j =>
+  (j.pendentes || []).forEach(p => mostrarProposta(Object.assign({ estado: 'aguardando' }, p))
+)).catch(() => {});
+
+function metrica(m) {
+  const f = (x) => Number(x || 0).toFixed(2).replace('.', ',') + 's';
+  let txt = (m.stt ? 'stt ' + f(m.stt) + ' · ' : '') +
+            (m.juiz ? 'juiz ' + f(m.juiz) + ' · ' : '') +
+            (m.cerebro === 'comando' ? 'comando pronto ' : m.cerebro === 'hermes' ? 'claude ' : 'rápido ') +
+            f(m.llm) + ' · 1º áudio ' + f(m.total);
+  if (m.ferramentas) txt += ' · ' + m.ferramentas + (m.ferramentas === 1 ? ' ferramenta' : ' ferramentas');
+  if (m.cancelado) txt += ' · interrompido';
+  $rodape.textContent = txt;
+}
+
+/* ================================================================ markdown */
+// Renderizador pequeno e SEGURO: escapa todo HTML e só então aplica a
+// marcação (código, negrito, itálico, links http, listas, títulos, tabelas).
+function esc(t) { return t.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function mdInline(t) {
+  const codigos = [];
+  t = t.replace(/`([^`\n]+)`/g, (_, c) => { codigos.push(c); return '\u0000' + (codigos.length - 1) + '\u0000'; });
+  t = esc(t)
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>')
+    .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+    .replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g, '$1<i>$2</i>')
+    .replace(/(^|[^_\w])_([^_\n]+)_(?!\w)/g, '$1<i>$2</i>')
+    .replace(/~~([^~]+)~~/g, '<s>$1</s>');
+  return t.replace(/\u0000(\d+)\u0000/g, (_, i) => '<code>' + esc(codigos[+i]) + '</code>');
+}
+function md(texto) {
+  const linhas = texto.replace(/\r/g, '').split('\n');
+  let html = '', i = 0;
+  const lista = (re, tag) => {
+    let h = '<' + tag + '>';
+    while (i < linhas.length && re.test(linhas[i])) { h += '<li>' + mdInline(linhas[i].replace(re, '')) + '</li>'; i++; }
+    return h + '</' + tag + '>';
+  };
+  while (i < linhas.length) {
+    const l = linhas[i];
+    if (/^```/.test(l)) {
+      const cod = []; i++;
+      while (i < linhas.length && !/^```/.test(linhas[i])) cod.push(linhas[i++]);
+      i++;
+      html += '<pre><code>' + esc(cod.join('\n')) + '</code></pre>';
+    } else if (/^\s*$/.test(l)) { i++; }
+    else if (/^#{1,4}\s/.test(l)) { const n = l.match(/^#+/)[0].length; html += `<h${n}>` + mdInline(l.replace(/^#+\s*/, '')) + `</h${n}>`; i++; }
+    else if (/^\s*[-*•]\s+/.test(l)) html += lista(/^\s*[-*•]\s+/, 'ul');
+    else if (/^\s*\d+[.)]\s+/.test(l)) html += lista(/^\s*\d+[.)]\s+/, 'ol');
+    else if (/^>\s?/.test(l)) { const q = []; while (i < linhas.length && /^>\s?/.test(linhas[i])) q.push(linhas[i++].replace(/^>\s?/, '')); html += '<blockquote>' + mdInline(q.join(' ')) + '</blockquote>'; }
+    else if (/^(-{3,}|\*{3,})\s*$/.test(l)) { html += '<hr>'; i++; }
+    else if (/^\|.*\|\s*$/.test(l) && i + 1 < linhas.length && /^\|[\s:|-]+\|\s*$/.test(linhas[i + 1])) {
+      const cel = (x) => x.trim().replace(/^\||\|$/g, '').split('|').map(c => mdInline(c.trim()));
+      html += '<table><tr>' + cel(l).map(c => '<th>' + c + '</th>').join('') + '</tr>';
+      i += 2;
+      while (i < linhas.length && /^\|.*\|\s*$/.test(linhas[i])) html += '<tr>' + cel(linhas[i++]).map(c => '<td>' + c + '</td>').join('') + '</tr>';
+      html += '</table>';
+    } else {
+      const par = [];
+      while (i < linhas.length && linhas[i].trim() && !/^(```|#{1,4}\s|\s*[-*•]\s+|\s*\d+[.)]\s+|>|\|)/.test(linhas[i])) par.push(linhas[i++]);
+      if (!par.length) par.push(linhas[i++]);
+      html += '<p>' + par.map(mdInline).join('<br>') + '</p>';
+    }
+  }
+  return html;
+}
+function preencherMd(el, texto) {
+  el.classList.add('md');
+  el.innerHTML = md(texto);
+  el.querySelectorAll('pre').forEach(pre => {
+    const b = botaoMini('Copiar', ICONES.copiar, () => copiar(pre.innerText, b));
+    b.classList.add('copiar'); pre.appendChild(b);
+  });
+}
+
+/* ================================================================ ações das mensagens */
+const ICONES = {
+  copiar: '<path d="M9 9h10v10H9z"/><path d="M5 15V5h10"/>',
+  ouvir: '<path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',
+  expert: '<path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
+};
+function botaoMini(rotulo, icone, acao) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'mini-btn';
+  b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    + icone + '</svg><span></span>';
+  b.querySelector('span').textContent = rotulo; b.title = rotulo;
+  b.onclick = (e) => { e.stopPropagation(); acao(); };
+  return b;
+}
+async function copiar(texto, b) {
+  try { await navigator.clipboard.writeText(texto); } catch (e) {
+    const ta = document.createElement('textarea'); ta.value = texto; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); ta.remove();
+  }
+  if (b) { const s = b.querySelector('span'), o = s.textContent; s.textContent = 'Copiado'; b.classList.add('feito');
+           setTimeout(() => { s.textContent = o; b.classList.remove('feito'); }, 1400); }
+}
+function perguntaAntes(d) {
+  let p = d.previousElementSibling;
+  while (p && p.dataset.quem !== 'voce') p = p.previousElementSibling;
+  return p ? p.querySelector('.txt').textContent : '';
+}
+function acoesDaResposta(d) {
+  if (d.querySelector('.acoes-msg')) return;
+  const a = document.createElement('div'); a.className = 'acoes-msg';
+  const texto = () => d.dataset.bruto || d.querySelector('.txt').innerText;
+  const bc = botaoMini('Copiar', ICONES.copiar, () => copiar(texto(), bc));
+  a.appendChild(bc);
+  a.appendChild(botaoMini('Ouvir', ICONES.ouvir, async () => {
+    await garantirSaida(); pararAudio(); enviar({ tipo: 'falar', texto: d.querySelector('.txt').innerText });
+  }));
+  if (!d.classList.contains('claude')) {
+    a.appendChild(botaoMini('Pedir ao Expert', ICONES.expert, async () => {
+      const q = perguntaAntes(d);
+      if (!q) return;
+      if (!hermesOnline) { sistema('Expert indisponível: o Claude está fora do ar.'); return; }
+      await garantirSaida(); pararAudio();
+      enviar({ tipo: 'expert', texto: q });
+    }));
+  }
+  d.appendChild(a);
+}
+
+/* ================================================================ conversas salvas */
+function desenharConversa(c) {
+  $msgs.replaceChildren();
+  $('tituloConv').textContent = c.titulo || 'Nova conversa';
+  for (const m of c.mensagens || []) {
+    rotaAtual = m.rota || 'rapido';
+    const d = conversa(m.quem, m.texto, m.fotos, true, m.arquivos);
+    if (m.quem === 'bot') { finalizarResposta(d, m.texto, m.rota); }
+  }
+  rotaAtual = 'rapido';
+  $listaConv.scrollTop = $listaConv.scrollHeight;
+}
+function finalizarResposta(d, texto, rota) {
+  if (!d) return;
+  if (rota === 'hermes') d.classList.add('claude');
+  d.dataset.bruto = texto;
+  preencherMd(d.querySelector('.txt'), texto);
+  acoesDaResposta(d);
+}
+function quando(ts) {
+  const d = new Date(ts * 1000), hoje = new Date();
+  const ontem = new Date(hoje); ontem.setDate(hoje.getDate() - 1);
+  if (d.toDateString() === hoje.toDateString()) return 'Hoje';
+  if (d.toDateString() === ontem.toDateString()) return 'Ontem';
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+}
+async function abrirHistorico() {
+  const $l = $('listaConversas');
+  $l.innerHTML = '<div class="vazio">Carregando…</div>';
+  $('painelConversas').hidden = false;
+  try {
+    const j = await (await fetch('/conversas')).json();
+    $l.replaceChildren();
+    if (!j.conversas.length) { $l.innerHTML = '<div class="vazio">Nenhuma conversa salva ainda.</div>'; return; }
+    let dia = '';
+    for (const c of j.conversas) {
+      const q = quando(c.atualizada);
+      if (q !== dia) { dia = q; const h = document.createElement('div'); h.className = 'conv-dia'; h.textContent = q; $l.appendChild(h); }
+      const it = document.createElement('div'); it.className = 'conv-item' + (c.id === conversaId ? ' atual' : '');
+      it.tabIndex = 0;
+      const info = document.createElement('div');
+      const t = document.createElement('div'); t.className = 't'; t.textContent = c.titulo;
+      const n = document.createElement('div'); n.className = 'q';
+      n.textContent = new Date(c.atualizada * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' · ' + c.n + ' mensagens';
+      info.append(t, n);
+      const ap = botaoMini('Apagar', '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', async () => {
+        if (!confirm('Apagar “' + c.titulo + '”?')) return;
+        await fetch('/conversas/' + c.id, { method: 'DELETE' });
+        if (c.id === conversaId) enviar({ tipo: 'conversa_nova' });
+        abrirHistorico();
+      });
+      ap.classList.add('apagar');
+      it.append(info, ap);
+      it.onclick = () => { enviar({ tipo: 'conversa_abrir', id: c.id }); $('painelConversas').hidden = true; };
+      it.onkeydown = (e) => { if (e.key === 'Enter') it.click(); };
+      $l.appendChild(it);
+    }
+  } catch (e) { $l.innerHTML = '<div class="vazio">Não consegui carregar as conversas.</div>'; }
+}
+$('btnHistorico').onclick = abrirHistorico;
+$('btnFecharHist').onclick = () => { $('painelConversas').hidden = true; };
+$('btnNovaConv').onclick = () => { enviar({ tipo: 'conversa_nova' }); $fala.textContent = ''; $voce.textContent = ''; };
+
+/* ================================================================ aba Hoje (Meu Hoje) */
+const propostasPendentes = new Map();
+const $hoje = $('listaHoje');
+function el(tag, cls, texto) { const e = document.createElement(tag); if (cls) e.className = cls; if (texto != null) e.textContent = texto; return e; }
+function dataCurta(iso) {
+  if (!iso) return '';
+  const d = new Date(iso.length <= 10 ? iso + 'T12:00:00' : iso);
+  return d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+}
+function horaDe(iso) { return iso && iso.length > 10 ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'dia'; }
+async function hojeAcao(acao, corpo) {
+  const r = await fetch('/hoje/' + acao, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detalhe || 'falhou');
+  return r.json();
+}
+// Sem conta conectada: convite para criar e conectar.
+function mostrarConectarHoje() {
+  const box = el('div', 'conectar-hoje');
+  box.innerHTML = `<h4>Seu dia, aqui na Luna</h4>
+    <p>O <b>Meu Hoje</b> organiza tarefas, agenda e diário. Conectado, esta aba mostra o seu dia
+      e você fala “Luna, anota comprar pão” ou “o que tenho hoje?”.</p>
+    <ol><li>Crie a conta grátis no site.</li><li>Volte e clique em <b>Conectar conta</b> — é só autorizar.</li></ol>
+    <div class="linha-b"><a class="botao" href="https://meuhoje.com.br/cadastro" target="_blank" rel="noopener">Criar conta</a>
+      <button type="button" class="botao forte" data-conectar-hoje>Conectar conta</button></div>`;
+  $hoje.replaceChildren(box);
+}
+
+async function carregarHoje(forcar) {
+  if (!$hoje.childElementCount) $hoje.innerHTML = '<div class="vazio">Carregando o seu dia…</div>';
+  let d;
+  try {
+    const r = await fetch('/hoje' + (forcar ? '?forcar=1' : ''));
+    d = await r.json();
+    if (!r.ok) throw Object.assign(new Error(d.detalhe || d.erro), { tipo: d.erro });
+  } catch (e) {
+    if (e.tipo === 'desconectado') mostrarConectarHoje();
+    else $hoje.replaceChildren(el('div', 'vazio', 'Não consegui ler o Meu Hoje agora (' + e.message + ').'));
+    return;
+  }
+  $hoje.replaceChildren();
+  // Cabeçalho do dia
+  const s1 = el('div', 'secao'), c1 = el('div', 'cartao'), topo = el('div', 'dia-topo');
+  topo.append(el('b', '', new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })));
+  const nv = (d.leituraDoDia || {}).nivel || '';
+  const nivel = el('span', 'nivel ' + nv, { baixa: 'energia baixa', media: 'energia média', alta: 'energia alta' }[nv] || 'dia');
+  nivel.title = 'Cabem ' + ((d.leituraDoDia || {}).limiteTarefas ?? '?') + ' tarefas hoje';
+  topo.append(nivel); c1.append(topo);
+  if (d.comecePor) { const cp = el('div', 'comece'); cp.append('Comece por ', el('b', '', d.comecePor)); c1.append(cp); }
+  s1.append(c1); $hoje.append(s1);
+  // Tarefas de hoje
+  const s2 = el('div', 'secao'), h2 = el('h4', '', 'Tarefas de hoje');
+  const rec = el('button', 'mini-btn', 'Atualizar'); rec.onclick = () => carregarHoje(true); h2.append(rec);
+  s2.append(h2);
+  const tarefas = [...(d.recorteDeHoje || []).map(t => ({ ...t, feita: false })), ...(d.feitasHoje || []).map(t => ({ ...t, feita: true }))];
+  if (!tarefas.length) s2.append(el('div', 'vazio', 'Nada para hoje. Aproveite.'));
+  for (const t of tarefas) {
+    const it = el('div', 'item' + (t.feita ? ' feito' : ''));
+    const ck = el('button', 'check' + (t.feita ? ' feito' : ''), '✓');
+    ck.title = t.feita ? 'Feita' : 'Marcar como feita'; ck.setAttribute('aria-label', ck.title + ': ' + t.titulo);
+    const meio = el('div'); meio.append(el('div', 't', t.titulo));
+    const sub = [t.estimativaMin ? t.estimativaMin + ' min' : '', t.repete === 'daily' ? 'todo dia' : '', t.primeiroPasso || ''].filter(Boolean).join(' · ');
+    if (sub) meio.append(el('div', 'sub', sub));
+    const adiar = botaoMini('Amanhã', '<path d="M5 12h14M13 6l6 6-6 6"/>', async () => {
+      const am = new Date(); am.setDate(am.getDate() + 1);
+      try { await hojeAcao('adiar', { id: t.id, ate: am.toISOString().slice(0, 10) }); it.remove(); } catch (e) { sistema('Não consegui adiar: ' + e.message); }
+    });
+    if (!t.feita) {
+      ck.onclick = async () => {
+        ck.disabled = true;
+        try { await hojeAcao('concluir', { id: t.id }); ck.classList.add('feito'); it.classList.add('feito'); adiar.remove(); }
+        catch (e) { sistema('Não consegui concluir: ' + e.message); ck.disabled = false; }
+      };
+    } else ck.disabled = true;
+    it.append(ck, meio); if (!t.feita) it.append(adiar);
+    s2.append(it);
+  }
+  const add = el('form', 'add-tarefa'), inp = el('input'); inp.placeholder = 'Nova tarefa para hoje…'; inp.setAttribute('aria-label', 'Nova tarefa');
+  const ok = el('button', 'botao', 'Adicionar'); ok.type = 'submit';
+  add.append(inp, ok);
+  add.onsubmit = async (e) => {
+    e.preventDefault(); const titulo = inp.value.trim(); if (!titulo) return;
+    ok.disabled = true;
+    try { await hojeAcao('criar', { titulo, planejadaPara: new Date().toISOString().slice(0, 10) }); inp.value = ''; carregarHoje(true); }
+    catch (er) { sistema('Não consegui criar: ' + er.message); } finally { ok.disabled = false; }
+  };
+  s2.append(add); $hoje.append(s2);
+  // Agenda
+  const s3 = el('div', 'secao'); s3.append(el('h4', '', 'Agenda (7 dias)'));
+  const ag = d.proximos || [];
+  if (!ag.length) s3.append(el('div', 'vazio', 'Nenhum compromisso marcado.'));
+  let diaAtual = '';
+  for (const a of ag) {
+    const dia = dataCurta(a.inicio);
+    if (dia !== diaAtual) { diaAtual = dia; s3.append(el('div', 'conv-dia', dia)); }
+    const it = el('div', 'item'); it.append(el('span', 'hora', a.diaInteiro ? 'dia' : horaDe(a.inicio)));
+    const m = el('div'); m.append(el('div', 't', a.titulo)); if (a.local) m.append(el('div', 'sub', a.local));
+    it.append(m, el('span')); s3.append(it);
+  }
+  $hoje.append(s3);
+  $hoje.append(el('p', 'dica', 'Dica: fale “Luna, anota no Meu Hoje…” ou “terminei X” para mexer sem abrir aqui.'));
+  const sair = el('button', 'mini-btn', 'Desconectar conta do Meu Hoje'); sair.style.cssText = 'align-self:flex-start;margin:4px 0 8px';
+  sair.onclick = async () => { if (!confirm('Desconectar a conta do Meu Hoje desta Luna?')) return;
+    await fetch('/meuhoje/desconectar', { method: 'POST' }); carregarHoje(true); };
+  $hoje.append(sair);
+}
+
+/* ================================================================ aba Aprendizado */
+const $apr = $('listaApr');
+async function carregarAprendizado() {
+  if (!$apr.childElementCount) $apr.innerHTML = '<div class="vazio">Carregando…</div>';
+  let d;
+  try { d = await (await fetch('/aprendizado')).json(); }
+  catch (e) { $apr.replaceChildren(el('div', 'vazio', 'Não consegui carregar.')); return; }
+  $apr.replaceChildren();
+  // Propostas pendentes
+  const s0 = el('div', 'secao'); s0.append(el('h4', '', 'Esperando sua aprovação'));
+  if (!propostasPendentes.size) s0.append(el('div', 'dica', 'Nenhuma. Quando ela quiser mudar algo nela mesma, aparece aqui e na conversa.'));
+  for (const m of propostasPendentes.values()) {
+    const c = el('div', 'cartao'); c.append(el('b', '', m.titulo));
+    c.append(el('div', 'sub', 'Muda: ' + (m.arquivos || []).join(', ')));
+    const ir = el('button', 'botao', 'Ver na conversa'); ir.style.marginTop = '8px'; ir.onclick = () => abrirAba('conv');
+    c.append(ir); s0.append(c);
+  }
+  $apr.append(s0);
+  // Atalhos
+  const s1 = el('div', 'secao'); s1.append(el('h4', '', 'Atalhos prontos (sem o Claude)'));
+  if (!d.atalhos.length) s1.append(el('div', 'dica', 'Nenhum ainda. Uma tarefa que você repete vira atalho e passa a rodar em segundos.'));
+  for (const a of d.atalhos) {
+    const it = el('div', 'item'), m = el('div');
+    const t = el('div', 't', a.nome); if (a.skill) t.append(el('span', 'chip', a.skill));
+    m.append(t); if (a.exemplo) m.append(el('div', 'sub', a.exemplo));
+    const tr = el('label', 'troca'); tr.title = a.ligado ? 'Ligado' : 'Desligado';
+    const cb = el('input'); cb.type = 'checkbox'; cb.checked = a.ligado; cb.setAttribute('aria-label', 'Atalho ' + a.nome);
+    cb.onchange = async () => { await fetch('/aprendizado/atalho/' + encodeURIComponent(a.nome) + '/' + (cb.checked ? 'ligar' : 'desligar'), { method: 'POST' }); tr.title = cb.checked ? 'Ligado' : 'Desligado'; };
+    tr.append(cb, el('span'));
+    it.append(el('span'), m, tr); s1.append(it);
+  }
+  $apr.append(s1);
+  // Skills
+  const s2 = el('div', 'secao'); s2.append(el('h4', '', 'Habilidades que o Claude aprendeu'));
+  for (const k of d.skills) {
+    const it = el('div', 'item'), m = el('div');
+    const t = el('div', 't', k.nome); t.append(el('span', 'chip' + (k.usos >= 5 ? ' forte' : ''), k.usos + (k.usos === 1 ? ' uso' : ' usos')));
+    m.append(t); if (k.descricao) m.append(el('div', 'sub', k.descricao));
+    const qd = k.ultimo ? quando(Date.parse(k.ultimo) / 1000) : '';
+    it.append(el('span'), m, el('span', 'quando', qd === 'Hoje' ? new Date(k.ultimo).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : qd));
+    s2.append(it);
+  }
+  $apr.append(s2);
+  // Candidatos
+  const s3 = el('div', 'secao'); s3.append(el('h4', '', 'Pedidos que se repetem'));
+  if (!d.candidatos.length) s3.append(el('div', 'dica', 'Nada se repetindo ainda.'));
+  for (const c of d.candidatos) {
+    const it = el('div', 'item'), m = el('div'); m.append(el('div', 't', c.texto), el('div', 'sub', c.vezes + ' vezes pelo Claude'));
+    const b = botaoMini('Virar atalho', '<path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12z"/>', () => {
+      $entrada.value = 'Luna, transforma em atalho rápido o pedido “' + c.texto + '” (propõe com teste, eu aprovo).';
+      ajustarEntrada(); $entrada.focus();
+    });
+    it.append(el('span'), m, b); s3.append(it);
+  }
+  $apr.append(s3);
+}
+
+/* ================================================================ modos */
+
+function marcarModo() {
+  const atual = modoLive ? 'live' : cerebro;
+  document.querySelectorAll('.seg button').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.modo === atual));
+  });
+  document.querySelector('.seg [data-modo="hermes"]').disabled = !hermesOnline;
+}
+
+function escolherModo(modo) {
+  if (!conectado) return;
+  if (modo === 'live') {
+    if (!micLigado) { sistema('O modo Live precisa do microfone ligado.'); return; }
+    enviar({ tipo: 'modo', modo: 'live' });
+    return;
+  }
+  if (modoLive) enviar({ tipo: 'modo', modo: 'pipeline' });
+  if (modo === 'hermes' && !hermesOnline) { erro('Expert indisponível: Claude fora do ar (Hermes 8642)'); return; }
+  enviar({ tipo: 'cerebro', cerebro: modo });
+  sistema(modo === 'hermes' ? 'Modo Expert: tudo vai direto para o Claude.' : 'Modo Auto.');
+}
+
+/* ================================================================ conexões */
+// Chaves das IAs: a tela manda, o servidor grava no .env e testa. A chave
+// nunca volta para cá (só "…abcd").
+async function montarConexoes(alvo, testar, so) {
+  const caixa = $(alvo); if (!caixa) return null;
+  let dados;
+  try { dados = await (await fetch('/conexoes' + (testar ? '?testar=1' : ''))).json(); }
+  catch (e) { caixa.textContent = 'Servidor fora do ar.'; return null; }
+  caixa.replaceChildren();
+  if (alvo === 'cxAjustes') $('ajAlertaIa').hidden = Object.values(dados).every(v => !v.obrigatorio || v.configurado);
+  for (const [id, sv] of Object.entries(dados)) {
+    if (so && id !== so) continue;
+    if (sv.tipo === 'cerebro') { caixa.append(cardCerebro(sv, alvo, so)); continue; }
+    if (sv.tipo === 'stt') { caixa.append(cardStt(sv, alvo, so)); continue; }
+    const card = document.createElement('div');
+    card.className = 'cx' + (sv.obrigatorio ? ' obrig' : '') + (sv.configurado ? ' pronto' : '');
+    const t = sv.teste;
+    const sit = !sv.configurado ? (sv.obrigatorio ? 'falta configurar' : 'desligado')
+              : t ? (t.ok ? 'conectado' : t.msg) : 'configurado';
+    const cls = t ? (t.ok ? 'ok' : 'falha') : (sv.configurado ? 'ok' : '');
+    card.innerHTML = `<header><b></b><span class="sit ${cls}"></span></header><p></p>
+      <div class="campos"></div>
+      <div class="rodape-cx"><button type="button" class="botao">Salvar e testar</button>
+      <a target="_blank" rel="noopener">onde pego a chave?</a><span class="msg-cx"></span></div>`;
+    card.querySelector('b').textContent = sv.nome;
+    card.querySelector('.sit').textContent = sit;
+    card.querySelector('p').textContent = sv.papel;
+    card.querySelector('a').href = sv.link;
+    const campos = card.querySelector('.campos');
+    for (const c of sv.campos) {
+      const l = document.createElement('label'); l.className = 'campo';
+      const inp = document.createElement('input');
+      inp.dataset.var = c.var; inp.autocomplete = 'off'; inp.spellcheck = false;
+      if (c.segredo) {
+        inp.type = 'password';
+        inp.placeholder = c.definido ? 'salva (' + c.mostrar + ') — cole outra para trocar' : 'cole a chave aqui';
+      } else {
+        inp.value = c.mostrar || ''; inp.placeholder = c.exemplo || '';
+      }
+      l.append(c.rotulo, inp); campos.append(l);
+    }
+    const btn = card.querySelector('button'), msg = card.querySelector('.msg-cx');
+    btn.onclick = async () => {
+      const valores = {};
+      for (const inp of campos.querySelectorAll('input')) {
+        const v = inp.value.trim();
+        if (v && !(inp.type !== 'password' && v === (sv.campos.find(c => c.var === inp.dataset.var) || {}).mostrar)) valores[inp.dataset.var] = v;
+      }
+      if (!Object.keys(valores).length && !sv.configurado) { msg.textContent = 'Cole a chave primeiro.'; return; }
+      btn.disabled = true; msg.textContent = 'testando…';
+      try {
+        const r = await fetch('/conexoes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                             body: JSON.stringify({ servico: id, valores }) });
+        const d = await r.json();
+        msg.textContent = '';
+        await montarConexoes(alvo, false, so);
+        const novo = [...$(alvo).children].find(el => el.querySelector('b').textContent === sv.nome);
+        if (novo) {
+          const st = novo.querySelector('.sit');
+          st.textContent = d.ok ? 'conectado' : d.msg; st.className = 'sit ' + (d.ok ? 'ok' : 'falha');
+        }
+        checarHermes();
+        if (d.ok && $('dlgBoasVindas').open) { carregarChecks(); $('tutProximo').focus(); }
+      } catch (e) { msg.textContent = 'falhou: ' + e.message; }
+      btn.disabled = false;
+    };
+    caixa.append(card);
+  }
+  return dados;
+}
+
+// Ouvido: onde a fala vira texto. Lista de opções (não select): são poucas
+// e a diferença entre elas (placa x nuvem, grátis x pago) precisa aparecer.
+function cardStt(sv, alvo, so) {
+  const card = el('div', 'cx obrig' + (sv.configurado ? ' pronto' : ''));
+  const t = sv.teste;
+  const sit = !sv.configurado ? 'falta a chave' : t ? (t.ok ? t.msg : t.msg) : 'configurado';
+  const cls = t ? (t.ok ? 'ok' : 'falha') : (sv.configurado ? 'ok' : '');
+  card.innerHTML = `<header><b></b><span class="sit ${cls}"></span></header><p></p>
+    <div class="opcoes-stt" role="radiogroup"></div>
+    <label class="campo" data-l="chave">Chave<input type="password" autocomplete="off" spellcheck="false"></label>
+    <div class="rodape-cx"><button type="button" class="botao">Salvar e testar</button>
+    <a target="_blank" rel="noopener">onde pego a chave?</a><span class="msg-cx"></span></div>`;
+  card.querySelector('b').textContent = sv.nome;
+  card.querySelector('.sit').textContent = sit;
+  card.querySelector('p').textContent = sv.papel + ' ' + (sv.placa ? '(' + sv.placa + ')' : '');
+  const grupo = card.querySelector('.opcoes-stt');
+  const nomeGrupo = 'stt-' + alvo;
+  for (const o of sv.opcoes) {
+    const l = el('label', 'op-stt');
+    const r = document.createElement('input'); r.type = 'radio'; r.name = nomeGrupo; r.value = o.id;
+    r.checked = o.id === sv.escolhido;
+    const txt = el('span'); const b = el('b', '', o.nome); txt.append(b);
+    if (o.recomendado) txt.append(el('span', 'rec', 'recomendado'));
+    if (o.precisa_chave && o.definido) txt.append(el('span', 'rec', 'chave ✓'));
+    txt.append(el('small', '', o.dica));
+    l.append(r, txt); grupo.append(l);
+  }
+  const inp = card.querySelector('[data-l="chave"] input');
+  const lbl = card.querySelector('[data-l="chave"]');
+  const a = card.querySelector('a');
+  const escolhida = () => sv.opcoes.find(x => x.id === (grupo.querySelector('input:checked') || {}).value) || sv.opcoes[0];
+  const mostrar = () => {
+    const o = escolhida();
+    lbl.hidden = !o.precisa_chave; a.hidden = !o.link; a.href = o.link || '#';
+    inp.value = '';
+    inp.placeholder = o.definido ? 'salva (' + o.mostrar + ') — cole outra para trocar' : 'cole a chave aqui';
+    lbl.firstChild.textContent = 'Chave ' + (o.nome.split(': ')[1] || '');
+  };
+  grupo.onchange = mostrar; mostrar();
+  const btn = card.querySelector('button'), msg = card.querySelector('.msg-cx');
+  btn.onclick = async () => {
+    const o = escolhida();
+    const valores = { STT: o.id };
+    const chave = inp.value.trim();
+    if (o.precisa_chave) {
+      if (!chave && !o.definido) { msg.textContent = 'Cole a chave primeiro.'; return; }
+      if (chave) valores[o.var] = chave;
+    }
+    btn.disabled = true;
+    msg.textContent = o.id === 'local' ? 'carregando o Whisper na placa…' : 'testando…';
+    try {
+      const d = await (await fetch('/conexoes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                  body: JSON.stringify({ servico: 'stt', valores }) })).json();
+      await montarConexoes(alvo, false, so);
+      const novo = [...$(alvo).querySelectorAll('.cx')].find(c => c.querySelector('.opcoes-stt'));
+      if (novo) { const st = novo.querySelector('.sit'); st.textContent = d.ok ? d.msg : d.msg; st.className = 'sit ' + (d.ok ? 'ok' : 'falha'); }
+      if (d.ok && $('dlgBoasVindas').open) carregarChecks();
+    } catch (e) { msg.textContent = 'falhou: ' + e.message; btn.disabled = false; }
+  };
+  return card;
+}
+
+// Cérebro: a pessoa escolhe a IA; o card mostra só os campos que ela pede.
+function cardCerebro(sv, alvo, so) {
+  const card = el('div', 'cx obrig' + (sv.configurado ? ' pronto' : ''));
+  const t = sv.teste;
+  const sit = !sv.configurado ? 'falta configurar' : t ? (t.ok ? 'conectado' : t.msg) : 'configurado';
+  const cls = t ? (t.ok ? 'ok' : 'falha') : (sv.configurado ? 'ok' : '');
+  card.innerHTML = `<header><b></b><span class="sit ${cls}"></span></header><p></p>
+    <div class="campos">
+      <label class="campo">Qual IA<select data-f="ia"></select></label>
+      <small class="dica-ia" style="color:var(--suave)"></small>
+      <label class="campo" data-l="chave">Chave da API<input type="password" data-f="chave" autocomplete="off" spellcheck="false"></label>
+      <label class="campo" data-l="url">Endereço<input data-f="url" autocomplete="off" spellcheck="false" placeholder="https://.../v1"></label>
+      <label class="campo" data-l="modelo">Modelo <small style="color:var(--suave)">(vazio = o recomendado)</small><input data-f="modelo" autocomplete="off" spellcheck="false"></label>
+    </div>
+    <div class="rodape-cx"><button type="button" class="botao">Salvar e testar</button>
+    <a target="_blank" rel="noopener">onde pego a chave?</a><span class="msg-cx"></span></div>`;
+  card.querySelector('b').textContent = sv.nome;
+  card.querySelector('.sit').textContent = sit;
+  card.querySelector('p').textContent = sv.papel;
+  const f = n => card.querySelector(`[data-f="${n}"]`);
+  const sel = f('ia');
+  for (const o of sv.opcoes) {
+    const op = document.createElement('option'); op.value = o.id;
+    op.textContent = o.nome + (o.definido && o.precisa_chave ? '  ✓' : ''); sel.append(op);
+  }
+  sel.value = sv.escolhido;
+  const mostrar = (trocou) => {
+    const o = sv.opcoes.find(x => x.id === sel.value);
+    card.querySelector('.dica-ia').textContent = o.dica;
+    card.querySelector('a').href = o.link;
+    card.querySelector('[data-l="chave"]').hidden = !o.precisa_chave;
+    card.querySelector('[data-l="url"]').hidden = !o.precisa_url;
+    card.querySelector('[data-l="modelo"]').hidden = !!o.sem_modelo;
+    const a = card.querySelector('a');
+    a.textContent = o.id === 'ollama' ? 'baixar o Ollama' : o.id === 'assinatura' ? 'quais assinaturas funcionam?' : 'onde pego a chave?';
+    f('chave').value = '';
+    f('chave').placeholder = o.definido ? 'salva (' + o.mostrar + ') — cole outra para trocar' : 'cole a chave aqui';
+    f('modelo').placeholder = o.modelo_padrao || 'nome do modelo';
+    if (trocou) f('modelo').value = '';
+  };
+  f('modelo').value = sv.modelo || '';
+  f('url').value = sv.url || '';
+  mostrar(false);
+  sel.onchange = () => mostrar(true);
+  const btn = card.querySelector('button'), msg = card.querySelector('.msg-cx');
+  btn.onclick = async () => {
+    const o = sv.opcoes.find(x => x.id === sel.value);
+    const valores = { CEREBRO: o.id, CEREBRO_MODELO: o.sem_modelo ? '' : f('modelo').value.trim() };
+    const chave = f('chave').value.trim();
+    if (o.precisa_chave) {
+      if (!chave && !o.definido) { msg.textContent = 'Cole a chave primeiro.'; return; }
+      if (chave) valores[o.id === 'outro' ? 'CEREBRO_API_KEY' : ({ deepseek: 'DEEPSEEK_API_KEY', gemini: 'GEMINI_API_KEY', openai: 'OPENAI_API_KEY', groq: 'GROQ_API_KEY', openrouter: 'OPENROUTER_API_KEY' })[o.id]] = chave;
+    }
+    if (o.precisa_url) {
+      if (!f('url').value.trim()) { msg.textContent = 'Informe o endereço.'; return; }
+      valores.CEREBRO_URL = f('url').value.trim();
+      if (!valores.CEREBRO_MODELO) { msg.textContent = 'Informe o modelo.'; return; }
+    }
+    btn.disabled = true; msg.textContent = 'testando…';
+    try {
+      const r = await fetch('/conexoes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                           body: JSON.stringify({ servico: 'cerebro', valores }) });
+      const d = await r.json();
+      await montarConexoes(alvo, false, so);
+      const novo = $(alvo).querySelector('.cx.obrig .sit');
+      if (novo) { novo.textContent = d.ok ? 'conectado' : d.msg; novo.className = 'sit ' + (d.ok ? 'ok' : 'falha'); }
+      checarHermes();
+      if (d.ok && $('dlgBoasVindas').open) { carregarChecks(); $('tutProximo').focus(); }
+    } catch (e) { msg.textContent = 'falhou: ' + e.message; btn.disabled = false; }
+  };
+  return card;
+}
+
+/* ================================================================ primeiros passos */
+// Guia em 5 etapas: checagem do sistema -> IA -> Hermes -> extras -> pronto.
+// Abre sozinho na primeira vez (ou sempre que faltar a chave da IA).
+let etapa = 0;
+const N_ETAPAS = 5;
+const MONTAR = { 1: ['cxDeepseek', 'cerebro'], 2: ['cxHermes', 'hermes'] };
+
+async function carregarChecks() {
+  const ul = $('checksLista');
+  let itens;
+  try { itens = await (await fetch('/sistema')).json(); }
+  catch (e) { ul.innerHTML = '<li><span class="ic">!</span><span>Servidor fora do ar.</span></li>'; return; }
+  ul.replaceChildren();
+  for (const it of itens) {
+    const li = el('li', (it.ok ? 'ok' : 'falta') + (it.obrigatorio ? ' obrig' : ''));
+    li.append(el('span', 'ic', it.ok ? '✓' : (it.obrigatorio ? '!' : '–')));
+    const meio = el('span'); meio.append(el('b', '', it.nome), el('small', '', it.detalhe)); li.append(meio);
+    const dir = el('span');
+    if (!it.ok && it.acao) {
+      const b = el('button', 'mini-btn', 'configurar');
+      b.type = 'button';
+      b.onclick = () => irEtapa({ conexoes: it.id === 'hermes' ? 2 : 1, hoje: 3 }[it.acao]);
+      dir.append(b);
+    } else if (!it.ok && it.link) {
+      const a = el('a', '', 'como'); a.href = it.link; a.target = '_blank'; a.rel = 'noopener'; dir.append(a);
+    } else dir.append(el('span', 'tag', it.obrigatorio ? 'essencial' : 'opcional'));
+    li.append(dir);
+    ul.append(li);
+  }
+}
+
+function irEtapa(n) {
+  etapa = Math.max(0, Math.min(N_ETAPAS - 1, n));
+  document.querySelectorAll('#dlgBoasVindas .etapa').forEach(sec => { sec.hidden = +sec.dataset.etapa !== etapa; });
+  [...$('passos').children].forEach((sp, i) => { sp.className = i < etapa ? 'feito' : i === etapa ? 'atual' : ''; });
+  $('tutVoltar').hidden = etapa === 0;
+  $('tutPular').hidden = etapa === N_ETAPAS - 1;
+  $('tutProximo').textContent = etapa === 0 ? 'Começar' : etapa === N_ETAPAS - 1 ? 'Usar a Luna' : 'Próximo';
+  if (etapa === 0) carregarChecks();
+  if (MONTAR[etapa]) montarConexoes(MONTAR[etapa][0], etapa === 1, MONTAR[etapa][1]);
+  if (etapa === 1) montarConexoes('cxOuvidoTut', false, 'stt');
+  if (etapa === 3) atualizarStatusHoje();
+}
+
+function abrirTutorial(n) {
+  if ($('dlgAjustes').open) $('dlgAjustes').close();
+  irEtapa(n || 0);
+  if (!$('dlgBoasVindas').open) $('dlgBoasVindas').showModal();
+}
+$('tutProximo').onclick = () => {
+  if (etapa === N_ETAPAS - 1) { $('dlgBoasVindas').close(); return; }
+  irEtapa(etapa + 1);
+};
+$('tutVoltar').onclick = () => irEtapa(etapa - 1);
+$('tutPular').onclick = () => $('dlgBoasVindas').close();
+$('btnTutorial').onclick = () => abrirTutorial(0);
+
+async function desligarLuna() {
+  if (!confirm('Desligar a Luna? Para abrir de novo, use o atalho "Luna".')) return;
+  try { await fetch('/desligar', { method: 'POST' }); } catch (e) { /* já caiu */ }
+  document.body.innerHTML = '<div style="display:grid;place-items:center;height:100vh;color:var(--suave);font-size:15px">' +
+    'Luna desligada. Pode fechar esta janela.</div>';
+  setTimeout(() => window.close(), 1200);
+}
+$('btnDesligar').onclick = desligarLuna;
+
+/* ================================================================ atualizações */
+// Botão "Atualização" na barra de cima: só aparece quando há algo pendente
+// (tela nova, reiniciar para aplicar, versão nova no GitHub).
+let WEB_VERSAO = '';
+let attItens = [];
+async function checarAtualizacao(forcar) {
+  try {
+    const d = await (await fetch('/atualizacao?web=' + encodeURIComponent(WEB_VERSAO) + (forcar ? '&forcar=1' : ''))).json();
+    if (!WEB_VERSAO) WEB_VERSAO = d.web;          // a versão da tela que está aberta
+    attItens = d.itens || [];
+    $('btnAtualizar').hidden = !attItens.length;
+    $('btnAtualizar').title = attItens.map(i => i.titulo).join(' · ') || 'Nada pendente';
+    $('attVersao').textContent = d.instalada ? 'Versão instalada: ' + d.instalada : '';
+    if ($('dlgAtualizar').open) montarAtualizacoes(d);
+  } catch (e) { /* servidor reiniciando */ }
+}
+function montarAtualizacoes(d) {
+  const lista = $('attLista'); lista.replaceChildren();
+  if (!attItens.length) { lista.append(el('p', '', 'Tudo em dia.')); return; }
+  for (const it of attItens) {
+    const card = el('div', 'cx');
+    const h = el('header'); h.append(el('b', '', it.titulo)); card.append(h);
+    card.append(el('p', '', it.detalhe));
+    if (it.novidades && it.novidades.length) {
+      const ul = el('ul'); it.novidades.slice(0, 6).forEach(n => ul.append(el('li', '', n))); card.append(ul);
+    }
+    const rod = el('div', 'rodape-cx');
+    const b = el('button', 'botao', it.botao); b.type = 'button';
+    const msg = el('span', 'msg-cx');
+    b.onclick = () => aplicarAtualizacao(it, b, msg);
+    rod.append(b);
+    if (it.link) { const a = el('a', '', 'ver no GitHub'); a.href = it.link; a.target = '_blank'; a.rel = 'noopener'; rod.append(a); }
+    rod.append(msg); card.append(rod); lista.append(card);
+  }
+}
+async function esperarVoltar(msg) {
+  msg.textContent = 'reiniciando… (uns 30 s)';
+  await new Promise(r => setTimeout(r, 4000));
+  for (let i = 0; i < 60; i++) {
+    try { const r = await fetch('/saude'); if (r.ok && (await r.json()).carregado) { location.reload(); return; } } catch (e) { /* ainda fora */ }
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  msg.textContent = 'demorou demais: abra pelo atalho Luna';
+}
+async function aplicarAtualizacao(it, b, msg) {
+  if (it.acao === 'recarregar') { location.reload(); return; }
+  if (it.acao === 'baixar') { window.open(it.link, '_blank', 'noopener'); return; }
+  b.disabled = true;
+  if (it.acao === 'atualizar') {
+    msg.textContent = 'baixando a versão nova…';
+    let d;
+    try { d = await (await fetch('/atualizar', { method: 'POST' })).json(); }
+    catch (e) { msg.textContent = 'falhou: ' + e.message; b.disabled = false; return; }
+    if (!d.ok) { msg.textContent = d.msg; b.disabled = false; return; }
+  }
+  if (!confirm('Reiniciar a Luna agora? Leva uns 30 segundos.')) { b.disabled = false; msg.textContent = ''; return; }
+  try { await fetch('/reiniciar', { method: 'POST' }); } catch (e) { /* já caiu */ }
+  esperarVoltar(msg);
+}
+$('btnAtualizar').onclick = () => { $('dlgAtualizar').showModal(); montarAtualizacoes({}); };
+$('attChecar').onclick = async () => { $('attChecar').disabled = true; await checarAtualizacao(true); montarAtualizacoes({}); $('attChecar').disabled = false; };
+checarAtualizacao(false);
+setInterval(() => checarAtualizacao(false), 5 * 60 * 1000);
+
+async function checarPrimeiroUso() {
+  try {
+    const d = await (await fetch('/conexoes')).json();
+    if (!d.cerebro.configurado) abrirTutorial(0);
+  } catch (e) { /* servidor subindo: tenta na próxima */ }
+}
+if (!localStorage.getItem('tutorialVisto')) setTimeout(() => abrirTutorial(0), 1200);
+
+/* ---- Meu Hoje: conectar a conta (OAuth numa aba nova) */
+async function atualizarStatusHoje() {
+  try {
+    const d = await (await fetch('/meuhoje/status')).json();
+    const t = $('mhStatusTut');
+    if (t) t.textContent = d.conectado ? '✓ conta conectada' : 'não conectado';
+    return d;
+  } catch (e) { return { conectado: false }; }
+}
+async function conectarHoje() {
+  const aba = window.open('about:blank', '_blank');
+  try {
+    const d = await (await fetch('/meuhoje/conectar', { method: 'POST' })).json();
+    if (!d.ok) throw new Error(d.msg);
+    aba.location = d.url;
+  } catch (e) { aba && aba.close(); sistema('Não consegui abrir o login do Meu Hoje: ' + e.message); }
+}
+document.addEventListener('click', e => { if (e.target.closest('[data-conectar-hoje]')) conectarHoje(); });
+window.addEventListener('message', e => {
+  if (e.data === 'meuhoje-ok') {
+    atualizarStatusHoje();
+    carregarHoje(true);
+    sistema('Meu Hoje conectado.');
+  }
+});
+
+async function checarHermes() {
+  try {
+    const r = await fetch('/estado'); const d = await r.json();
+    hermesOnline = !!d.hermes;
+    pill('pillDeepseek', d.cerebro ? 'on' : 'off', d.cerebro ? (d.cerebro_nome || 'IA').replace(/ \(.*/, '') : 'IA sem chave');
+
+    if (!d.cerebro && !$('dlgBoasVindas').open && !sessionStorage.getItem('bvFechado')) { sessionStorage.setItem('bvFechado', '1'); checarPrimeiroUso(); }
+    if (d.custo) {
+      $('stCusto').textContent = reais(d.custo.brl) + ' hoje';
+      $('stCusto').title = `${d.cerebro_nome || 'IA'} hoje (estimativa): ${d.custo.chamadas} chamadas, US$ ${d.custo.usd.toFixed(4)}. No mês: ${reais(d.custo.mes_brl)}. O Claude usa sua assinatura.`;
+    }
+  } catch (e) { hermesOnline = false; }
+  pill('pillHermes', hermesOnline ? 'on' : 'off', hermesOnline ? 'Claude' : 'Claude fora do ar');
+  $modeloClaude.disabled = !hermesOnline;
+  if (!hermesOnline && cerebro === 'hermes' && conectado) enviar({ tipo: 'cerebro', cerebro: 'auto' });
+  marcarModo();
+}
+
+function pill(id, classe, texto) {
+  const p = $(id); p.classList.remove('on', 'off'); if (classe) p.classList.add(classe); p.textContent = texto;
+}
+function reais(v) { return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: v && v < 0.1 ? 3 : 2 }); }
+
+/* ================================================================ interromper / texto */
+
+function interromper() {
+  pararAudio();
+  enviar({ tipo: 'interromper' });
+  marcarFerramentasParadas();
+  $parar.classList.remove('visivel');
+}
+
+// Campo de texto que cresce para baixo até três linhas e depois rola.
+function ajustarEntrada() {
+  $entrada.style.height = 'auto';
+  $entrada.style.height = Math.min($entrada.scrollHeight, 78) + 'px';
+}
+$entrada.addEventListener('input', ajustarEntrada);
+$entrada.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('formTexto').requestSubmit(); }
+});
+
+/* ---------------------------------------------------------------- imagens */
+// Anexo pelo clipe, Ctrl+V ou arrastando. Reduzida no navegador (máx. 1600 px,
+// JPEG) antes de ir: o texto continua legível e o WebSocket não engasga.
+const $anexos = $('anexos'), $form = $('formTexto');
+let anexos = [];            // data URLs prontas para enviar
+let arquivos = [];          // {nome, tipo, dados} de PDF/texto
+let arquivosPendentes = [];
+let fotosPendentes = [];    // mostradas no balão do "você" quando o servidor ecoa
+const MAX_ANEXOS = 4, LARG_MAX = 1600;
+
+function reduzirImagem(arquivo) {
+  return new Promise((ok, falha) => {
+    const url = URL.createObjectURL(arquivo), img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, LARG_MAX / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      ok(c.toDataURL('image/jpeg', 0.86));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); falha(new Error('imagem inválida')); };
+    img.src = url;
+  });
+}
+
+function lerBase64(f) {
+  return new Promise((ok, falha) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = falha; r.readAsDataURL(f); });
+}
+async function anexar(lista) {
+  for (const a of lista) {
+    if (a.type.startsWith('image/')) {
+      if (anexos.length >= MAX_ANEXOS) { sistema('Até ' + MAX_ANEXOS + ' imagens por mensagem.'); break; }
+      try { anexos.push(await reduzirImagem(a)); } catch (e) { sistema('Não consegui ler essa imagem.'); }
+    } else {
+      if (arquivos.length >= 3) { sistema('Até 3 arquivos por mensagem.'); break; }
+      if (a.size > 15 * 1024 * 1024) { sistema('“' + a.name + '” passa de 15 MB.'); continue; }
+      try { arquivos.push({ nome: a.name, tipo: a.type, dados: await lerBase64(a) }); } catch (e) { sistema('Não consegui ler “' + a.name + '”.'); }
+    }
+  }
+  desenharAnexos();
+  $entrada.focus();
+}
+
+function desenharAnexos() {
+  $anexos.replaceChildren();
+  anexos.forEach((u, i) => {
+    const d = document.createElement('div'); d.className = 'anexo';
+    const im = document.createElement('img'); im.src = u; im.alt = 'anexo ' + (i + 1);
+    const x = document.createElement('button'); x.type = 'button'; x.textContent = '×';
+    x.title = 'Remover'; x.setAttribute('aria-label', 'Remover imagem ' + (i + 1));
+    x.onclick = () => { anexos.splice(i, 1); desenharAnexos(); };
+    d.append(im, x); $anexos.appendChild(d);
+  });
+  arquivos.forEach((a, i) => {
+    const d = document.createElement('div'); d.className = 'anexo arq'; d.title = a.nome;
+    const ext = document.createElement('span'); ext.className = 'ext'; ext.textContent = (a.nome.split('.').pop() || 'arq').slice(0, 4);
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = a.nome;
+    const x = document.createElement('button'); x.type = 'button'; x.textContent = '×';
+    x.title = 'Remover'; x.setAttribute('aria-label', 'Remover ' + a.nome);
+    x.onclick = () => { arquivos.splice(i, 1); desenharAnexos(); };
+    d.append(ext, nm, x); $anexos.appendChild(d);
+  });
+}
+
+$('btnAnexar').onclick = () => $('arquivo').click();
+$('arquivo').onchange = (e) => { anexar([...e.target.files]); e.target.value = ''; };
+document.addEventListener('paste', (e) => {
+  const fs = [...(e.clipboardData?.files || [])];
+  if (fs.length) { e.preventDefault(); anexar(fs); }
+});
+let arrastos = 0;
+document.addEventListener('dragenter', (e) => {
+  if ([...(e.dataTransfer?.types || [])].includes('Files')) { arrastos++; $form.classList.add('arrastando'); }
+});
+document.addEventListener('dragleave', () => { if (--arrastos <= 0) { arrastos = 0; $form.classList.remove('arrastando'); } });
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => {
+  e.preventDefault(); arrastos = 0; $form.classList.remove('arrastando');
+  anexar([...(e.dataTransfer?.files || [])]);
+});
+$('zoom').onclick = () => $('zoom').close();
+
+$('formTexto').onsubmit = async (e) => {
+  e.preventDefault();
+  const t = $entrada.value.trim();
+  if (!t && !anexos.length && !arquivos.length) return;
+  await garantirSaida();
+  pararAudio();
+  const msg = { tipo: 'texto', texto: t };
+  if (anexos.length) msg.imagens = anexos.slice();
+  if (arquivos.length) msg.arquivos = arquivos.slice();
+  if (!enviar(msg)) { erro('Sem conexão com o servidor da Luna'); return; }
+  fotosPendentes = anexos.slice();
+  anexos = []; arquivos = []; desenharAnexos();
+  $entrada.value = '';
+  ajustarEntrada();
+  turnoAberto = false; abrirTurno();
+};
+
+/* ================================================================ vozes */
+
+function montarVozes(lista, atual) {
+  if (!lista || !lista.length || $voz.children.length) return;
+  const grupos = [
+    ['Personagens', lista.filter(v => v.motor === 'jarvis')],
+    ['Convertidas (RVC · opcional, mais pesadas)', lista.filter(v => v.motor === 'mix')],
+    ['Naturais (online)', lista.filter(v => v.natural && v.motor !== 'mix' && v.motor !== 'jarvis')],
+    ['Rápidas (offline)', lista.filter(v => !v.natural)],
+  ];
+  for (const [rotulo, vozes] of grupos) {
+    if (!vozes.length) continue;
+    const gr = document.createElement('optgroup'); gr.label = rotulo;
+    for (const v of vozes) {
+      const op = document.createElement('option'); op.value = v.id;
+      op.textContent = `${v.nome} (${v.tipo}) · ${Number(v.lat).toFixed(2)}s` + (v.pesada ? ' · pesada' : '');
+      op.dataset.nome = v.nome;
+      gr.appendChild(op);
+    }
+    $voz.appendChild(gr);
+  }
+  $voz.value = atual;
+  if (!$voz.value && $voz.options.length) $voz.selectedIndex = 0;
+  atualizarRotuloVoz($voz.value);
+  $('notaRvc').hidden = !lista.some(v => v.pesada);
+}
+
+function atualizarRotuloVoz(id) {
+  const op = [...$voz.options].find(o => o.value === id);
+  $('rotuloVoz').textContent = op ? op.dataset.nome : '';
+}
+
+function aplicarVoz() {
+  const voz = $voz.value, vel = parseFloat($vel.value);
+  if (!voz) return;
+  localStorage.setItem('voz', voz); localStorage.setItem('vel', vel);
+  enviar({ tipo: 'voz', voz, velocidade: vel });
+  atualizarRotuloVoz(voz);
+}
+
+async function provar() {
+  await garantirSaida();
+  proximoInicio = 0;
+  enviar({ tipo: 'provar', voz: $voz.value, velocidade: parseFloat($vel.value),
+           texto: 'Oi! É assim que eu vou falar com você.' });
+}
+
+/* ================================================================ modelo do Claude */
+
+// A lista vem do servidor (config.HERMES_MODELOS): a tela não inventa nomes
+// de modelo, e acrescentar um Opus novo lá aparece aqui sem tocar no HTML.
+function montarModelosClaude(lista) {
+  // Servidor antigo (ainda sem a lista): some com a caixa em vez de
+  // mostrar uma setinha vazia.
+  $modeloClaude.hidden = !(lista && lista.length);
+  if (!lista || !lista.length || $modeloClaude.children.length) return;
+  for (const mo of lista) {
+    const op = document.createElement('option');
+    op.value = mo.id; op.textContent = mo.nome;
+    $modeloClaude.appendChild(op);
+  }
+  const salvo = localStorage.getItem('modeloClaude') || '';
+  $modeloClaude.value = [...$modeloClaude.options].some(o => o.value === salvo) ? salvo : '';
+}
+
+function aplicarModeloClaude() {
+  if (!$modeloClaude.options.length) return;
+  enviar({ tipo: 'modelo_claude', modelo: $modeloClaude.value });
+}
+
+/* ================================================================ eventos */
+
+$mic.onclick = alternarMic;
+$parar.onclick = interromper;
+document.querySelectorAll('.seg button').forEach(b => b.onclick = () => escolherModo(b.dataset.modo));
+// Ajustes: abas. A última aberta volta aberta; "ia" monta as conexões
+// (com teste de verdade) só quando alguém olha para ela.
+function abaAjustes(nome) {
+  document.querySelectorAll('.aj-nav [data-aba]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.aba === nome)));
+  document.querySelectorAll('.aj-painel').forEach(p => { p.hidden = p.dataset.painel !== nome; });
+  localStorage.setItem('abaAjustes', nome);
+  if (nome === 'ia') montarConexoes('cxAjustes', true);
+  if (nome === 'uso') montarUso();
+  if (nome === 'req') montarReq();
+  if (nome === 'sistema') {
+    $('ajAttResumo').textContent = attItens.length ? attItens.map(i => i.titulo).join(' · ') : 'Tudo em dia.';
+    $('ajAtt').textContent = attItens.length ? 'Ver' : 'Verificar';
+  }
+}
+// ---------------------------------------------------------------- Uso e Requisitos
+let usoCache = null;
+async function carregarUso() {
+  try { usoCache = await (await fetch('/uso')).json(); } catch (e) { return null; }
+  return usoCache;
+}
+function statusUso() {
+  const cx = $('usoStatus'); cx.replaceChildren();
+  const itens = [
+    ['Servidor da Luna', $('pillConexao'), 'voz e transcrição'],
+    ['IA principal', $('pillDeepseek'), usoCache ? usoCache.cerebro : ''],
+    ['Claude (Expert)', $('pillHermes'), 'via Hermes'],
+    ['Ouvido', null, usoCache ? usoCache.stt : ''],
+  ];
+  for (const [nome, pillEl, sub] of itens) {
+    const on = pillEl ? pillEl.classList.contains('on') : true;
+    const off = pillEl ? pillEl.classList.contains('off') : false;
+    const c = el('div', 'uso-st ' + (off ? 'off' : on ? 'on' : ''));
+    c.append(el('small', '', nome), el('b', '', off ? (pillEl.textContent || 'fora do ar') : 'no ar'), el('small', '', sub));
+    cx.append(c);
+  }
+}
+async function montarUso() {
+  const d = await carregarUso(); statusUso(); if (!d) return;
+  const hist = d.historico, hoje = d.hoje;
+  const usados = hist.filter(h => h.chamadas);
+  const media = usados.length ? usados.reduce((a, h) => a + h.brl, 0) / usados.length : 0;
+  $('usoHoje').textContent = reais(hoje.brl);
+  $('usoHojeCh').textContent = hoje.chamadas + (hoje.chamadas === 1 ? ' pedido' : ' pedidos');
+  $('usoMes').textContent = reais(hoje.mes_brl);
+  $('usoMesMedia').textContent = usados.length ? 'média ' + reais(media) + ' por dia de uso' : 'sem uso ainda';
+  const dia = new Date().getDate(), fimMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+  $('usoPrev').textContent = reais(dia ? hoje.mes_brl / dia * fimMes : 0);
+  const g = $('usoGraf'); g.replaceChildren();
+  const max = Math.max(...hist.map(h => h.brl), 0.0001);
+  hist.forEach((h, i) => {
+    const b = el('i', (i === hist.length - 1 ? 'hoje ' : '') + (h.brl ? '' : 'zero'));
+    b.style.height = Math.max(2, h.brl / max * 90) + 'px';
+    const [a, m, dd] = h.dia.split('-');
+    b.title = `${dd}/${m}: ${reais(h.brl)} · ${h.chamadas} pedidos`;
+    g.append(b);
+  });
+  $('usoGrafLeg').textContent = 'maior dia: ' + reais(max);
+  const est = d.estimativas, t = $('usoEst'); t.replaceChildren();
+  $('usoEstLeg').textContent = est.dias_com_uso ? `por mês, com os seus ~${est.chamadas_dia} pedidos por dia` : 'aparece depois do primeiro uso';
+  for (const ia of est.ias) {
+    const tr = document.createElement('tr'); if (ia.id === d.cerebro_id) tr.className = 'atual';
+    const n = document.createElement('td'); n.textContent = ia.nome + (ia.id === d.cerebro_id ? ' (a sua)' : '');
+    if (ia.cota_gratis) n.append(el('span', 'selo', 'cota grátis'));
+    const v = document.createElement('td');
+    v.textContent = ia.gratis ? (ia.id === 'ollama' ? 'grátis (usa a placa)' : 'incluso na assinatura') : '~' + reais(ia.brl_mes);
+    tr.append(n, v); t.append(tr);
+  }
+}
+async function montarReq() {
+  const d = usoCache && Date.now() - (usoCache._t || 0) < 3000 ? usoCache : await carregarUso(); if (!d) return;
+  d._t = Date.now();
+  const r = d.recursos;
+  $('reqPcNome').textContent = r.gpu ? `${r.gpu} · ${r.ram_total_gb} GB de RAM` : `sem placa NVIDIA · ${r.ram_total_gb} GB de RAM`;
+  if (r.vram_total_gb) {
+    const luna = Math.min(r.vram_luna_gb, r.vram_usada_gb), outros = Math.max(0, r.vram_usada_gb - luna);
+    $('reqVramTxt').textContent = `${r.vram_usada_gb.toFixed(1)} de ${r.vram_total_gb.toFixed(0)} GB em uso · Luna ~${luna.toFixed(1)} GB`;
+    $('reqVramLuna').style.width = (luna / r.vram_total_gb * 100) + '%';
+    $('reqVramOutros').style.width = (outros / r.vram_total_gb * 100) + '%';
+  } else {
+    $('reqVramTxt').textContent = 'não tem (use o ouvido na nuvem)';
+    $('reqVramLuna').style.width = '0'; $('reqVramOutros').style.width = '0';
+  }
+  const ul = $('reqPartes'); ul.replaceChildren();
+  if (!r.partes.length) ul.append(el('li', '', 'A Luna não está usando a placa de vídeo agora.'));
+  for (const p of r.partes) { const li = el('li'); li.append(el('span', '', p.nome), el('span', '', '~' + p.gb.toFixed(1) + ' GB')); ul.append(li); }
+  $('reqRam').textContent = (r.ram_luna_mb / 1024).toFixed(1) + ' GB (livre: ' + r.ram_livre_gb + ' GB)';
+  $('reqDisco').textContent = r.disco_livre_gb + ' GB';
+  const perfil = d.stt_id !== 'local' ? 'leve' : d.cerebro_id === 'ollama' ? 'offline' : 'completo';
+  document.querySelectorAll('.tab-req tbody tr').forEach(tr => tr.classList.toggle('seu', tr.dataset.perfil === perfil));
+  const dx = $('reqDicas'); dx.replaceChildren();
+  for (const k of d.dicas) {
+    const c = el('div', 'dica-c ' + k.tipo);
+    c.append(el('span', 'tp', k.tipo === 'leve' ? 'mais leve' : 'mais barato'), el('b', '', k.titulo), el('span', '', k.texto));
+    if (k.aba) { const b = el('button', '', k.aba === 'ia' ? 'Abrir Inteligência →' : 'Abrir Voz →'); b.type = 'button'; b.onclick = () => abaAjustes(k.aba); c.append(b); }
+    dx.append(c);
+  }
+}
+
+function abrirAjustes(aba) {
+  $('dlgAjustes').showModal();
+  abaAjustes(aba || localStorage.getItem('abaAjustes') || 'voz');
+}
+document.querySelectorAll('.aj-nav [data-aba]').forEach(b => { b.onclick = () => abaAjustes(b.dataset.aba); });
+$('dlgAjustes').querySelector('.aj-nav').onkeydown = (e) => {
+  if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+  const bs = [...document.querySelectorAll('.aj-nav [data-aba]')];
+  const i = bs.indexOf(document.activeElement); if (i < 0) return;
+  const n = bs[(i + (e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : bs.length - 1)) % bs.length];
+  n.focus(); abaAjustes(n.dataset.aba); e.preventDefault();
+};
+$('ajAtt').onclick = async () => {
+  $('ajAtt').disabled = true; await checarAtualizacao(true); $('ajAtt').disabled = false;
+  $('dlgAjustes').close(); $('dlgAtualizar').showModal(); montarAtualizacoes({});
+};
+$('btnAjustes').onclick = () => abrirAjustes();
+$('btnMini').onclick = () => fetch('/mini', { method: 'POST' });
+$voz.onchange = () => { aplicarVoz(); provar(); };
+$modeloClaude.onchange = () => {
+  aplicarModeloClaude();
+  sistema('Claude: ' + $modeloClaude.selectedOptions[0].textContent + ' nos próximos pedidos.');
+};
+$vel.oninput = () => { $velValor.textContent = parseFloat($vel.value).toFixed(2) + 'x'; };
+$vel.onchange = aplicarVoz;
+// Volume: só mexe no ganho da tela (o servidor nem sabe), então vale já na
+// frase que está tocando. Zero = muda, sem interromper a resposta.
+function aplicarVolume(v) {
+  volumeVoz = Math.max(0, Math.min(1, v));
+  $volValor.textContent = Math.round(volumeVoz * 100) + '%';
+  localStorage.setItem('volume', volumeVoz);
+  if (ganhoSaida) {
+    // Rampa curta em vez de salto: evita o estalo do corte seco.
+    const t = ctxSaida.currentTime;
+    ganhoSaida.gain.cancelScheduledValues(t);
+    ganhoSaida.gain.setValueAtTime(ganhoSaida.gain.value, t);
+    ganhoSaida.gain.linearRampToValueAtTime(volumeVoz, t + 0.05);
+  }
+}
+$vol.oninput = () => aplicarVolume(parseFloat($vol.value));
+$('btnProvar').onclick = provar;
+$('chkAtivacao').checked = ativacao;
+let barge = localStorage.getItem('barge') !== '0';   // padrão: ligado
+$('chkBarge').checked = barge;
+$('chkBarge').onchange = (e) => {
+  barge = e.target.checked;
+  localStorage.setItem('barge', barge ? '1' : '0');
+  enviar({ tipo: 'barge', ligado: barge });
+};
+$('chkContinua').checked = localStorage.getItem('continua') === '1';   // padrão: desligada
+$('chkContinua').onchange = (e) => {
+  localStorage.setItem('continua', e.target.checked ? '1' : '0');
+  enviar({ tipo: 'continua', ligada: e.target.checked });
+};
+$('chkAtivacao').onchange = async (e) => {
+  const liga = e.target.checked;
+  enviar({ tipo: 'ativacao', ligada: liga });
+  // Sempre ouvindo: liga o microfone junto.
+  if (liga && !micLigado) await alternarMic();
+  sistema(liga ? 'Chamada por “Luna” ligada: fale “Luna, …” quando quiser.'
+               : 'Chamada por “Luna” desligada.');
+};
+$('btnLimpar').onclick = () => {
+  enviar({ tipo: 'conversa_nova' });
+  $fala.textContent = ''; $voce.textContent = '';
+};
+
+const ABAS = { conv: 'listaConv', ativ: 'listaAtiv', hoje: 'listaHoje', apr: 'listaApr' };
+function abrirAba(nome) {
+  document.querySelectorAll('.abas [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x.dataset.aba === nome)));
+  for (const [k, id] of Object.entries(ABAS)) $(id).hidden = k !== nome;
+  $('painelConversas').hidden = true;
+  localStorage.setItem('aba', nome);
+  if (nome === 'hoje') carregarHoje();
+  if (nome === 'apr') carregarAprendizado();
+}
+document.querySelectorAll('.abas [role=tab]').forEach(b => b.onclick = () => abrirAba(b.dataset.aba));
+$('btnAtividade').onclick = () => $lado.classList.add('aberto');
+$('btnFecharLado').onclick = () => $lado.classList.remove('aberto');
+
+/* ================================================================ som de "pensando" */
+// No lugar de falar "Deixa eu pensar nisso": duas notas suaves (sino macio),
+// geradas aqui mesmo, baixinho. Não passa pelo analisador da fala, então não
+// conta como "ela está falando" (nem abre janela nem ativa o interromper).
+let ultimoSom = 0;
+function somPensando() {
+  if (performance.now() - ultimoSom < 4000) return;     // nunca em rajada
+  ultimoSom = performance.now();
+  garantirSaida().then(() => {
+    if (!ctxSaida) return;
+    const t0 = ctxSaida.currentTime + 0.02;
+    const saida = ctxSaida.createGain(); saida.gain.value = 0.10;
+    // eco leve: dá o "ar" de sino sem ficar metálico
+    const eco = ctxSaida.createDelay(); eco.delayTime.value = 0.16;
+    const volta = ctxSaida.createGain(); volta.gain.value = 0.28;
+    saida.connect(destinoAudio()); saida.connect(eco); eco.connect(volta); volta.connect(eco);
+    volta.connect(destinoAudio());
+    [[587.33, 0], [880, 0.14]].forEach(([f, dt]) => {         // ré5 -> lá5
+      const o = ctxSaida.createOscillator(), g = ctxSaida.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      const h = ctxSaida.createOscillator(), gh = ctxSaida.createGain();   // harmônico sutil
+      h.type = 'sine'; h.frequency.value = f * 2; gh.gain.value = 0.12;
+      const t = t0 + dt;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(1, t + 0.025);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+      o.connect(g); h.connect(gh); gh.connect(g); g.connect(saida);
+      o.start(t); h.start(t); o.stop(t + 1.2); h.stop(t + 1.2);
+    });
+    setTimeout(() => { try { saida.disconnect(); volta.disconnect(); } catch (e) {} }, 2600);
+  });
+}
+
+/* ================================================================ paleta (Ctrl+K) */
+const $pal = $('paleta'), $palBusca = $('paletaBusca'), $palLista = $('paletaLista');
+let palItens = [], palSel = 0, palConversas = [];
+function comandosBase() {
+  const c = [
+    ['Nova conversa', 'conversa', () => $('btnNovaConv').click()],
+    ['Histórico de conversas', 'conversa', () => { abrirAba('conv'); abrirHistorico(); }],
+    ['Modo Auto', 'modo', () => escolherModo('auto')],
+    ['Modo Expert (tudo ao Claude)', 'modo', () => escolherModo('hermes')],
+    [micLigado ? 'Desligar microfone' : 'Ligar microfone', 'voz', () => alternarMic()],
+    ['Parar / interromper', 'voz', () => interromper()],
+    ['Olhar minha tela', 'pedido', () => pedir('Luna, olha minha tela e me diz o que tem')],
+    ['Anexar arquivo ou imagem', 'chat', () => $('btnAnexar').click()],
+    ['Meu dia (aba Hoje)', 'abas', () => abrirAba('hoje')],
+    ['Primeiros passos (guia e checagem)', 'janela', () => abrirTutorial(0)],
+    ['Desligar a Luna', 'janela', () => desligarLuna()],
+    ['Procurar atualizações', 'janela', async () => { await checarAtualizacao(true); $('dlgAtualizar').showModal(); montarAtualizacoes({}); }],
+    ['Aprendizado', 'abas', () => abrirAba('apr')],
+    ['Atividade', 'abas', () => abrirAba('ativ')],
+    ['Modo mini (só o globo)', 'janela', () => fetch('/mini', { method: 'POST' })],
+    ['Ajustes', 'janela', () => abrirAjustes()],
+    ['Conectar as IAs (chaves)', 'janela', () => abrirAjustes('ia')],
+    ['Onde a fala vira texto (placa ou nuvem)', 'janela', () => abrirAjustes('ia')],
+    ['Voz e velocidade', 'janela', () => abrirAjustes('voz')],
+    ['Uso e gastos', 'janela', () => abrirAjustes('uso')],
+    ['Requisitos e dicas (mais leve, mais barato)', 'janela', () => abrirAjustes('req')],
+  ];
+  return c.map(([t, g, f]) => ({ t, g, f }));
+}
+function pedir(texto) { $entrada.value = texto; ajustarEntrada(); $('formTexto').requestSubmit(); }
+function semAcento(t) { return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+function filtrarPaleta() {
+  const q = semAcento($palBusca.value.trim());
+  const base = comandosBase().concat(palConversas.map(c => ({ t: c.titulo, g: 'conversa salva',
+    f: () => { abrirAba('conv'); enviar({ tipo: 'conversa_abrir', id: c.id }); } })));
+  palItens = q ? base.filter(i => q.split(/\s+/).every(p => semAcento(i.t + ' ' + i.g).includes(p))) : base.slice(0, 13);
+  if (q) palItens.push({ t: 'Perguntar à Luna: “' + $palBusca.value.trim() + '”', g: 'enviar', f: () => pedir($palBusca.value.trim()) });
+  palSel = Math.min(palSel, Math.max(0, palItens.length - 1));
+  $palLista.replaceChildren(...palItens.map((i, k) => {
+    const li = el('li'); li.setAttribute('role', 'option'); li.setAttribute('aria-selected', String(k === palSel));
+    li.append(el('span', '', i.t), el('span', 'g', i.g));
+    li.onmousemove = () => { if (palSel !== k) { palSel = k; marcarPaleta(); } };
+    li.onclick = () => executarPaleta(k);
+    return li;
+  }));
+  if (!palItens.length) $palLista.append(el('li', 'vazio', 'Nada encontrado.'));
+}
+function marcarPaleta() {
+  [...$palLista.children].forEach((li, k) => li.setAttribute('aria-selected', String(k === palSel)));
+  $palLista.children[palSel]?.scrollIntoView({ block: 'nearest' });
+}
+function executarPaleta(k) { const i = palItens[k]; if (!i) return; $pal.close(); i.f(); }
+async function abrirPaleta() {
+  $palBusca.value = ''; palSel = 0; filtrarPaleta(); $pal.showModal(); $palBusca.focus();
+  try { palConversas = (await (await fetch('/conversas')).json()).conversas || []; filtrarPaleta(); } catch (e) {}
+}
+$palBusca.oninput = () => { palSel = 0; filtrarPaleta(); };
+$palBusca.onkeydown = (e) => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); palSel = Math.min(palSel + 1, palItens.length - 1); marcarPaleta(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); palSel = Math.max(palSel - 1, 0); marcarPaleta(); }
+  else if (e.key === 'Enter') { e.preventDefault(); executarPaleta(palSel); }
+};
+$pal.onclick = (e) => { if (e.target === $pal) $pal.close(); };
+
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault(); $pal.open ? $pal.close() : abrirPaleta(); return;
+  }
+  if ($pal.open) return;
+  const digitando = ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName);
+  if (e.key === 'Escape') {
+    if ($('dlgAjustes').open || $('zoom').open || $('dlgBoasVindas').open) return;
+    if (digitando) { document.activeElement.blur(); }
+    interromper();
+    return;
+  }
+  if (digitando || $('dlgAjustes').open || $('zoom').open || $('dlgBoasVindas').open) return;
+  if (e.key === '/') { e.preventDefault(); $entrada.focus(); }
+  else if (e.code === 'Space' && !e.repeat) { e.preventDefault(); alternarMic(); }
+});
+
+/* ================================================================ início */
+
+const velSalva = parseFloat(localStorage.getItem('vel'));
+if (velSalva) { $vel.value = velSalva; $velValor.textContent = velSalva.toFixed(2) + 'x'; }
+$vol.value = volumeVoz;
+$volValor.textContent = Math.round(volumeVoz * 100) + '%';
+fetch('/vozes').then(r => r.json()).then(d => montarVozes(d.vozes, localStorage.getItem('voz') || d.padrao)).catch(() => {});
+ajustarCanvas();
+requestAnimationFrame(desenhar);
+abrirAba(localStorage.getItem('aba') || 'conv');
+checarHermes().then(conectar);
+setInterval(checarHermes, 15000);
+mudarEstado('desligado');
+</script>
+</body>
+</html>
