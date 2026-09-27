@@ -89,7 +89,11 @@ Opcional: [Hermes Agent](https://hermes-agent.nousresearch.com/docs) (modo Exper
 
 ## Instalar e abrir
 
-1. Baixe o projeto (**Code → Download ZIP** e extraia, ou `git clone`).
+1. Baixe o projeto: **Code → Download ZIP** e extraia, ou pelo Git (use o endereço **HTTPS**):
+
+   ```powershell
+   git clone https://github.com/LucasTabosaGit/luna.git
+   ```
 2. Clique duas vezes em **`Luna.bat`**.
 
 Na primeira vez ele instala tudo (ambiente Python, dependências com PyTorch/CUDA, `.env`) e cria o atalho
@@ -122,6 +126,16 @@ Crie a conta em https://meuhoje.com.br/cadastro e clique em **Conectar conta** n
 
 - `pessoal/sites.json` — `{"meu site": "https://..."}` para "Luna, abre meu site".
 - `atalhos.json` — atalhos de voz (começa vazio; a Luna propõe novos pela trava de aprovação).
+
+### Problemas comuns
+
+- **`git@github.com: Permission denied (publickey)`**: você usou o endereço **SSH**
+  (`git@github.com:...`), que exige uma chave SSH cadastrada no seu GitHub. Não é vírus nem falta de acesso:
+  use o endereço HTTPS acima ou baixe o ZIP.
+- **Windows ou antivírus avisando do `Luna.bat` / `.ps1`**: acontece com todo script baixado da internet.
+  O código está todo aberto aqui para conferir: o `Luna.bat` só chama o `instalar.ps1` (cria o ambiente Python
+  e instala as dependências do `requirements.txt`) e depois o `iniciar.ps1`. No aviso azul do Windows, clique
+  em **Mais informações → Executar assim mesmo**.
 
 ## Detector do nome
 
