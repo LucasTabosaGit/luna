@@ -195,6 +195,28 @@ async def aprendizado_ver():
     return await asyncio.to_thread(aprendizado.resumo)
 
 
+@app.get("/treino-voz")
+async def treino_voz_status():
+    """Detector do nome com a voz de quem usa (src/treino_voz.py)."""
+    import treino_voz
+    return await asyncio.to_thread(treino_voz.status)
+
+
+@app.post("/treino-voz/{acao}")
+async def treino_voz_acao(acao: str):
+    import treino_voz
+    if acao == "treinar":
+        if not treino_voz.status()["rodando"]:
+            asyncio.get_running_loop().run_in_executor(None, treino_voz.treinar)
+        return {"ok": True}
+    feito = {"aprovar": treino_voz.aprovar, "descartar": treino_voz.descartar,
+             "desfazer": treino_voz.desfazer}.get(acao)
+    if feito is None:
+        return JSONResponse({"erro": "ação desconhecida"}, status_code=404)
+    r = await asyncio.to_thread(feito)
+    return {"ok": r is not False}
+
+
 @app.post("/aprendizado/atalho/{nome}/{estado}")
 async def aprendizado_atalho(nome: str, estado: str):
     import aprendizado
@@ -1705,18 +1727,23 @@ async def _olhar_tela(s: Sessao, texto: str, t_fim_fala: float, t_stt: float,
 def _guardar_amostra(audio: np.ndarray, texto: str, chamou: bool) -> None:
     """Guarda falas curtas (até 4 s) em dados_luna/voz_real/, com o texto.
 
-    São a matéria-prima para treinar o detector com a SUA voz (hoje ele só
-    conhece vozes sintéticas). Fica no PC, fora do git; máx. 400 arquivos.
+    São a matéria-prima do "Treinar com a minha voz" (src/treino_voz.py).
+    Fica no PC, fora do git. Guarda as MAIS NOVAS: até 300 de cada tipo
+    (com e sem o nome); passando disso, a mais antiga daquele tipo sai.
     """
     try:
         if len(audio) > 4 * config.SAMPLE_RATE:
             return
         pasta = config.RAIZ / "dados_luna" / "voz_real"
         pasta.mkdir(parents=True, exist_ok=True)
-        if sum(1 for _ in pasta.glob("*.wav")) >= 400:
-            return
+        tipo = "_nome" if chamou else "_sem"
+        velhas = sorted(pasta.glob("*%s.wav" % tipo))
+        for w in velhas[:max(0, len(velhas) - 299)]:
+            w.unlink(missing_ok=True)
+            w.with_suffix(".txt").unlink(missing_ok=True)
         import soundfile as sf
-        nome = time.strftime("%m%d-%H%M%S") + ("_nome" if chamou else "_sem")
+        # Ano no nome: a ordem alfabética é a ordem do tempo.
+        nome = time.strftime("%Y%m%d-%H%M%S") + tipo
         sf.write(str(pasta / (nome + ".wav")), audio, config.SAMPLE_RATE)
         (pasta / (nome + ".txt")).write_text(texto, encoding="utf-8")
     except Exception:  # noqa: BLE001 - amostra é opcional

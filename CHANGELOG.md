@@ -14,6 +14,8 @@
 - Funciona **sem placa de vídeo**: a fala pode ser transcrita na nuvem (Groq, OpenAI ou Gemini).
 - Ajustes reorganizados em abas: Voz, Escuta, Inteligência, Uso e gastos, Requisitos e dicas, Atalhos e Sistema.
 - Tela inicial com exemplos para clicar; o guia de Primeiros passos termina ensinando como falar, como parar e os três modos.
+- **Treinar com a minha voz** (aba Aprendizado): o detector do nome aprende com as suas gravações, mostra se
+  ficou melhor que o atual e só passa a valer com a sua aprovação.
 - Instalação e abertura em Python puro (`instalar.py`, `src/abrir.py`): nenhum script PowerShell no projeto.
   Alguns antivírus acusavam os `.ps1` como ameaça (falso positivo).
 - Modo Expert também com o **ChatGPT** (assinatura Plus/Pro pelo Hermes): GPT-6 Astra, GPT-5.6 Sol e GPT-5.6 Luna. A lista mostra só as assinaturas conectadas.

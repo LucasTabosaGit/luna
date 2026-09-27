@@ -872,8 +872,6 @@
             <button type="button" class="botao" id="ajAtt">Verificar</button></div>
           <div class="aj-item"><span><b>Nova conversa</b><small>Apaga o histórico da conversa atual.</small></span>
             <button type="button" class="botao" id="btnLimpar">Limpar</button></div>
-          <div class="aj-item"><span><b>Interface antiga</b><small>A tela clássica, para comparar.</small></span>
-            <a class="botao" href="/web/classico.html">Abrir</a></div>
           <div class="aj-item perigo"><span><b>Desligar a Luna</b><small>Fecha tudo. Para abrir de novo, use o atalho “Luna”.</small></span>
             <button type="button" class="botao" id="btnDesligar">Desligar</button></div>
         </div>
@@ -2152,6 +2150,7 @@ async function carregarAprendizado() {
     c.append(ir); s0.append(c);
   }
   $apr.append(s0);
+  $apr.append(secaoTreinoVoz());
   // Atalhos
   const s1 = el('div', 'secao'); s1.append(el('h4', '', 'Atalhos prontos (sem o Claude)'));
   if (!d.atalhos.length) s1.append(el('div', 'dica', 'Nenhum ainda. Uma tarefa que você repete vira atalho e passa a rodar em segundos.'));
@@ -2189,6 +2188,74 @@ async function carregarAprendizado() {
     it.append(el('span'), m, b); s3.append(it);
   }
   $apr.append(s3);
+}
+
+/* ---- "Treinar com a minha voz": detector do nome (src/treino_voz.py) ---- */
+const $treinoVoz = el('div', 'secao');
+let treinoVozTimer = null;
+function secaoTreinoVoz() { atualizarTreinoVoz(); return $treinoVoz; }
+function placarTxt(p) {
+  return `reconheceu o nome em ${p.pegou} de ${p.com_nome} vezes e acordou sem ser chamada ${p.falsos} ` +
+         `${p.falsos === 1 ? 'vez' : 'vezes'} (em ${p.sem_nome} falas sem o nome)`;
+}
+async function atualizarTreinoVoz() {
+  let d;
+  try { d = await (await fetch('/treino-voz')).json(); } catch (e) { return; }
+  const s = $treinoVoz; s.replaceChildren(el('h4', '', 'O nome “Luna” com a sua voz'));
+  const qual = d.modelo === 'pessoal'
+    ? 'Hoje ela usa um detector treinado com a sua voz' + (d.treinado_em ? ' (' + d.treinado_em + ').' : '.')
+    : 'Hoje ela usa o detector de fábrica, treinado com vozes de computador.';
+  s.append(el('div', 'dica', qual + ' Ela guarda, só neste PC, falas curtas suas (' + d.com_nome +
+    ' com o nome e ' + d.sem_nome + ' sem). Com elas dá para ensinar o detector a reconhecer melhor quando é você chamando.'));
+  const c = el('div', 'cartao'); s.append(c);
+  clearTimeout(treinoVozTimer);
+  if (d.rodando) {
+    c.append(el('b', '', 'Treinando…'), el('div', 'sub', d.etapa || ''));
+    treinoVozTimer = setTimeout(atualizarTreinoVoz, 2500);
+    return;
+  }
+  const r = d.resultado;
+  if (r) {
+    const prova = r.justo ? 'Nas suas gravações mais novas, que o detector novo nunca ouviu:'
+                          : 'Nas suas gravações mais novas (o detector atual já tinha ouvido parte delas; a comparação favorece ele):';
+    c.append(el('b', '', r.melhor ? 'O novo ficou melhor' : 'O novo não ficou melhor'), el('div', 'sub', prova));
+    const ul = el('ul', 'sub'); ul.style.margin = '6px 0 0 18px';
+    ul.append(el('li', '', 'Atual: ' + placarTxt(r.atual)), el('li', '', 'Novo: ' + placarTxt(r.novo)));
+    c.append(ul);
+    const bts = el('div'); bts.style.cssText = 'display:flex;gap:8px;margin-top:10px';
+    if (r.melhor) {
+      const ok = el('button', 'botao', 'Usar o novo');
+      ok.onclick = async () => { await fetch('/treino-voz/aprovar', { method: 'POST' }); atualizarTreinoVoz(); };
+      const nao = el('button', 'mini-btn', 'Manter o atual');
+      nao.onclick = async () => { await fetch('/treino-voz/descartar', { method: 'POST' }); atualizarTreinoVoz(); };
+      bts.append(ok, nao);
+    } else {
+      c.append(el('div', 'sub', 'Nada mudou: ela continua com o detector atual. Tente de novo depois de mais uns dias de uso.'));
+      const fechar = el('button', 'mini-btn', 'Ok');
+      fechar.onclick = async () => { await fetch('/treino-voz/descartar', { method: 'POST' }); atualizarTreinoVoz(); };
+      bts.append(fechar);
+    }
+    c.append(bts);
+    return;
+  }
+  if (d.erro) c.append(el('div', 'sub erro', 'Não deu certo: ' + d.erro));
+  if (!d.pronto) {
+    c.append(el('b', '', 'Ainda juntando gravações'),
+      el('div', 'sub', `Precisa de pelo menos ${d.min_nome} com o nome (tem ${d.com_nome}) e ${d.min_sem} sem (tem ${d.sem_nome}). É só ir usando.`));
+  } else {
+    c.append(el('b', '', 'Treinar com a minha voz'),
+      el('div', 'sub', (d.novas ? d.novas + ' gravações novas desde o último treino. ' : '') +
+        'Leva de 1 a 3 minutos. No fim ela mostra se o novo acerta mais que o atual; só passa a valer se você aprovar.'));
+    const b = el('button', 'botao', 'Treinar agora'); b.style.marginTop = '10px';
+    b.onclick = async () => { b.disabled = true; await fetch('/treino-voz/treinar', { method: 'POST' }); setTimeout(atualizarTreinoVoz, 600); };
+    c.append(b);
+  }
+  if (d.pode_desfazer) {
+    const v = el('button', 'mini-btn', 'Voltar para o detector anterior'); v.style.cssText = 'margin-top:8px;align-self:flex-start';
+    v.onclick = async () => { if (!confirm('Voltar para o detector que ela usava antes?')) return;
+      await fetch('/treino-voz/desfazer', { method: 'POST' }); atualizarTreinoVoz(); };
+    s.append(v);
+  }
 }
 
 /* ================================================================ modos */

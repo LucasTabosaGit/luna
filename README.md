@@ -141,9 +141,17 @@ Crie a conta em https://meuhoje.com.br/cadastro e clique em **Conectar conta** n
 ## Detector do nome
 
 O detector que vem em `recursos/detector/` foi treinado só com vozes sintéticas: funciona para qualquer
-pessoa. Para ficar mais preciso com a **sua** voz, grave amostras (a Luna guarda as chamadas em
-`dados_luna/voz_real`) e rode `src/treina_detector_luna.py` — o modelo novo vai para `modelos/oww/luna.pkl`
-e passa a ter prioridade.
+pessoa. Com o uso, a Luna guarda falas curtas suas **só no seu PC** (`dados_luna/voz_real`, as 300 mais
+novas com o nome e as 300 mais novas sem). Quando já tiver umas 40 de cada, vá em **Aprendizado → O nome
+“Luna” com a sua voz → Treinar agora** (1 a 3 minutos, no processador):
+
+- ela treina um detector novo com a sua voz e compara com o atual nas suas gravações mais novas, que o novo
+  nunca ouviu ("reconheceu o nome em 41 de 42 vezes, acordou sem ser chamada 2 vezes");
+- se o novo não for melhor, é descartado e nada muda;
+- se for melhor, só passa a valer quando você clicar em **Usar o novo**, e dá para voltar ao anterior.
+
+Isso melhora o reconhecimento do **nome**. A transcrição do resto da frase (Whisper ou nuvem) é a mesma para
+todo mundo e não aprende com a sua pronúncia.
 
 ## Estrutura
 
