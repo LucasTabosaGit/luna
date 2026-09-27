@@ -839,14 +839,14 @@
         <div class="aj-bloco">
           <div class="uso-cab"><b>Qual jeito combina com o seu PC</b><small>valores aproximados</small></div>
           <table class="tab-req">
-            <thead><tr><th></th><th>Placa de vídeo</th><th>RAM</th><th>Internet</th><th>Custo</th></tr></thead>
+            <thead><tr><th></th><th data-win="Placa de vídeo" data-mac="Onde ouve">Placa de vídeo</th><th>RAM</th><th>Internet</th><th>Custo</th></tr></thead>
             <tbody>
-              <tr data-perfil="leve"><td><b>Leve</b><small>ouvido na nuvem</small></td><td>não precisa</td><td>4 GB</td><td>sim</td><td>IA + ouvido (Groq: cota grátis)</td></tr>
-              <tr data-perfil="completo"><td><b>Completo</b><small>ouvido na placa</small></td><td>NVIDIA, 4 GB+</td><td>8 GB</td><td>sim</td><td>só a IA</td></tr>
-              <tr data-perfil="offline"><td><b>Sem internet</b><small>Ollama + ouvido na placa</small></td><td>NVIDIA, 8 GB+</td><td>16 GB</td><td>só para as vozes</td><td>grátis</td></tr>
+              <tr data-perfil="leve"><td><b>Leve</b><small>ouvido na nuvem</small></td><td data-win="não precisa" data-mac="serviço em nuvem">não precisa</td><td>4 GB</td><td>sim</td><td>IA + ouvido (Groq: cota grátis)</td></tr>
+              <tr data-perfil="completo"><td><b>Completo</b><small data-win="ouvido na placa" data-mac="ouvido na GPU do Mac">ouvido na placa</small></td><td data-win="NVIDIA, 4 GB+" data-mac="no seu Mac">NVIDIA, 4 GB+</td><td>8 GB</td><td>sim</td><td>só a IA</td></tr>
+              <tr data-perfil="offline"><td><b>Sem internet</b><small data-win="Ollama + ouvido na placa" data-mac="Ollama + ouvido na GPU">Ollama + ouvido na placa</small></td><td data-win="NVIDIA, 8 GB+" data-mac="no seu Mac">NVIDIA, 8 GB+</td><td>16 GB</td><td>só para as vozes</td><td>grátis</td></tr>
             </tbody>
           </table>
-          <small class="leg">Todos: Windows 10/11, Python 3.11, ffmpeg e ~8 GB de disco. As vozes da Microsoft e o JARVIS
+          <small class="leg">Todos: <span data-win="Windows 10/11" data-mac="Mac com Apple Silicon (M1 ou mais novo)">Windows 10/11</span>, Python 3.11, ffmpeg e ~8 GB de disco. As vozes da Microsoft e o JARVIS
             precisam de internet; sem ela a Luna fala com a voz de reserva (Kokoro).</small>
         </div>
       </section>
@@ -935,8 +935,10 @@
       </div>
       <div class="conexoes" id="cxDeepseek"></div>
       <div class="guia" style="margin-top:14px">
-        <p><b>E o ouvido?</b> A fala vira texto na placa de vídeo (grátis). Se o seu PC <b>não tem placa NVIDIA</b>
-          ou tem uma fraca, escolha <b>Na nuvem: Groq</b> — a chave é grátis em
+        <p><b>E o ouvido?</b> <span data-win="A fala vira texto na placa de vídeo (grátis). Se o seu PC &lt;b&gt;não tem placa NVIDIA&lt;/b&gt;
+          ou tem uma fraca, escolha" data-mac="A fala vira texto na GPU do Mac, via MLX (grátis, sem internet). Quer ainda
+          mais rápido? Escolha">A fala vira texto na placa de vídeo (grátis). Se o seu PC <b>não tem placa NVIDIA</b>
+          ou tem uma fraca, escolha</span> <b>Na nuvem: Groq</b> — a chave é grátis em
           <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com</a>
           (entre com o Google e clique em <i>Create API Key</i>).</p>
       </div>
@@ -1052,6 +1054,10 @@ const TAXA_ENVIO = 16000;   // Whisper e Silero trabalham em 16 kHz
 const TAXA_SAIDA = 24000;   // Kokoro/Edge devolvem 24 kHz
 
 const $ = (id) => document.getElementById(id);
+// Windows ou Mac: o navegador diz. Textos com data-win/data-mac trocam sozinhos.
+const MAC = /Mac/i.test(navigator.userAgentData?.platform || navigator.platform || navigator.userAgent);
+if (MAC) document.addEventListener('DOMContentLoaded', () =>
+  document.querySelectorAll('[data-mac]').forEach(el => { el.innerHTML = el.dataset.mac; }));
 const $mic = $('btnMic'), $entrada = $('entrada'), $parar = $('btnParar');
 const $fala = $('falaAtual'), $voce = $('voceDisse'), $rot = $('estadoRotulo');
 const $listaAtiv = $('listaAtiv'), $listaConv = $('listaConv'), $rodape = $('rodape');
@@ -1618,7 +1624,16 @@ const MIC_CASOS = {
     ],
     nota: 'A permissão fica salva: só é preciso fazer isso uma vez.',
   },
-  windows: {
+  windows: MAC ? {
+    titulo: 'O macOS está bloqueando o microfone',
+    sub: 'O navegador até deixa, mas o macOS não libera o microfone para ele. Para liberar:',
+    passos: [
+      'Abra <b>Ajustes do Sistema</b> → <b>Privacidade e Segurança</b> → <b>Microfone</b>.',
+      'Ligue o microfone para o <b>Google Chrome</b> (ou o navegador que você está usando).',
+      'Volte aqui e clique em <b>Tentar de novo</b>. Se não aparecer, feche e abra o navegador de novo.',
+    ],
+    nota: '',
+  } : {
     titulo: 'O Windows está bloqueando o microfone',
     sub: 'O navegador até deixa, mas o Windows não libera o microfone para apps. Para liberar:',
     passos: [
@@ -1633,7 +1648,8 @@ const MIC_CASOS = {
     sub: 'A Luna não achou nenhum microfone ligado a este computador.',
     passos: [
       'Confira se o microfone ou fone com microfone está <b>conectado</b> (no USB, tente outra porta).',
-      'No Windows, clique com o botão direito no <b>ícone de som</b> perto do relógio → <b>Configurações de som</b> → em <b>Entrada</b>, escolha o seu microfone.',
+      MAC ? 'No Mac, abra <b>Ajustes do Sistema</b> → <b>Som</b> → <b>Entrada</b> e escolha o seu microfone.'
+          : 'No Windows, clique com o botão direito no <b>ícone de som</b> perto do relógio → <b>Configurações de som</b> → em <b>Entrada</b>, escolha o seu microfone.',
       'Clique em <b>Tentar de novo</b>.',
     ],
     nota: 'Enquanto isso, dá para usar a Luna digitando na caixa de texto.',
@@ -1765,7 +1781,7 @@ function conversa(quem, texto, fotos, historico, arqs) {
 
 const ERROS = [
   [/NotAllowedError|Permission denied|permiss/i, 'O navegador bloqueou o microfone.', 'Clique no cadeado ao lado do endereço e permita o microfone.'],
-  [/NotFoundError|device not found|Requested device/i, 'Nenhum microfone encontrado.', 'Confira se ele está conectado e escolhido no Windows.'],
+  [/NotFoundError|device not found|Requested device/i, 'Nenhum microfone encontrado.', MAC ? 'Confira se ele está conectado e escolhido em Ajustes do Sistema → Som.' : 'Confira se ele está conectado e escolhido no Windows.'],
   [/NotReadableError|Could not start/i, 'Outro programa está usando o microfone.', 'Feche o app que está com ele (Discord, OBS…) e tente de novo.'],
   [/Insufficient Balance|402|quota/i, 'Acabou o saldo (ou a cota) da IA principal.', 'Recarregue a conta dela ou troque de IA em Ajustes → Inteligência; enquanto isso use o modo Expert.'],
   [/401|Unauthorized|api[_ ]?key|Authentication/i, 'Uma chave foi recusada.', 'Confira as chaves em Ajustes → Inteligência.'],
@@ -2954,7 +2970,7 @@ async function montarReq() {
   const d = usoCache && Date.now() - (usoCache._t || 0) < 3000 ? usoCache : await carregarUso(); if (!d) return;
   d._t = Date.now();
   const r = d.recursos;
-  $('reqPcNome').textContent = r.gpu ? `${r.gpu} · ${r.ram_total_gb} GB de RAM` : `sem placa NVIDIA · ${r.ram_total_gb} GB de RAM`;
+  $('reqPcNome').textContent = r.gpu ? `${r.gpu} · ${r.ram_total_gb} GB de RAM` : `${MAC ? 'sem MLX (Whisper no processador)' : 'sem placa NVIDIA'} · ${r.ram_total_gb} GB de RAM`;
   if (r.vram_total_gb) {
     const luna = Math.min(r.vram_luna_gb, r.vram_usada_gb), outros = Math.max(0, r.vram_usada_gb - luna);
     $('reqVramTxt').textContent = `${r.vram_usada_gb.toFixed(1)} de ${r.vram_total_gb.toFixed(0)} GB em uso · Luna ~${luna.toFixed(1)} GB`;

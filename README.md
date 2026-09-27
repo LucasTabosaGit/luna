@@ -1,6 +1,6 @@
 # Luna — assistente de voz em português
 
-Assistente de voz para Windows que você chama pelo nome ("**Luna**, que horas são?").
+Assistente de voz para **Windows e Mac** que você chama pelo nome ("**Luna**, que horas são?").
 Escuta na sua máquina (placa de vídeo) ou na nuvem, pensa com a IA que você escolher (**DeepSeek**, Gemini, OpenAI, Groq, OpenRouter ou Ollama local) e,
 opcionalmente, passa o trabalho pesado para o **Claude** via [Hermes Agent](https://hermes-agent.nousresearch.com/docs):
 mexer em arquivos, abrir programas, pesquisar, lembrar das coisas.
@@ -66,14 +66,16 @@ microfone → portão "Luna" (openWakeWord) → Whisper large-v3-turbo (placa de
 
 ## Requisitos
 
-Todos: **Windows 10/11**, **Python 3.11**, `ffmpeg` no PATH (`winget install ffmpeg`) e ~8 GB de disco.
-Escolha o jeito que combina com o seu PC (dá para trocar depois em Ajustes):
+Todos: **Windows 10/11** ou **Mac com Apple Silicon** (M1 ou mais novo), **Python 3.11**, `ffmpeg`
+(Windows: `winget install ffmpeg` · Mac: `brew install ffmpeg`) e ~8 GB de disco.
+A Luna descobre sozinha em qual sistema está e se ajusta. Escolha o jeito que combina com o seu PC
+(dá para trocar depois em Ajustes):
 
 | Jeito | Placa de vídeo | RAM | Internet | Custo |
 |---|---|---|---|---|
 | **Leve** (ouvido na nuvem) | não precisa | 4 GB | sim | a IA + o ouvido (Groq tem cota grátis) |
-| **Completo** (ouvido na placa) | NVIDIA, 4 GB+ | 8 GB | sim | só a IA |
-| **Sem internet** (Ollama + ouvido na placa) | NVIDIA, 8 GB+ | 16 GB | só para as vozes | grátis |
+| **Completo** (ouvido na placa) | NVIDIA 4 GB+ · no Mac, a GPU dele | 8 GB | sim | só a IA |
+| **Sem internet** (Ollama + ouvido na placa) | NVIDIA 8 GB+ · no Mac, a GPU dele | 16 GB | só para as vozes | grátis |
 
 Medido numa RTX 5060 Ti: no modo Completo a Luna usa ~2,8 GB da placa (Whisper 2,2 + voz de reserva 0,6);
 no modo Leve, praticamente nada. As vozes convertidas (RVC, opcionais) somam ~0,7 GB só enquanto escolhidas.
@@ -94,11 +96,18 @@ Opcional: [Hermes Agent](https://hermes-agent.nousresearch.com/docs) (modo Exper
    ```powershell
    git clone https://github.com/LucasTabosaGit/luna.git
    ```
-2. Clique duas vezes em **`Luna.bat`**.
+2. **Windows:** clique duas vezes em **`Luna.bat`**.
+   **Mac:** instale antes `brew install python@3.11 ffmpeg` e clique duas vezes em **`Luna.command`**
+   (se o Mac recusar por ser de "desenvolvedor não identificado": botão direito → **Abrir**).
 
-Na primeira vez ele instala tudo (ambiente Python, dependências com PyTorch/CUDA, `.env`) e cria o atalho
-**Luna** na área de trabalho e no menu Iniciar. Depois é só usar o atalho: ele liga o que faltar e abre a janela.
-Os modelos (~3 GB) baixam sozinhos no primeiro uso.
+Na primeira vez ele instala tudo (ambiente Python, dependências, `.env`) e cria o atalho **Luna**: no Windows na
+área de trabalho e no menu Iniciar; no Mac em Aplicativos. Depois é só usar o atalho: ele liga o que faltar e abre
+a janela. Os modelos (~3 GB) baixam sozinhos no primeiro uso.
+
+**No Mac**, o ouvido local roda na GPU da Apple (Whisper pelo MLX). Na primeira vez o Mac pede duas permissões:
+**Microfone** (para o navegador) e **Acessibilidade** (para o atalho `Ctrl+Alt+L` e os comandos de mídia). Em Mac
+com Intel funciona, mas use o ouvido na nuvem. A versão Mac foi adaptada a partir do trabalho de
+[felipyenzo7543-blip](https://github.com/felipyenzo7543-blip/luna-mac) e ainda está em **beta**.
 
 Na janela abre o guia **Primeiros passos**: confere Python, ffmpeg, placa de vídeo e modelos, e leva você por
 cada conexão — a IA principal, Claude via Hermes e Meu Hoje — com os links e o botão *Salvar e testar*.
@@ -156,10 +165,12 @@ todo mundo e não aprende com a sua pronúncia.
 ## Estrutura
 
 ```
-Luna.bat              abrir (instala na primeira vez)
-instalar.py           .venv + dependências + .env + atalho
+Luna.bat              abrir no Windows (instala na primeira vez)
+Luna.command          abrir no Mac (instala na primeira vez)
+instalar.py           .venv + dependências + .env + atalho (Windows ou Mac)
+src/plataforma.py     o que muda entre Windows e Mac (volume, teclas, apps, GPU)
 src/abrir.py          liga Hermes (se houver) e o servidor; abre a janela (é o que o atalho chama)
-src/criar_atalho.py   atalho "Luna" na área de trabalho e no menu Iniciar
+src/criar_atalho.py   atalho "Luna" (Windows: área de trabalho e Iniciar; Mac: Aplicativos)
 src/                  servidor e módulos (ver CONTRIBUTING.md)
 web/index.html        interface
 recursos/detector/    detector genérico do nome "Luna"

@@ -1,6 +1,8 @@
-# Luna - dependencias (Python 3.11, Windows).
-# O PyTorch com CUDA vem antes, pelo instalar.ps1:
-#   pip install torch --index-url https://download.pytorch.org/whl/cu128
+# Luna - dependencias (Python 3.11). Um arquivo so para Windows e Mac: as
+# linhas com "; sys_platform ..." so instalam no sistema certo.
+# O PyTorch vem antes, pelo instalar.py:
+#   Windows: pip install torch --index-url https://download.pytorch.org/whl/cu128
+#   Mac:     pip install torch   (a wheel do PyPI ja traz o MPS da Apple)
 faster-whisper==1.2.1
 ctranslate2==4.8.2
 kokoro==0.9.4
@@ -22,6 +24,13 @@ pypdf==6.19.0
 mss==10.2.0
 pillow==12.3.0
 psutil==7.2.2
-pycaw
-comtypes==1.4.17
 truststore
+# Windows: volume e atalhos
+pycaw; sys_platform == "win32"
+comtypes==1.4.17; sys_platform == "win32"
+# Mac (Apple Silicon): Whisper na GPU (MLX), teclas, janela mini, atalho global
+mlx==0.32.2; sys_platform == "darwin" and platform_machine == "arm64"
+mlx-whisper==0.4.3; sys_platform == "darwin" and platform_machine == "arm64"
+pynput==1.8.2; sys_platform == "darwin"
+pyobjc-framework-Cocoa==12.2.2; sys_platform == "darwin"
+pyobjc-framework-Quartz==12.2.2; sys_platform == "darwin"

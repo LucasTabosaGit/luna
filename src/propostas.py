@@ -36,7 +36,8 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 PASTA = RAIZ / "propostas"
 ESTADO = PASTA / "estado.json"
-PY = str(RAIZ / ".venv" / "Scripts" / "python.exe")
+import plataforma  # noqa: E402
+PY = str(plataforma.python_venv())
 if not Path(PY).exists():
     PY = sys.executable          # rodando fora do .venv do projeto
 SERVIDOR = "http://127.0.0.1:8777"

@@ -19,7 +19,7 @@ from pathlib import Path
 import websockets
 
 RAIZ = Path(__file__).resolve().parent.parent
-PY = str(RAIZ / ".venv" / "Scripts" / "python.exe")
+PY = str(RAIZ / ".venv" / ("bin/python3" if sys.platform == "darwin" else "Scripts/python.exe"))
 if not Path(PY).exists():
     PY = sys.executable          # rodando fora do .venv do projeto
 COM = RAIZ / "src" / "comandos.py"

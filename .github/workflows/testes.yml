@@ -21,3 +21,24 @@ jobs:
           pip install --quiet psutil pycaw comtypes numpy sounddevice python-dotenv
           python src/teste_comandos.py
           python src/teste_fala_limpa.py
+          python src/teste_plataforma.py
+
+  mac:
+    # Mac de verdade (Apple Silicon) do GitHub: confere que a Luna se ajusta
+    # ao macOS (comandos, volume pelo osascript, apps de /Applications).
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Sintaxe
+        run: python -m compileall -q src instalar.py
+      - name: Comandos prontos no macOS
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          pip install --quiet psutil numpy sounddevice python-dotenv pyobjc-framework-Cocoa pyobjc-framework-Quartz
+          python src/teste_comandos.py
+          python src/teste_fala_limpa.py
+          python -c "import sys; sys.path.insert(0, 'src'); import plataforma as P; assert P.MAC; print(P.NOME, P.python_venv(), P.hermes_home()); print(len(P.listar_apps()), 'apps em /Applications'); print('volume', P.volume_ler())"

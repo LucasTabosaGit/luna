@@ -10,7 +10,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 from pathlib import Path
+
+_MAC = sys.platform == "darwin"
 
 RAIZ = Path(__file__).resolve().parent.parent
 MODELOS = RAIZ / "modelos"
@@ -53,6 +56,8 @@ ESPERA_MAX_S = 30
 # Em português rende bem melhor que o `small` e cabe folgado em 16 GB.
 STT_MODELO = "deepdml/faster-whisper-large-v3-turbo-ct2"
 STT_COMPUTE = "float16"      # int8_float16 se faltar VRAM
+# Mac (Apple Silicon): o mesmo modelo, convertido para o MLX (GPU da Apple).
+STT_MODELO_MLX = "mlx-community/whisper-large-v3-turbo"
 STT_IDIOMA = "pt"
 
 # ---------------------------------------------------------------------
@@ -114,7 +119,8 @@ HERMES_MODELOS = [
 def _hermes_logados() -> set[str]:
     """Providers com login no Hermes (só os NOMES, lidos dos auth.json;
     nenhum token é lido) + o provider padrão do perfil."""
-    base = Path(os.environ.get("LOCALAPPDATA", "")) / "hermes"
+    import plataforma
+    base = plataforma.hermes_home()
     achados: set[str] = set()
     for arq in (base / "auth.json", base / "profiles" / HERMES_PERFIL / "auth.json"):
         try:
@@ -155,9 +161,9 @@ def chave_hermes() -> str:
     k = (os.environ.get("API_SERVER_KEY") or "").strip()
     if k:
         return k
-    base = os.environ.get("LOCALAPPDATA", "")
-    for cand in (Path(base) / "hermes" / "profiles" / HERMES_PERFIL / ".env",
-                 Path(base) / "hermes" / ".env"):
+    import plataforma
+    base = plataforma.hermes_home()
+    for cand in (base / "profiles" / HERMES_PERFIL / ".env", base / ".env"):
         try:
             for linha in cand.read_text(encoding="utf-8",
                                         errors="replace").splitlines():
@@ -331,9 +337,10 @@ def cerebro() -> dict:
 # Preços (US$ por hora de fala, set/2026): Groq 0,04; OpenAI mini 0,18.
 STTS = {
     "local": {
-        "nome": "Na placa de vídeo (Whisper)", "var": "", "url": "", "modelo": "",
-        "link": "",
-        "dica": "Grátis e funciona sem internet. Usa cerca de 2 GB da placa de vídeo (NVIDIA).",
+        "nome": "Na GPU do Mac (Whisper)" if _MAC else "Na placa de vídeo (Whisper)",
+        "var": "", "url": "", "modelo": "", "link": "",
+        "dica": ("Grátis e funciona sem internet. Usa a GPU do Mac (Apple Silicon) via MLX." if _MAC
+                 else "Grátis e funciona sem internet. Usa cerca de 2 GB da placa de vídeo (NVIDIA)."),
     },
     "groq": {
         "nome": "Na nuvem: Groq", "var": "GROQ_API_KEY",
@@ -408,7 +415,7 @@ SISTEMA_HERMES = (
     "Nesta conversa seu nome é Luna: é assim que o usuário chama a "
     "assistente de voz, e é como você se apresenta. "
     "Esta conversa é por VOZ: o usuário fala pelo microfone e ouve sua "
-    "resposta sintetizada. Você está no computador dele (Windows) e pode "
+    "resposta sintetizada. Você está no computador dele (" + ("Mac" if _MAC else "Windows") + ") e pode "
     "usar suas ferramentas para agir. "
     "A resposta final deve ter no máximo duas ou três frases curtas, em "
     "português falado, sem markdown, listas, código, caminhos longos ou "
@@ -530,6 +537,7 @@ def chave_gemini() -> str:
 # usa .venv-rvc (Python 3.10) e conversa por HTTP local.
 #
 # Subir:  .venv-rvc\Scripts\python.exe src\rvc_servico.py
+# (Mac: .venv-rvc/bin/python3; sem CUDA, o RVC roda no processador)
 RVC_URL = os.environ.get("RVC_URL", "http://127.0.0.1:8778")
 
 
@@ -594,7 +602,8 @@ JARVIS_FILTRO = (
 def rvc_instalado() -> bool:
     """RVC é opcional e baixado à parte: venv próprio (.venv-rvc, Python
     3.10) + modelos .pth em modelos/rvc. Sem os dois, as vozes nem aparecem."""
-    return (RAIZ / ".venv-rvc" / "Scripts" / "python.exe").exists() and bool(vozes_rvc())
+    import plataforma
+    return plataforma.python_venv(".venv-rvc").exists() and bool(vozes_rvc())
 
 
 def vozes_disponiveis() -> list:

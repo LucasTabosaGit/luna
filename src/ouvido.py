@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import re
 import time
-from typing import Optional
+
 
 import numpy as np
 
@@ -150,7 +150,10 @@ class TranscritorNuvem:
 def criar():
     """O transcritor da escolha atual (Ajustes -> Inteligência)."""
     motor = config.stt_id()
-    return Transcritor() if motor == "local" else TranscritorNuvem(motor)
+    if motor != "local":
+        return TranscritorNuvem(motor)
+    import plataforma
+    return TranscritorMac() if plataforma.MAC else Transcritor()
 
 
 class Transcritor:
@@ -254,5 +257,72 @@ class Transcritor:
         if not texto or suspeito:
             return "", dt
         if _normaliza(texto) in _FANTASMAS:
+            return "", dt
+        return texto, dt
+
+
+class TranscritorMac(Transcritor):
+    """Mac (Apple Silicon): Whisper na GPU pelo MLX (mlx-whisper).
+
+    O CTranslate2 (faster-whisper) não tem backend Metal: no Mac ele só
+    roda no processador, e fica de reserva se o MLX falhar. Adaptado do
+    fork de felipyenzo7543-blip (luna-mac).
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.dispositivo, self.compute = "gpu", "mlx"
+        self._pronto = False
+
+    def carregar(self) -> None:
+        if self._pronto or self._modelo is not None:
+            return
+        t0 = time.time()
+        try:
+            import mlx_whisper
+            # Aquecimento: a 1ª transcrição compila os kernels Metal e
+            # demora; também confirma que o MLX carrega de verdade.
+            mlx_whisper.transcribe(
+                np.zeros(config.SAMPLE_RATE, dtype="float32"),
+                path_or_hf_repo=config.STT_MODELO_MLX, language=config.STT_IDIOMA,
+                condition_on_previous_text=False, temperature=0.0)
+            self._pronto = True
+        except Exception as e:  # noqa: BLE001
+            print("  [stt] mlx-whisper falhou (%s); usando o processador" % str(e)[:100], flush=True)
+            self.dispositivo, self.compute = "cpu", "int8"
+            super().carregar()
+        self.carga_s = time.time() - t0
+
+    def descarregar(self) -> None:
+        if self._pronto:
+            try:
+                import mlx.core as mx
+                import mlx_whisper
+                mlx_whisper.transcribe.ModelHolder.model = None
+                mlx_whisper.transcribe.ModelHolder.model_path = None
+                mx.clear_cache()
+            except Exception:  # noqa: BLE001
+                pass
+            self._pronto = False
+        super().descarregar()
+
+    def transcrever(self, audio: np.ndarray, dica: str = "") -> tuple[str, float]:
+        self.carregar()
+        if not self._pronto:                    # caiu para o processador
+            return super().transcrever(audio, dica)
+        import mlx_whisper
+        t0 = time.time()
+        r = mlx_whisper.transcribe(
+            audio, path_or_hf_repo=config.STT_MODELO_MLX, language=config.STT_IDIOMA,
+            condition_on_previous_text=False, temperature=0.0,
+            initial_prompt=(dica[-150:] or None))
+        partes, suspeito = [], True
+        for seg in r.get("segments", []):
+            if seg.get("no_speech_prob", 0.0) < 0.6:
+                suspeito = False
+            partes.append(seg.get("text", ""))
+        texto = " ".join(p.strip() for p in partes).strip()
+        dt = time.time() - t0
+        if not texto or suspeito or _normaliza(texto) in _FANTASMAS:
             return "", dt
         return texto, dt

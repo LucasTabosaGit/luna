@@ -55,8 +55,8 @@ def capturar(largura_max: int = LARGURA_MAX) -> tuple[str, tuple[int, int]]:
     import mss
     from PIL import Image
 
-    p = _PONTO()
-    ctypes.windll.user32.GetCursorPos(ctypes.byref(p))
+    import plataforma
+    p = _PONTO(*plataforma.cursor())
     with mss.mss() as sct:
         mon = sct.monitors[1]
         for m in sct.monitors[1:]:

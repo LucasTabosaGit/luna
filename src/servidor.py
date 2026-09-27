@@ -255,13 +255,14 @@ def _rvc_ligar(esperar_s: float = 90) -> bool:
         return False
     with _rvc_lock:
         if not _rvc_no_ar():
-            py = config.RAIZ / ".venv-rvc" / "Scripts" / "python.exe"
+            import plataforma
+            py = plataforma.python_venv(".venv-rvc")
             logs = config.RAIZ / "logs"
             logs.mkdir(exist_ok=True)
             print("  [rvc] ligando o serviço (voz convertida escolhida)...", flush=True)
             subprocess.Popen([str(py), str(config.RAIZ / "src" / "rvc_servico.py")], cwd=str(config.RAIZ),
                              stdout=open(logs / "rvc.log", "ab"), stderr=open(logs / "rvc.err.log", "ab"),
-                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                             **plataforma.sem_janela())
         fim = time.time() + esperar_s
         while time.time() < fim:
             try:
@@ -452,15 +453,17 @@ async def reiniciar():
     env = dict(os.environ, REINICIO_ESPERA_PID=str(os.getpid()))
     log = open(raiz / "logs" / "srv.log", "ab")
     err = open(raiz / "logs" / "srv.err.log", "ab")
-    flags = 0x00000008 | 0x00000200          # DETACHED_PROCESS | NEW_PROCESS_GROUP
+    import plataforma
+    kw = plataforma.sem_janela(desligado=True)
     try:
+        if plataforma.WINDOWS:           # + BREAKAWAY_FROM_JOB (sai da árvore do Hermes)
+            kw = {"creationflags": kw["creationflags"] | 0x01000000}
         subprocess.Popen([sys.executable, str(Path(__file__).resolve())], cwd=str(raiz),
-                         env=env, stdout=log, stderr=err, stdin=subprocess.DEVNULL,
-                         creationflags=flags | 0x01000000)   # + BREAKAWAY_FROM_JOB
+                         env=env, stdout=log, stderr=err, stdin=subprocess.DEVNULL, **kw)
     except OSError:
         subprocess.Popen([sys.executable, str(Path(__file__).resolve())], cwd=str(raiz),
                          env=env, stdout=log, stderr=err, stdin=subprocess.DEVNULL,
-                         creationflags=flags)
+                         **plataforma.sem_janela(desligado=True))
     print("  [reiniciar] substituto lançado; saindo em 1s", flush=True)
     # Sai depois de responder, para quem chamou receber o OK.
     asyncio.get_running_loop().call_later(1.0, os._exit, 0)
@@ -499,7 +502,7 @@ async def conexoes_salvar(req: Request):
 
 def _trocar_stt() -> None:
     """Troca onde a fala vira texto sem reiniciar. Saindo do Whisper local,
-    devolve a memória da placa de vídeo."""
+    devolve a memória da placa de vídeo (ou da GPU do Mac)."""
     global _ouvido
     import ouvido as _mod_ouvido
     atual = getattr(_ouvido, "motor", "local")
@@ -513,11 +516,8 @@ def _trocar_stt() -> None:
     del velho
     import gc
     gc.collect()
-    try:
-        import torch
-        torch.cuda.empty_cache()
-    except Exception:  # noqa: BLE001
-        pass
+    import plataforma
+    plataforma.liberar_gpu()
     print("  [stt] agora: %s" % config.STTS[config.stt_id()]["nome"], flush=True)
 
 
@@ -529,18 +529,19 @@ def _uso_recursos() -> dict:
          "ram_livre_gb": round(psutil.virtual_memory().available / 2**30, 1),
          "disco_livre_gb": round(psutil.disk_usage(str(config.RAIZ)).free / 2**30),
          "gpu": "", "vram_total_gb": 0, "vram_usada_gb": 0}
-    try:
-        import torch
-        if torch.cuda.is_available():
-            livre, total = torch.cuda.mem_get_info()
-            r.update(gpu=torch.cuda.get_device_name(0), vram_total_gb=round(total / 2**30, 1),
-                     vram_usada_gb=round((total - livre) / 2**30, 1))
-    except Exception:  # noqa: BLE001
-        pass
+    # Mac: memória unificada. "vram_total" é a RAM toda e "vram_usada" só o
+    # que o MLX tem alocado (plataforma.gpu).
+    import plataforma
+    g = plataforma.gpu()
+    if g["tipo"]:
+        r.update(gpu=g["nome"], vram_total_gb=g["total_gb"], vram_usada_gb=g["usada_gb"],
+                 mac=plataforma.MAC)
     # O que da Luna está ocupando a placa agora (medido nesta máquina).
     partes = []
     if _ouvido is not None and getattr(_ouvido, "dispositivo", "") == "cuda":
         partes.append({"nome": "Whisper (ouvido na placa)", "gb": 2.2})
+    elif _ouvido is not None and getattr(_ouvido, "compute", "") == "mlx":
+        partes.append({"nome": "Whisper (ouvido na GPU do Mac)", "gb": round(g["usada_gb"], 1)})
     if _voz is not None and getattr(_voz, "_pipe", None) is not None:
         partes.append({"nome": "Kokoro (voz de reserva)", "gb": 0.6})
     if _rvc_no_ar():
@@ -654,10 +655,13 @@ async def _espelhar(dados: dict) -> None:
 async def abrir_mini():
     """Abre o globo e minimiza a janela principal (feito pelo mini.py)."""
     import subprocess
+
+    import plataforma
     py = Path(sys.executable)
     pyw = py.with_name("pythonw.exe")
-    subprocess.Popen([str(pyw if pyw.exists() else py), str(Path(__file__).with_name("mini.py"))],
-                     cwd=str(config.RAIZ), creationflags=0x08000000)   # sem console
+    mini = "mini.py" if plataforma.WINDOWS else "mini_mac.py"
+    subprocess.Popen([str(pyw if pyw.exists() else py), str(Path(__file__).with_name(mini))],
+                     cwd=str(config.RAIZ), **plataforma.sem_janela())
     return {"ok": True}
 
 

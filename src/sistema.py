@@ -5,30 +5,26 @@ rápido (< 2 s): nada aqui instala ou muda coisa alguma.
 """
 from __future__ import annotations
 
-import os
 import shutil
 import sys
-from pathlib import Path
 
 import config
+import plataforma
 
 
 def _gpu() -> tuple[bool, str]:
-    try:
-        import torch
-        if torch.cuda.is_available():
-            p = torch.cuda.get_device_properties(0)
-            return True, "%s (%.0f GB)" % (p.name, p.total_memory / 2**30)
-        return False, "sem placa NVIDIA com CUDA: funciona, mas a voz fica lenta"
-    except Exception as e:  # noqa: BLE001
-        return False, "PyTorch com problema: %s" % str(e)[:80]
+    g = plataforma.gpu()
+    if g["tipo"] == "mlx":
+        return True, "%s (%.0f GB de memória unificada)" % (g["nome"], g["total_gb"])
+    if g["tipo"] == "cuda":
+        return True, "%s (%.0f GB)" % (g["nome"], g["total_gb"])
+    if plataforma.MAC:
+        return False, "sem MLX: o Whisper local cai para o processador"
+    return False, "sem placa NVIDIA com CUDA: funciona, mas a voz fica lenta"
 
 
 def _hermes_instalado() -> bool:
-    if shutil.which("hermes"):
-        return True
-    base = Path(os.environ.get("LOCALAPPDATA", ""))
-    return (base / "hermes" / "hermes-agent" / "venv" / "Scripts" / "hermes.exe").exists()
+    return plataforma.hermes_exe() is not None
 
 
 def checar() -> list[dict]:
@@ -50,7 +46,7 @@ def checar() -> list[dict]:
         item("gpu", "Placa de vídeo", True,
              "não precisa: a fala é transcrita na nuvem (%s)" % config.STTS[motor]["nome"].split(": ")[-1])
     else:
-        item("gpu", "Placa de vídeo (CUDA)", ok,
+        item("gpu", "GPU do Mac (MLX)" if plataforma.MAC else "Placa de vídeo (CUDA)", ok,
              det if ok else "sem placa NVIDIA: escolha o ouvido na nuvem (Groq tem cota grátis)",
              acao="conexoes")
     mod_w = any((config.MODELOS / "whisper").glob("**/model.bin")) if (config.MODELOS / "whisper").exists() else False

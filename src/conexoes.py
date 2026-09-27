@@ -163,13 +163,9 @@ def _status_cerebro() -> dict:
 
 
 def _gpu() -> tuple[bool, float]:
-    try:
-        import torch
-        if torch.cuda.is_available():
-            return True, torch.cuda.get_device_properties(0).total_memory / 2**30
-    except Exception:  # noqa: BLE001
-        pass
-    return False, 0.0
+    import plataforma
+    g = plataforma.gpu()
+    return bool(g["tipo"]), g["total_gb"]
 
 
 def _status_stt() -> dict:

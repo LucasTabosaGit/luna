@@ -9,7 +9,7 @@ Conexão da conta, em ordem de preferência:
 
 Renovação do token: o refresh token é de USO ÚNICO. Quando o token é o do
 Hermes, a renovação pega a MESMA trava que ele (`meuhoje.json.refresh.lock`,
-msvcrt 1 byte), relê o arquivo depois da trava e grava do jeito dele
+plataforma.travar: 1 byte), relê o arquivo depois da trava e grava do jeito dele
 (atômico, `expires_at` absoluto), para Luna e gateway não queimarem o token
 um do outro. Se a renovação falhar, NÃO apaga nada: só avisa para reconectar.
 """
@@ -18,7 +18,6 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-import msvcrt
 import os
 import secrets
 import tempfile
@@ -29,6 +28,7 @@ from pathlib import Path
 import httpx
 
 import config
+import plataforma
 
 NOME = "Meu Hoje"
 SITE = "https://meuhoje.com.br"
@@ -44,7 +44,7 @@ FOLGA_S = 90          # renova se faltar menos que isso
 # 1) login próprio da Luna
 PROPRIA = config.RAIZ / "dados" / "meuhoje"
 # 2) login do Hermes (perfil da Luna)
-HERMES = Path(os.environ.get("LOCALAPPDATA", "")) / "hermes" / "profiles" / config.HERMES_PERFIL / "mcp-tokens"
+HERMES = plataforma.hermes_home() / "profiles" / config.HERMES_PERFIL / "mcp-tokens"
 
 
 class Desconectado(Exception):
@@ -98,7 +98,7 @@ def _renovar(f: dict) -> dict:
         fim = time.monotonic() + 15
         while True:
             try:
-                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                plataforma.travar(fd)
                 break
             except OSError:
                 if time.monotonic() > fim:
@@ -122,7 +122,7 @@ def _renovar(f: dict) -> dict:
         finally:
             try:
                 os.lseek(fd, 0, 0)
-                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+                plataforma.destravar(fd)
             except OSError:
                 pass
     finally:

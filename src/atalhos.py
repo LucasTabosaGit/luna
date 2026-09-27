@@ -32,6 +32,8 @@ import json
 import os
 import re
 import subprocess
+
+import plataforma
 import threading
 from pathlib import Path
 
@@ -46,7 +48,7 @@ def _commitado() -> bool:
     try:
         r = subprocess.run(["git", "status", "--porcelain", "--", ARQ.name], cwd=RAIZ,
                            capture_output=True, text=True, timeout=5,
-                           creationflags=0x08000000)
+                           **plataforma.sem_janela())
         return r.returncode == 0 and not r.stdout.strip()
     except Exception:  # noqa: BLE001 - sem git: não arrisca
         return False
@@ -130,7 +132,7 @@ def rodar(a: dict, g: dict) -> tuple[bool, str]:
     cmd = [c.format(**g) for c in a["comando"]]
     try:
         r = subprocess.run(cmd, capture_output=True, timeout=a.get("teto_s", 40),
-                           creationflags=0x08000000)
+                           **plataforma.sem_janela())
         # PowerShell 5.1 escreve na página de código do console (acentos).
         saida = r.stdout.decode("utf-8", errors="strict") if r.stdout else ""
     except UnicodeDecodeError:

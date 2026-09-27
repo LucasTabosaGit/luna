@@ -13,13 +13,11 @@ propósito: vão para o Hermes, que pode confirmar antes.
 
 from __future__ import annotations
 
-import ctypes
 import datetime as _dt
 import difflib
 import json
 import os
 import re
-import subprocess
 import threading
 import unicodedata
 import urllib.parse
@@ -105,23 +103,9 @@ def fmt(n: float) -> str:
     return f"{n:.2f}".rstrip("0").rstrip(".").replace(".", ",")
 
 
-# ----------------------------------------------------------------- Windows
-
-_user32 = ctypes.windll.user32 if os.name == "nt" else None
-_TECLA_SOLTA = 0x0002
-
-
-def _teclas(*vks: int) -> None:
-    """Pressiona a combinação (na ordem) e solta (ao contrário)."""
-    for vk in vks:
-        _user32.keybd_event(vk, 0, 0, 0)
-    for vk in reversed(vks):
-        _user32.keybd_event(vk, 0, _TECLA_SOLTA, 0)
-
-
-VK_PLAY_PAUSE, VK_PROXIMA, VK_ANTERIOR = 0xB3, 0xB0, 0xB1
-VK_WIN, VK_D, VK_PRINT = 0x5B, 0x44, 0x2C
-VK_CTRL, VK_SHIFT = 0x11, 0x10
+# ------------------------------------------------- sistema (Windows ou Mac)
+# Teclas, volume, apps: src/plataforma.py escolhe o jeito de cada sistema.
+import plataforma as P  # noqa: E402
 
 # Cidade do clima quando o pedido não diz qual. NÃO usar a localização do IP:
 # com VPN/Cloudflare WARP ela muda de país a cada consulta (já saiu Buenos
@@ -130,30 +114,27 @@ CIDADE_PADRAO = "Maceio"
 
 
 def _atalho(nome, teclas, fala):
+    """teclas: nomes de plataforma.teclas ("ctrl" vira Command no Mac)."""
     def f(_m, executar):
         if executar:
-            _teclas(*teclas)
+            P.teclas(*teclas)
         return Resultado(nome, fala)
     return f
 
 
-def _volume():
-    from pycaw.pycaw import AudioUtilities
-    return AudioUtilities.GetSpeakers().EndpointVolume
-
-
 def _abrir(alvo: str) -> None:
-    os.startfile(alvo)  # noqa: S606 - URL, pasta ou atalho conhecido
+    P.abrir(alvo)                  # URL, pasta ou atalho conhecido
 
 
-# ------------------------------------------------------------ apps (Iniciar)
+# ------------------------------------------------ apps (menu Iniciar / .app)
 
-_APPS: dict[str, tuple[str, str]] = {}      # normalizado -> (nome, AppID)
+_APPS: dict[str, tuple[str, str]] = {}      # normalizado -> (nome, AppID ou .app)
 _APPS_PRONTO = threading.Event()
 _LIXO = re.compile(r"desinstal|uninstall|documenta|manual|help|ajuda|faq|"
                    r"release notes|modo de reparo|readme|website|leia-me")
 
-# Como as pessoas chamam -> nome no menu Iniciar.
+# Como as pessoas chamam -> nome no menu Iniciar (no Mac, o equivalente:
+# plataforma.nome_app troca "bloco de notas" por "textedit" etc.).
 APELIDOS = {
     "chrome": "google chrome", "google chrome": "google chrome",
     "navegador": "google chrome", "o navegador": "google chrome",
@@ -182,21 +163,15 @@ APELIDOS = {
     "lm studio": "lm studio", "paint": "paint", "camera": "camera",
     "fotos": "fotos", "loja": "microsoft store", "steam": "steam",
 }
+APELIDOS = {k: P.nome_app(v) for k, v in APELIDOS.items()}    # Mac: textedit, finder...
 
 
 def _carregar_apps() -> None:
     try:
-        cmd = ("[Console]::OutputEncoding=[Text.Encoding]::UTF8; "
-               "Get-StartApps | ConvertTo-Json -Compress")
-        out = subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
-                             capture_output=True, timeout=30,
-                             creationflags=0x08000000).stdout
-        itens = json.loads(out.decode("utf-8", "replace") or "[]")
-        for a in itens if isinstance(itens, list) else [itens]:
-            nome = (a.get("Name") or "").strip()
+        for nome, como in P.listar_apps():
             chave = normalizar(nome)
-            if nome and a.get("AppID") and not _LIXO.search(chave):
-                _APPS.setdefault(chave, (nome, a["AppID"]))
+            if chave and como and not _LIXO.search(chave):
+                _APPS.setdefault(chave, (nome, como))
     except Exception as e:  # noqa: BLE001
         print("  [comandos] lista de apps falhou: %s" % str(e)[:100], flush=True)
     finally:
@@ -316,9 +291,8 @@ def _vol_definir(m, executar):
     if n is None or not 0 <= n <= 100:
         return None
     if executar:
-        v = _volume()
-        v.SetMute(0, None)
-        v.SetMasterVolumeLevelScalar(n / 100, None)
+        P.volume_mudo(False)
+        P.volume_definir(n)
     return Resultado("volume", f"Volume em {fmt(n)} por cento.")
 
 
@@ -333,24 +307,23 @@ def _vol_passo(m, executar, sinal):
         passo = n
     novo = 50.0
     if executar:
-        v = _volume()
-        v.SetMute(0, None)
-        atual = v.GetMasterVolumeLevelScalar() * 100
+        P.volume_mudo(False)
+        atual, _ = P.volume_ler()
         novo = max(0.0, min(100.0, atual + sinal * passo))
-        v.SetMasterVolumeLevelScalar(novo / 100, None)
+        P.volume_definir(novo)
     return Resultado("volume", f"Volume em {fmt(round(novo))} por cento.")
 
 
 def _mudo(_m, executar, ligar):
     if executar:
-        _volume().SetMute(1 if ligar else 0, None)
+        P.volume_mudo(ligar)
     return Resultado("volume", "Pronto, sem som." if ligar else "Som de volta.")
 
 
-def _midia(nome, vk, fala):
+def _midia(nome, tecla, fala):
     def f(_m, executar):
         if executar:
-            _teclas(vk)
+            P.midia(tecla)
         return Resultado(nome, fala)
     return f
 
@@ -430,7 +403,7 @@ def _spotify(m, executar):
     q = m.group("q").strip()
     q = re.sub(r"^(musica|musicas|playlist|album|a playlist|o album|a musica)( de| do| da)?\s+", "", q) or q
     if executar:
-        os.startfile("spotify:search:" + urllib.parse.quote(q))  # noqa: S606
+        _abrir("spotify:search:" + urllib.parse.quote(q))
     return Resultado("spotify", "Abrindo no Spotify.")
 
 
@@ -451,19 +424,19 @@ def _google(m, executar):
 
 def _area_trabalho(_m, executar):
     if executar:
-        _teclas(VK_WIN, VK_D)
+        P.mostrar_area_de_trabalho()
     return Resultado("janelas", "Pronto.")
 
 
 def _print(_m, executar):
     if executar:
-        _teclas(VK_WIN, VK_PRINT)      # salva em Imagens\Capturas de Tela
+        P.print_da_tela(PASTAS["imagens"] / "Capturas de Tela")
     return Resultado("print", "Print salvo na pasta Imagens.")
 
 
 def _bloquear(_m, executar):
     if executar:
-        _user32.LockWorkStation()
+        P.bloquear_tela()
     return Resultado("bloquear", "Bloqueando.")
 
 
@@ -491,9 +464,9 @@ def _abrir_algo(m, executar):
     app = achar_app(alvo)
     if app is None:
         return None
-    nome, appid = app
+    nome, como = app
     if executar:
-        subprocess.Popen(["explorer.exe", "shell:AppsFolder\\" + appid])  # noqa: S603,S607
+        P.abrir_app(como)
     return Resultado("abrir", f"Abrindo {nome}.")
 
 
@@ -571,15 +544,15 @@ REGRAS: list[tuple[re.Pattern, object]] = [(re.compile(p), f) for p, f in [
     (r"^(pausa|pause|pausar|despausa|continua|continuar|retoma|retomar|play|"
      r"da play|de play|da o play|manda play|solta)( a| o)?( musica| video| som| midia)?"
      + _ONDE + r"$",
-     _midia("mídia", VK_PLAY_PAUSE, "Pronto.")),
+     _midia("mídia", "play", "Pronto.")),
     (r"^(toca|tocar)( a| o)? (musica|video)" + _ONDE + r"$",
-     _midia("mídia", VK_PLAY_PAUSE, "Pronto.")),
+     _midia("mídia", "play", "Pronto.")),
     (r"^((proxima|proximo|pula|pular|passa|avanca)( a| o| essa| esse)?"
      r"( musica| faixa| video)?|musica seguinte)" + _ONDE + r"$",
-     _midia("mídia", VK_PROXIMA, "Próxima.")),
+     _midia("mídia", "proxima", "Próxima.")),
     (r"^((volta|voltar)( a| o| pra| para)? (musica|faixa|video)( anterior)?|"
      r"(musica|faixa) anterior|anterior)" + _ONDE + r"$",
-     _midia("mídia", VK_ANTERIOR, "Voltando.")),
+     _midia("mídia", "anterior", "Voltando.")),
     # --- timers
     (r"^(cancela|cancelar|cancele|para|pare|desliga|apaga)( o| os| a| as)? "
      r"(timer|timers|temporizador|temporizadores|alarme|alarmes)$",
@@ -613,11 +586,11 @@ REGRAS: list[tuple[re.Pattern, object]] = [(re.compile(p), f) for p, f in [
      r"( a| o| uma| um)? (?P<q>.+?) no( meu)? (spotify|espotifai|spotifai)( ai| la)?$", _spotify),
     # --- abas do navegador (teclas no navegador que estiver na frente)
     (r"^(abre|abra|abrir|cria|crie|nova)( uma)? (nova )?(guia|aba)( nova)?( no (chrome|navegador|edge))?$",
-     _atalho("navegador", (VK_CTRL, ord("T")), "Pronto.")),
+     _atalho("navegador", ("ctrl", "t"), "Pronto.")),
     (r"^(fecha|feche|fechar)( essa| esta| a)? (guia|aba)$",
-     _atalho("navegador", (VK_CTRL, ord("W")), "Pronto.")),
+     _atalho("navegador", ("ctrl", "w"), "Pronto.")),
     (r"^(reabre|reabra|reabrir|volta|recupera)( a)? (guia|aba)( que fechei| fechada)?$",
-     _atalho("navegador", (VK_CTRL, VK_SHIFT, ord("T")), "Pronto.")),
+     _atalho("navegador", ("ctrl", "shift", "t"), "Pronto.")),
     # --- youtube e pesquisa (termo explícito: "no youtube", "no google")
     (r"^(toca|tocar|coloca|poe|bota|abre|abra|procura|procure|pesquisa|pesquise|busca|busque)"
      r"( a| o)? (?P<q>.+?) no youtube$", _youtube),

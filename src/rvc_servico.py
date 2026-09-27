@@ -93,9 +93,11 @@ def carregar(voz: str):
     global _rvc, _voz_atual
 
     if _rvc is None:
-        print("carregando RVC na GPU...", flush=True)
+        # Sem CUDA (Mac não tem): processador. O rvc_python não tem MPS.
+        dispositivo = "cuda:0" if torch.cuda.is_available() else "cpu"
+        print("carregando RVC (%s)..." % dispositivo, flush=True)
         t0 = time.time()
-        _rvc = RVCInference(models_dir=str(MODELOS), device="cuda:0")
+        _rvc = RVCInference(models_dir=str(MODELOS), device=dispositivo)
 
         # Parâmetros alinhados ao pipeline de referência
         # (JarodMica/rvc-tts-pipeline) e à documentação do RVC.

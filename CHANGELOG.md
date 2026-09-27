@@ -1,5 +1,15 @@
 # Mudanças
 
+## Mac (beta)
+
+- A Luna agora roda também no **Mac com Apple Silicon**: descobre o sistema sozinha e se ajusta.
+  Adaptado a partir do fork de [felipyenzo7543-blip](https://github.com/felipyenzo7543-blip/luna-mac).
+  - Abrir e instalar: `Luna.command` (o `instalar.py` serve aos dois sistemas).
+  - Ouvido local na GPU da Apple (Whisper pelo MLX); o processador fica de reserva.
+  - Volume, mídia, bloquear a tela, print, abrir apps de Aplicativos, atalho `Ctrl+Alt+L` e o modo Mini.
+  - Textos da janela (microfone, requisitos) mudam para o Mac.
+- `src/plataforma.py` junta num lugar só o que muda entre Windows e Mac.
+
 ## 0.1.0 — primeira versão pública
 
 - Ativação só pelo nome "Luna" (detector no áudio + texto), com "cancela"/"para" para interromper.

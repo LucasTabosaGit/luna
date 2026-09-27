@@ -13,13 +13,13 @@ fica em `dados/atalhos_off.json`, uma preferência da tela. atalhos.py consulta.
 from __future__ import annotations
 
 import json
-import os
 import re
 from collections import Counter
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-SKILLS = Path(os.environ.get("LOCALAPPDATA", "")) / "hermes" / "profiles" / "assistente" / "skills"
+import plataforma  # noqa: E402
+SKILLS = plataforma.hermes_home() / "profiles" / "assistente" / "skills"
 OFF = RAIZ / "dados" / "atalhos_off.json"
 REG_CLAUDE = RAIZ / "logs" / "para_claude.jsonl"
 

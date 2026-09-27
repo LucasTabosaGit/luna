@@ -1,13 +1,12 @@
 """Abre a Luna: liga o que faltar (Hermes, servidor) e mostra a janela.
 
-É o que o atalho "Luna" e o Luna.bat chamam, com o pythonw (sem console).
-Python puro de propósito: nada de PowerShell escondido, que antivírus
-confundem com vírus. Clicar duas vezes não duplica nada: cada parte só
+É o que o atalho "Luna" e o Luna.bat (Windows, com o pythonw, sem console)
+ou o Luna.command (Mac) chamam. Python puro de propósito: nada de script
+escondido, que antivírus confundem com vírus. Clicar duas vezes não duplica nada: cada parte só
 sobe se a porta dela ainda não estiver no ar.
 """
 from __future__ import annotations
 
-import ctypes
 import os
 import socket
 import subprocess
@@ -18,7 +17,6 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 LOGS = RAIZ / "logs"
-SEM_JANELA = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
 
 
 def no_ar(porta: int) -> bool:
@@ -28,11 +26,12 @@ def no_ar(porta: int) -> bool:
 
 
 def aviso(texto: str) -> None:
-    ctypes.windll.user32.MessageBoxW(None, texto, "Luna", 0x30)
+    import plataforma
+    plataforma.aviso(texto)
 
 
 def ambiente() -> dict:
-    """Modelos e caches dentro da pasta do projeto (não enchem o C:)."""
+    """Modelos e caches dentro da pasta do projeto (não enchem o disco do sistema)."""
     env = dict(os.environ)
     env.update({
         "HF_HOME": str(RAIZ / "modelos" / "hf"),
@@ -54,23 +53,25 @@ def ligar_hermes() -> None:
     """Hermes (opcional): modo Expert e tarefas no PC."""
     if no_ar(8642):
         return
-    hermes = Path(os.environ.get("LOCALAPPDATA", "")) / "hermes" / "hermes-agent" / "venv" / "Scripts" / "hermes.exe"
-    if not hermes.is_file():
+    import plataforma
+    hermes = plataforma.hermes_exe()
+    if not hermes:
         return
-    log = hermes.parent.parent.parent.parent / "gateway-voz.log"
+    log = plataforma.hermes_home() / "gateway-voz.log"
     with open(log, "ab") as out, open(str(log) + ".err", "ab") as err:
-        subprocess.Popen([str(hermes), "-p", "default", "gateway", "run"], stdout=out, stderr=err,
-                         stdin=subprocess.DEVNULL, creationflags=SEM_JANELA)
+        subprocess.Popen([hermes, "-p", "default", "gateway", "run"], stdout=out, stderr=err,
+                         stdin=subprocess.DEVNULL, **plataforma.sem_janela())
 
 
 def ligar_servidor() -> subprocess.Popen | None:
     if no_ar(8777):
         return None
-    py = RAIZ / ".venv" / "Scripts" / "python.exe"
+    import plataforma
+    py = plataforma.python_venv()
     LOGS.mkdir(exist_ok=True)
     with open(LOGS / "srv.log", "ab") as out, open(LOGS / "srv.err.log", "ab") as err:
         return subprocess.Popen([str(py), str(RAIZ / "src" / "servidor.py")], cwd=str(RAIZ), env=ambiente(),
-                                stdout=out, stderr=err, stdin=subprocess.DEVNULL, creationflags=SEM_JANELA)
+                                stdout=out, stderr=err, stdin=subprocess.DEVNULL, **plataforma.sem_janela())
 
 
 def esperar(proc: subprocess.Popen | None) -> bool:
@@ -90,16 +91,18 @@ def esperar(proc: subprocess.Popen | None) -> bool:
 
 
 def main() -> int:
-    if not (RAIZ / ".venv" / "Scripts" / "python.exe").is_file():
-        aviso("A Luna ainda não foi instalada. Clique duas vezes em Luna.bat.")
+    sys.path.insert(0, str(RAIZ / "src"))
+    import plataforma
+    if not plataforma.python_venv().is_file():
+        aviso("A Luna ainda não foi instalada. Clique duas vezes em %s."
+              % ("Luna.command" if plataforma.MAC else "Luna.bat"))
         return 1
     ligar_hermes()
     proc = ligar_servidor()
     if not esperar(proc):
-        aviso("A Luna não conseguiu ligar.\n\nVeja o arquivo logs\\srv.err.log na pasta da Luna "
+        aviso("A Luna não conseguiu ligar.\n\nVeja o arquivo logs/srv.err.log na pasta da Luna "
               "(ou abra uma issue no GitHub com ele).")
         return 1
-    sys.path.insert(0, str(RAIZ / "src"))
     import atalho_global
     atalho_global.trazer_para_frente()         # reaproveita a janela se já estiver aberta
     return 0
