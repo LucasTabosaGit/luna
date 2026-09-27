@@ -17,7 +17,7 @@ import comandos  # noqa: E402
 POSITIVOS = [
     ("Que horas são?", "hora"), ("Hermes, que horas são agora?", "hora"),
     ("Me diz as horas", "hora"), ("Que dia é hoje?", "data"),
-    ("Qual a data de hoje?", "data"),
+    ("Qual a data de hoje?", "data"), ("Luna, que horas são?", "hora"), ("Luna, o que você sabe fazer?", "ajuda"),
     ("Aumenta o volume", "volume"), ("Abaixa o som", "volume"),
     ("Coloca o volume em 30", "volume"), ("Volume em trinta por cento", "volume"),
     ("Aumenta o volume para 50", "volume"), ("Diminui o volume em 20", "volume"),
@@ -124,7 +124,31 @@ def main() -> int:
         ok = r is None
         erros += not ok
         print(f"  {'ok ' if ok else 'ERR'} {frase:45s} -> {r.nome + ': ' + r.fala if r else 'cérebro'}")
-    total = len(POSITIVOS) + len(NEGATIVOS) - pulados
+    # A lista do "o que você sabe fazer?" não pode prometer o que não existe:
+    # cada exemplo do CATALOGO tem que cair no comando que ele diz.
+    print("\nCATÁLOGO (o que ela diz que sabe fazer)")
+    n_cat = 0
+    for titulo, nome_cat, exemplos in comandos.CATALOGO:
+        for frase in exemplos:
+            r = comandos.tentar(frase, executar=False)
+            nome = r.nome if r else None
+            ok = nome == nome_cat or (nome_cat == "abrir" and nome in ("abrir", "site", "pasta")) \
+                or (nome_cat == "youtube" and nome in ("youtube", "pesquisa")) \
+                or (nome_cat == "janelas" and nome in ("janelas", "print", "bloquear")) \
+                or (nome_cat == "hora" and nome in ("hora", "data"))
+            if not ok and nome_cat == "abrir" and nome is None and os.environ.get("CI"):
+                pulados += 1
+                continue
+            n_cat += 1
+            erros += not ok
+            print(f"  {'ok ' if ok else 'ERR'} {titulo[:22]:22s} {frase:40s} -> {nome}")
+    for frase in ("O que você sabe fazer?", "Me explica o que você sabe fazer", "Quais são os seus comandos?", "Ajuda"):
+        r = comandos.tentar(frase, executar=False)
+        ok = bool(r) and r.nome == "ajuda"
+        n_cat += 1
+        erros += not ok
+        print(f"  {'ok ' if ok else 'ERR'} {'ajuda':22s} {frase:40s} -> {r.nome if r else 'cérebro'}")
+    total = len(POSITIVOS) + len(NEGATIVOS) + n_cat - pulados
     print(f"\n{total - erros}/{total} corretos" + (f" ({pulados} pulados: app não instalado)" if pulados else ""))
     return 1 if erros else 0
 

@@ -14,6 +14,8 @@
 - Funciona **sem placa de vídeo**: a fala pode ser transcrita na nuvem (Groq, OpenAI ou Gemini).
 - Ajustes reorganizados em abas: Voz, Escuta, Inteligência, Uso e gastos, Requisitos e dicas, Atalhos e Sistema.
 - Tela inicial com exemplos para clicar; o guia de Primeiros passos termina ensinando como falar, como parar e os três modos.
+- "Luna, o que você sabe fazer?" responde com a lista real de comandos (conferida pelos testes) e os atalhos que ela aprendeu.
+- Microfone bloqueado, ausente ou ocupado abre uma janela explicando onde clicar para liberar.
 - README destaca o aprendizado com o Hermes (memória, habilidades e atalhos, com trava de aprovação).
 - README com "Por que ela é diferente" e "Como usar" (tabela de frases de exemplo).
 - Aba **Uso e gastos** (gasto de hoje, do mês, gráfico de 30 dias e quanto o seu uso custaria em cada IA) e

@@ -1552,9 +1552,50 @@ async def _acao_local(s: Sessao, texto: str, d: dict, t_fim_fala: float,
     return True
 
 
+def _ajuda_texto() -> tuple[str, str]:
+    """(fala curta, lista completa em markdown) do que a Luna faz DE VERDADE.
+
+    Vem do CATALOGO de comandos.py (conferido pelo teste_comandos), dos
+    atalhos aprovados em atalhos.json e do que está conectado agora.
+    """
+    comandos = _atualizado("comandos")
+    linhas = ["**O que eu faço na hora, sem IA:**", ""]
+    for titulo, _nome, exemplos in comandos.CATALOGO:
+        linhas.append("- **%s**: %s" % (titulo, " · ".join("“%s”" % e for e in exemplos)))
+    try:
+        import aprendizado
+        meus = [a for a in aprendizado.atalhos() if a["ligado"]]
+    except Exception:  # noqa: BLE001
+        meus = []
+    if meus:
+        linhas += ["", "**Atalhos que aprendi com você:**", ""]
+        def _ex(a):
+            e = (a.get("exemplo") or "").strip().strip('“”"')
+            return ": “%s”" % e if e else ""
+        linhas += ["- **%s**%s" % (a["nome"], _ex(a)) for a in meus[:12]]
+    claude = _hermes_online()
+    linhas += ["", "**E conversando:**", "",
+               "- Perguntas, explicações e textos com a IA principal (%s)." % config.LLM_NOME,
+               "- Cole um print ou anexe um PDF e pergunte sobre ele."]
+    if claude:
+        linhas.append("- Tarefas no computador (arquivos, pesquisa, organizar coisas) com o **Claude**, "
+                      "que também lembra de você e aprende habilidades novas.")
+    else:
+        linhas.append("- Com o **Claude** conectado (Hermes), eu também faço tarefas no computador e aprendo "
+                      "com o uso. Veja Ajustes → Inteligência.")
+    linhas += ["", "Sempre com “Luna” na frase. Para parar: “Luna, para”."]
+    fala = ("Na hora, sem IA, eu vejo hora e clima, mexo no volume e na música, abro programas e sites, "
+            "faço contas e timers. O resto eu converso com a IA%s. Deixei a lista completa na tela."
+            % (", e as tarefas no computador eu passo para o Claude" if claude else ""))
+    return fala, "\n".join(linhas)
+
+
 async def _entregar(s: Sessao, r, texto: str, t0: float, t_acao: float,
                     t_stt: float, t_fim_fala: float, origem: str) -> None:
     """Fala o resultado de um comando/ação, arma timers e registra."""
+    lista_ajuda = ""
+    if r.especial == "ajuda":
+        r.fala, lista_ajuda = await asyncio.to_thread(_ajuda_texto)
     if r.especial == "cancelar_timers":
         n = sum(1 for t in s.timers if not t.done())
         for t in s.timers:
@@ -1586,6 +1627,9 @@ async def _entregar(s: Sessao, r, texto: str, t0: float, t_acao: float,
                    rotulo="", id=ident, status="completed")
 
     await _falar_uma(s, r.fala)
+    if lista_ajuda:
+        # Fala o resumo; na tela fica a lista inteira (com markdown).
+        await s.enviar(tipo="bot_final", texto=lista_ajuda, rota="comando")
     s.historico.append({"role": "assistant", "content": r.fala})
     if len(s.historico) > 9:
         s.historico[:] = s.historico[:1] + s.historico[-8:]

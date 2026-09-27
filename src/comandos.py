@@ -49,7 +49,7 @@ def normalizar(t: str) -> str:
     t = re.sub(r"\s+", " ", t).strip()
     # Vocativos e cortesias nas pontas, que o Whisper transcreve junto.
     for _ in range(3):
-        t = re.sub(r"^(ei|oi|ola|ok|entao|hermes|assistente|por favor|"
+        t = re.sub(r"^(ei|oi|ola|ok|entao|luna|hermes|assistente|por favor|"
                    r"pode|poderia|voce pode|voce poderia|voce consegue|consegue|da pra|"
                    r"eu quero que voce|quero que voce|queria que voce)\s+",
                    "", t)
@@ -508,8 +508,37 @@ _PLAYER = (r"(?:spotify|espotifai|spotifai|spotfy|youtube|yotube|iutube|"
 _ONDE = (r"(?: (?:no|na|do|da|em|ai no|ai na|ai do|ai da|la no|la na|la do|la da) ?"
          + _PLAYER + r"| " + _PLAYER + r"| ai| la)?")
 
+# O que ela sabe fazer sem IA. É a lista que ela fala quando perguntam
+# "o que você sabe fazer?". teste_comandos.py confere que CADA exemplo daqui
+# cai mesmo no comando indicado: a lista nunca promete o que não existe.
+CATALOGO: list[tuple[str, str, list[str]]] = [
+    ("Hora e data", "hora", ["Que horas são?", "Que dia é hoje?"]),
+    ("Volume", "volume", ["Aumenta o volume", "Volume em 30", "Coloca no mudo"]),
+    ("Música e vídeo", "mídia", ["Pausa", "Pula essa", "Volta a música"]),
+    ("Spotify", "spotify", ["Toca Legião Urbana no Spotify"]),
+    ("YouTube e Google", "youtube", ["Toca Legião Urbana no YouTube", "Pesquisa receita de bolo no Google"]),
+    ("Timers e lembretes", "timer", ["Timer de 5 minutos", "Me lembra de tirar o bolo em 40 minutos", "Cancela o timer"]),
+    ("Contas", "conta", ["Quanto é 25 vezes 4?", "Quanto é 15% de 200?"]),
+    ("Clima", "clima", ["Como está o tempo?", "Vai chover hoje?"]),
+    ("Abrir programas, sites e pastas", "abrir", ["Abre o Chrome", "Abre o YouTube", "Abre a pasta downloads"]),
+    ("Abas do navegador", "navegador", ["Abre uma aba nova", "Fecha essa aba"]),
+    ("Janelas e tela", "janelas", ["Mostra a área de trabalho", "Tira um print", "Bloqueia o computador"]),
+]
+
+
+def _ajuda(_m, _executar):
+    # A lista completa é montada pelo servidor (junta atalhos aprendidos e o
+    # que está conectado); aqui só a fala curta.
+    return Resultado("ajuda", "", especial="ajuda")
+
+
 # Ordem importa: as mais específicas primeiro.
 REGRAS: list[tuple[re.Pattern, object]] = [(re.compile(p), f) for p, f in [
+    # --- ajuda: a lista real do que ela faz (CATALOGO + atalhos)
+    (r"^((me )?(diz|fala|explica|conta|mostra)( pra mim| para mim)? )?"
+     r"(o que|que coisas|quais coisas|oque) (voce|vc|tu)? ?(sabe|consegue|pode) fazer( por mim| aqui)?$|"
+     r"^(quais (sao )?(os )?(seus )?comandos|lista de comandos|(me )?mostra (os )?(seus )?comandos|"
+     r"ajuda|me ajuda|como (eu )?(te )?uso|como funciona( voce)?)$", _ajuda),
     # --- hora e data
     (r"^(que horas (sao|e)|que hora e|me (diz|fala) (as|que) horas( sao)?|"
      r"horas|hora certa|sabe que horas sao|voce sabe que horas sao)( agora)?$",

@@ -534,6 +534,17 @@
                    font-size: 12.5px; cursor: pointer; }
   .dica-c button:hover { text-decoration: underline; }
   @media (max-width: 760px) { .uso-grade { grid-template-columns: 1fr; } .tab-req th:nth-child(3), .tab-req td:nth-child(3) { display: none; } }
+  #dlgMic { width: min(520px, calc(100vw - 32px)); }
+  .mic-dlg h3 { margin: 10px 0 4px; }
+  .mic-ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+            background: color-mix(in oklch, var(--erro) 14%, transparent); color: var(--erro); }
+  .mic-ic svg { width: 24px; height: 24px; }
+  .mic-sub { margin: 0 0 12px; color: var(--suave); font-size: 13px; line-height: 1.5; }
+  .mic-passos { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 13.5px; line-height: 1.5; }
+  .mic-passos b { color: var(--tinta); }
+  .mic-passos .kbd { font-size: 11px; }
+  .mic-nota { margin: 12px 0 0; color: var(--fraco); font-size: 12px; line-height: 1.5; }
+  .mic-nota:empty { display: none; }
   .modos-guia { display: grid; gap: 6px; margin: 10px 0 4px; }
   .modos-guia div { border-left: 2px solid var(--ambar); padding: 2px 0 2px 10px; font-size: 13px; color: var(--suave); }
   .modos-guia b { color: var(--tinta); }
@@ -648,7 +659,7 @@
           <button type="button" data-pedido="Luna, como está o tempo?">Como está o tempo?</button>
           <button type="button" data-pedido="Luna, coloca um timer de 5 minutos">Timer de 5 minutos</button>
           <button type="button" data-pedido="Luna, quanto é 15% de 200?">15% de 200</button>
-          <button type="button" data-pedido="Luna, me explica o que você sabe fazer">O que você sabe fazer?</button>
+          <button type="button" data-pedido="Luna, o que você sabe fazer?">O que você sabe fazer?</button>
         </div>
       </div>
     </div>
@@ -1004,6 +1015,22 @@ API_SERVER_KEY=&lt;invente uma senha longa&gt;</pre></li>
 </dialog>
 
 <dialog id="zoom"><img alt=""></dialog>
+<dialog id="dlgMic" aria-labelledby="micTitulo">
+  <div class="dlg mic-dlg">
+    <div class="mic-ic" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/><path d="M3 3l18 18"/></svg>
+    </div>
+    <h3 id="micTitulo">O microfone está bloqueado</h3>
+    <p class="mic-sub" id="micSub"></p>
+    <ol class="mic-passos" id="micPassos"></ol>
+    <p class="mic-nota" id="micNota"></p>
+    <div class="linha" style="justify-content:space-between;margin-top:14px;gap:8px">
+      <button type="button" class="mini-btn" onclick="this.closest('dialog').close()">Agora não</button>
+      <button type="button" class="botao" id="micDeNovo">Tentar de novo</button>
+    </div>
+  </div>
+</dialog>
 <dialog id="dlgAtualizar" aria-label="Atualizações">
   <div class="dlg">
     <h3 style="margin:0 0 4px">Atualizações</h3>
@@ -1470,7 +1497,9 @@ function tratar(m) {
       let d = $msgs.lastElementChild;
       if (!d || d.dataset.quem !== 'bot') d = conversa('bot', '', null, false);
       finalizarResposta(d, m.texto, m.rota);
-      $fala.textContent = d.querySelector('.txt').innerText.replace(/\s+/g, ' ').replace(/Copiar/g, '').trim();
+      // Comando pronto (ex.: a lista de ajuda): a legenda fica com o que foi
+      // FALADO; a lista completa mora só na conversa.
+      if (m.rota !== 'comando') $fala.textContent = d.querySelector('.txt').innerText.replace(/\s+/g, ' ').replace(/Copiar/g, '').trim();
       $listaConv.scrollTop = $listaConv.scrollHeight;
       break;
     }
@@ -1571,9 +1600,82 @@ async function alternarMic() {
   if (micLigado) { desligarMic(); return; }
   $mic.disabled = true;
   try { await ligarMic(); }
-  catch (e) { erro(e.name + ': ' + e.message); }
+  catch (e) { if (!ajudaMic(e)) erro(e.name + ': ' + e.message); }
   finally { $mic.disabled = false; }
 }
+
+// Microfone bloqueado ou ausente: em vez de "não funciona", uma janela
+// dizendo exatamente onde clicar. Distingue o bloqueio do navegador do
+// bloqueio do Windows (Privacidade), que dá o mesmo erro com outra mensagem.
+const MIC_CASOS = {
+  navegador: {
+    titulo: 'O navegador bloqueou o microfone',
+    sub: 'A Luna precisa do microfone para ouvir você. Dá para liberar em poucos cliques:',
+    passos: [
+      'No alto da janela, clique no <b>microfone riscado</b> ou no <b>cadeado 🔒</b> (no navegador comum, fica ao lado do endereço).',
+      'Em <b>Microfone</b>, escolha <b>Permitir</b>.',
+      'Não achou o ícone? Clique nos <b>três pontinhos ⋮</b> no alto → <b>Configurações do site</b> (ou <b>Informações do app</b>) → <b>Microfone</b> → <b>Permitir</b>.',
+      'Clique em <b>Tentar de novo</b> aqui embaixo. Se não funcionar, aperte <span class="kbd">F5</span> para recarregar.',
+    ],
+    nota: 'A permissão fica salva: só é preciso fazer isso uma vez.',
+  },
+  windows: {
+    titulo: 'O Windows está bloqueando o microfone',
+    sub: 'O navegador até deixa, mas o Windows não libera o microfone para apps. Para liberar:',
+    passos: [
+      'Abra o <b>Iniciar</b> e procure <b>Privacidade do microfone</b> (ou vá em Configurações → Privacidade e segurança → Microfone).',
+      'Ligue <b>Acesso ao microfone</b> e também <b>Permitir que aplicativos da área de trabalho acessem o microfone</b>.',
+      'Volte aqui e clique em <b>Tentar de novo</b>.',
+    ],
+    nota: '',
+  },
+  ausente: {
+    titulo: 'Nenhum microfone encontrado',
+    sub: 'A Luna não achou nenhum microfone ligado a este computador.',
+    passos: [
+      'Confira se o microfone ou fone com microfone está <b>conectado</b> (no USB, tente outra porta).',
+      'No Windows, clique com o botão direito no <b>ícone de som</b> perto do relógio → <b>Configurações de som</b> → em <b>Entrada</b>, escolha o seu microfone.',
+      'Clique em <b>Tentar de novo</b>.',
+    ],
+    nota: 'Enquanto isso, dá para usar a Luna digitando na caixa de texto.',
+  },
+  ocupado: {
+    titulo: 'Outro programa está usando o microfone',
+    sub: 'Algum app pegou o microfone só para ele.',
+    passos: [
+      'Feche ou saia da chamada nos apps que usam o microfone (Discord, Teams, Zoom, OBS, WhatsApp…).',
+      'Clique em <b>Tentar de novo</b>.',
+    ],
+    nota: 'Se continuar, reiniciar o computador costuma resolver.',
+  },
+};
+function ajudaMic(e) {
+  const nome = (e && e.name) || '', msg = String((e && e.message) || '');
+  const caso = nome === 'NotAllowedError' || nome === 'SecurityError'
+    ? (/system|sistema/i.test(msg) ? 'windows' : 'navegador')
+    : nome === 'NotFoundError' || nome === 'OverconstrainedError' ? 'ausente'
+    : nome === 'NotReadableError' || nome === 'AbortError' ? 'ocupado' : '';
+  if (!caso) return false;
+  const c = MIC_CASOS[caso];
+  $('micTitulo').textContent = c.titulo;
+  $('micSub').textContent = c.sub;
+  $('micPassos').innerHTML = c.passos.map(p => '<li>' + p + '</li>').join('');
+  $('micNota').textContent = c.nota;
+  if (!$('dlgMic').open) $('dlgMic').showModal();
+  $fala.textContent = c.titulo + '.';
+  mudarEstado('desligado');
+  return true;
+}
+$('micDeNovo').onclick = async () => {
+  $('dlgMic').close();
+  if (!micLigado) await alternarMic();
+};
+// Se a permissão foi negada antes, avisa já ao abrir (sem esperar o clique).
+navigator.permissions?.query({ name: 'microphone' }).then(st => {
+  const olhar = () => { if (st.state === 'denied') ajudaMic({ name: 'NotAllowedError', message: '' }); };
+  olhar();
+  st.onchange = () => { if (st.state !== 'denied' && $('dlgMic').open) $('dlgMic').close(); else olhar(); };
+}).catch(() => {});
 
 /* ================================================================ turno / atividade */
 

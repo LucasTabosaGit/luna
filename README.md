@@ -51,8 +51,9 @@ microfone → portão "Luna" (openWakeWord) → Whisper large-v3-turbo (placa de
 | "Luna, me explica o que é inflação" | conversa com a IA escolhida |
 | "Luna, organiza os PDFs da pasta Downloads" | o Claude faz a tarefa no PC (com o Hermes) |
 
-3. Para parar a qualquer momento: **"Luna, para"** ou **"cancela"**.
-4. Também dá para digitar, colar um print (Ctrl+V) ou anexar um PDF e perguntar sobre ele.
+3. Não sabe o que pedir? Diga **"Luna, o que você sabe fazer?"**: ela mostra a lista completa.
+4. Para parar a qualquer momento: **"Luna, para"** ou **"cancela"**.
+5. Também dá para digitar, colar um print (Ctrl+V) ou anexar um PDF e perguntar sobre ele.
 
 **Os três modos** (botões ao lado do microfone):
 - **Auto**: o normal. Escolhe sozinho entre comando, IA rápida ou Claude.
