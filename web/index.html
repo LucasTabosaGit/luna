@@ -151,6 +151,12 @@
                max-height: 40vh; overflow-y: auto; }
   #falaAtual:empty::before { content: attr(data-vazio); color: var(--fraco); font-weight: 400; }
   #voceDisse { color: var(--suave); font-size: 14px; margin-top: 16px; min-height: 22px; }
+  .experimente { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 14px; }
+  .experimente small { width: 100%; color: var(--fraco); font-size: 11.5px; }
+  .experimente button { border: 1px solid var(--linha); background: transparent; color: var(--suave);
+                        border-radius: 999px; padding: 5px 11px; font-size: 12.5px; cursor: pointer; }
+  .experimente button:hover { color: var(--tinta); border-color: var(--ambar); }
+  .experimente[hidden] { display: none; }
   #voceDisse span { color: var(--fraco); }
 
   .doca { display: flex; align-items: center; gap: 14px; padding: 14px 22px calc(16px + env(safe-area-inset-bottom));
@@ -528,6 +534,9 @@
                    font-size: 12.5px; cursor: pointer; }
   .dica-c button:hover { text-decoration: underline; }
   @media (max-width: 760px) { .uso-grade { grid-template-columns: 1fr; } .tab-req th:nth-child(3), .tab-req td:nth-child(3) { display: none; } }
+  .modos-guia { display: grid; gap: 6px; margin: 10px 0 4px; }
+  .modos-guia div { border-left: 2px solid var(--ambar); padding: 2px 0 2px 10px; font-size: 13px; color: var(--suave); }
+  .modos-guia b { color: var(--tinta); }
   .aj-nota { margin: -6px 0 0; font-size: 12px; line-height: 1.45; color: var(--suave); }
   .aj-nota[hidden] { display: none; }
   .aj-bloco { display: grid; gap: 14px; border: 1px solid var(--linha); border-radius: 10px; padding: 14px; background: var(--fundo); }
@@ -633,6 +642,14 @@
         <p id="falaAtual" data-vazio="Ligue o microfone e fale, ou digite um comando abaixo."></p>
         <ol id="fila" hidden></ol>
         <div id="voceDisse"></div>
+        <div class="experimente" id="experimente" aria-label="Exemplos para experimentar">
+          <small>Experimente dizer ou clicar:</small>
+          <button type="button" data-pedido="Luna, que horas são?">Que horas são?</button>
+          <button type="button" data-pedido="Luna, como está o tempo?">Como está o tempo?</button>
+          <button type="button" data-pedido="Luna, coloca um timer de 5 minutos">Timer de 5 minutos</button>
+          <button type="button" data-pedido="Luna, quanto é 15% de 200?">15% de 200</button>
+          <button type="button" data-pedido="Luna, me explica o que você sabe fazer">O que você sabe fazer?</button>
+        </div>
       </div>
     </div>
 
@@ -957,13 +974,19 @@ API_SERVER_KEY=&lt;invente uma senha longa&gt;</pre></li>
     </section>
 
     <section class="etapa" data-etapa="4" hidden>
-      <h3>Pronto!</h3>
+      <h3>Pronto! Como conversar com ela</h3>
       <div class="guia">
         <ol>
-          <li>Clique no <b>microfone</b> e permita o acesso quando o navegador pedir.</li>
-          <li>Diga “<b>Luna</b>, que horas são?” — ela só responde quando ouve o nome.</li>
-          <li>Experimente: “Luna, abre o YouTube”, “Luna, aumenta o volume”, ou cole um print e pergunte.</li>
+          <li>Clique no <b>microfone</b> (ou aperte <span class="kbd">Espaço</span>) e permita o acesso quando o navegador pedir.</li>
+          <li>Fale com o nome na frase: “<b>Luna</b>, que horas são?”. Sem o nome ela não responde. Assim a TV e a conversa da sala não viram pedido.</li>
+          <li>Pode falar do seu jeito, não precisa decorar comando. “Luna, abaixa o som”, “Luna, coloca música no Spotify”, “Luna, me lembra do bolo em 40 minutos”.</li>
+          <li>Para parar a qualquer momento: “<b>Luna, para</b>” ou “cancela”, ou o botão ■.</li>
         </ol>
+        <div class="modos-guia">
+          <div><b>Auto</b> (o normal). Comandos do PC saem na hora, perguntas vão para a IA rápida e tarefas maiores vão sozinhas para o Claude.</div>
+          <div><b>Expert</b>. Tudo vai direto para o Claude: mais lento e mais capaz. Bom para mexer em arquivos, pesquisar e escrever.</div>
+          <div><b>Live</b>. Conversa falada de ida e volta com o Gemini, sem esperar a vez.</div>
+        </div>
         <p class="dica">Atalhos: <span class="kbd">Ctrl+Alt+L</span> chama a Luna de qualquer programa ·
           <span class="kbd">Ctrl+K</span> comandos · <span class="kbd">Espaço</span> liga o microfone.
           Este guia fica em Ajustes → <b>Primeiros passos</b>.</p>
@@ -1643,8 +1666,8 @@ const ERROS = [
   [/NotAllowedError|Permission denied|permiss/i, 'O navegador bloqueou o microfone.', 'Clique no cadeado ao lado do endereço e permita o microfone.'],
   [/NotFoundError|device not found|Requested device/i, 'Nenhum microfone encontrado.', 'Confira se ele está conectado e escolhido no Windows.'],
   [/NotReadableError|Could not start/i, 'Outro programa está usando o microfone.', 'Feche o app que está com ele (Discord, OBS…) e tente de novo.'],
-  [/Insufficient Balance|402|quota/i, 'Acabou o saldo (ou a cota) da IA principal.', 'Recarregue a conta dela ou troque de IA em Ajustes → Conexões; enquanto isso use o modo Expert.'],
-  [/401|Unauthorized|api[_ ]?key|Authentication/i, 'Uma chave foi recusada.', 'Confira as chaves em Ajustes → Conexões.'],
+  [/Insufficient Balance|402|quota/i, 'Acabou o saldo (ou a cota) da IA principal.', 'Recarregue a conta dela ou troque de IA em Ajustes → Inteligência; enquanto isso use o modo Expert.'],
+  [/401|Unauthorized|api[_ ]?key|Authentication/i, 'Uma chave foi recusada.', 'Confira as chaves em Ajustes → Inteligência.'],
   [/429|rate.?limit|Too Many/i, 'Muitos pedidos seguidos.', 'Espere alguns segundos e tente de novo.'],
   [/timed? ?out|Timeout|demorou/i, 'Demorou demais para responder.', 'Pode ter sido a internet. Tente de novo.'],
   [/Hermes|8642|Claude fora|Expert indispon/i, 'O Claude não está respondendo.', 'O gateway do Hermes pode estar reiniciando. Espere uns segundos.'],
@@ -2916,6 +2939,14 @@ function comandosBase() {
   return c.map(([t, g, f]) => ({ t, g, f }));
 }
 function pedir(texto) { $entrada.value = texto; ajustarEntrada(); $('formTexto').requestSubmit(); }
+// Exemplos na tela vazia: somem na primeira conversa e voltam em "Nova conversa".
+document.querySelectorAll('#experimente [data-pedido]').forEach(b => b.onclick = () => pedir(b.dataset.pedido));
+function mostrarExemplos() {
+  $('experimente').hidden = !!($fala.textContent.trim() || $voce.textContent.trim());
+}
+new MutationObserver(mostrarExemplos).observe($fala, { childList: true, characterData: true, subtree: true });
+new MutationObserver(mostrarExemplos).observe($voce, { childList: true, characterData: true, subtree: true });
+mostrarExemplos();
 function semAcento(t) { return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
 function filtrarPaleta() {
   const q = semAcento($palBusca.value.trim());

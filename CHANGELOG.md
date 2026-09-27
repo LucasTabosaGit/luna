@@ -13,5 +13,7 @@
 - Botão **Atualização** na barra de cima: avisa quando sai versão nova e atualiza com um clique.
 - Funciona **sem placa de vídeo**: a fala pode ser transcrita na nuvem (Groq, OpenAI ou Gemini).
 - Ajustes reorganizados em abas: Voz, Escuta, Inteligência, Uso e gastos, Requisitos e dicas, Atalhos e Sistema.
+- Tela inicial com exemplos para clicar; o guia de Primeiros passos termina ensinando como falar, como parar e os três modos.
+- README com "Por que ela é diferente" e "Como usar" (tabela de frases de exemplo).
 - Aba **Uso e gastos** (gasto de hoje, do mês, gráfico de 30 dias e quanto o seu uso custaria em cada IA) e
   **Requisitos e dicas** (o que a Luna usa no seu PC agora e como deixá-la mais leve ou mais barata).

@@ -1,5 +1,5 @@
 {
- "versao": "2026.09.27.0616",
+ "versao": "2026.09.27.0629",
  "repo": "LucasTabosaGit/luna",
  "novidades": [
   "Ativação só pelo nome \"Luna\" (detector no áudio + texto), com \"cancela\"/\"para\" para interromper.",
@@ -13,6 +13,6 @@
   "Botão Atualização na barra de cima: avisa quando sai versão nova e atualiza com um clique.",
   "Funciona sem placa de vídeo: a fala pode ser transcrita na nuvem (Groq, OpenAI ou Gemini).",
   "Ajustes reorganizados em abas: Voz, Escuta, Inteligência, Uso e gastos, Requisitos e dicas, Atalhos e Sistema.",
-  "Aba Uso e gastos (gasto de hoje, do mês, gráfico de 30 dias e quanto o seu uso custaria em cada IA) e"
+  "Tela inicial com exemplos para clicar; o guia de Primeiros passos termina ensinando como falar, como parar e os três mod"
  ]
 }

@@ -12,16 +12,49 @@ microfone → portão "Luna" (openWakeWord) → Whisper large-v3-turbo (placa de
           → voz Microsoft pt-BR (Francisca, Thalita, Antônio, JARVIS) → alto-falante
 ```
 
-## O que ela faz
+## Por que ela é diferente
 
-- **Só atende quando ouve "Luna"** — TV, música e conversa na sala são descartadas antes de transcrever.
-- **Comandos prontos**: abrir apps e sites, volume, mídia, pastas, hora, contas — sem IA, na hora.
-- **Conversa** rápida pela IA escolhida, que também **lê imagens** (cole um print no chat; DeepSeek, Gemini e OpenAI).
-- **Modo Expert**: tudo direto ao Claude (precisa do Hermes).
-- **Aprende atalhos**: o que o Claude resolve várias vezes vira atalho — com **trava de aprovação**:
-  ela propõe, testa, e só vale depois que você aprova.
-- Interface com conversas salvas, markdown, anexos (imagem, PDF, texto), abas de Atividade e Aprendizado,
-  barra com o gasto do dia, **Mini** (globo flutuante com legenda), **Ctrl+Alt+L** de qualquer lugar e **Ctrl+K**.
+- **Fala português do Brasil de verdade.** Tudo foi feito e testado em PT-BR: a escuta, os comandos, as vozes e as respostas.
+  Entende "abaixa o som", "pula essa", "me lembra do bolo em 40 minutos" e até nomes mal pronunciados ("abre o espotifai").
+- **Só atende quando ouve "Luna".** Um detector do nome roda no seu PC antes de qualquer coisa. TV, música e conversa
+  da sala são descartadas antes de virar texto e não saem do computador.
+- **É rápida onde dá e inteligente onde precisa.** Hora, volume, timer, contas, abrir apps e sites respondem na hora,
+  sem IA. Perguntas vão para uma IA rápida e barata. Tarefas de verdade no PC (arquivos, pesquisa, textos) vão sozinhas
+  para o **Claude**, via [Hermes Agent](https://hermes-agent.nousresearch.com/docs).
+- **Você escolhe as peças.** A IA principal pode ser DeepSeek, Gemini, OpenAI, Groq, OpenRouter, Ollama (no seu PC)
+  ou **a assinatura que você já paga** (ChatGPT Plus/Pro e outras, pelo Hermes). O ouvido pode rodar na placa de
+  vídeo (grátis, sem internet) ou na nuvem (sem placa). Tudo se troca em Ajustes, sem reiniciar.
+- **Aprende com você, mas não muda sozinha.** O que você pede muitas vezes vira atalho, com uma **trava de aprovação**:
+  ela propõe, testa e só passa a valer depois que você aprova.
+- **Mostra quanto custa.** Ajustes → *Uso e gastos* mostra o gasto de hoje e do mês e quanto o seu uso custaria em
+  cada IA. Com o DeepSeek, o uso normal fica em centavos por mês.
+- **É sua.** Código aberto (MIT), chaves só no seu PC, conversas salvas em arquivos seus.
+
+## Como usar
+
+1. Clique no microfone (ou aperte `Espaço`) e fale com o nome na frase: **"Luna, que horas são?"**
+2. Fale do seu jeito, sem decorar comando. Alguns exemplos:
+
+| Você diz | O que acontece |
+|---|---|
+| "Luna, abaixa o som" / "volume em 30" | muda o volume na hora |
+| "Luna, pausa" / "pula essa" / "toca Legião Urbana no Spotify" | controla a música |
+| "Luna, abre o Chrome" / "abre o YouTube" / "abre a pasta downloads" | abre programas, sites e pastas |
+| "Luna, me lembra de tirar o bolo em 40 minutos" | timer com aviso falado |
+| "Luna, quanto é 15% de 200?" / "vai chover hoje?" | contas e clima, sem IA |
+| "Luna, me explica o que é inflação" | conversa com a IA escolhida |
+| "Luna, organiza os PDFs da pasta Downloads" | o Claude faz a tarefa no PC (com o Hermes) |
+
+3. Para parar a qualquer momento: **"Luna, para"** ou **"cancela"**.
+4. Também dá para digitar, colar um print (Ctrl+V) ou anexar um PDF e perguntar sobre ele.
+
+**Os três modos** (botões ao lado do microfone):
+- **Auto**: o normal. Escolhe sozinho entre comando, IA rápida ou Claude.
+- **Expert**: tudo direto para o Claude. Mais lento, mais capaz.
+- **Live**: conversa falada de ida e volta com o Gemini.
+
+**Atalhos de teclado**: `Ctrl+Alt+L` chama a Luna de qualquer programa · `Ctrl+K` busca qualquer ação ·
+**Mini** deixa um globo flutuante com a legenda por cima das outras janelas.
 
 ## Requisitos
 
@@ -66,7 +99,7 @@ Permita o microfone e diga "**Luna**, …".
 1. Instale o Hermes Agent e crie um perfil (ex.: `hermes profile create assistente`).
 2. No `.env` do perfil: `API_SERVER_ENABLED=true` e anote a `API_SERVER_KEY`.
 3. Rode `hermes gateway run`.
-4. Na Luna: Ajustes → Conexões → Claude: endereço `http://127.0.0.1:8642/p/assistente/v1` e a chave.
+4. Na Luna: Ajustes → Inteligência → Claude: endereço `http://127.0.0.1:8642/p/assistente/v1` e a chave.
 
 ### Meu Hoje (opcional)
 
@@ -112,8 +145,10 @@ Contribuições: veja [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Privacidade
 
-As chaves ficam só no `.env` (fora do git). O áudio é transcrito na sua máquina; o texto dos pedidos vai
-para a IA escolhida (e para o Claude, quando usado). Conversas ficam em `dados/`, também fora do git.
+As chaves ficam só no `.env` (fora do git). O detector do nome roda sempre no seu PC: o que não tem "Luna"
+é descartado ali mesmo. Com o ouvido **na placa**, o áudio é transcrito na sua máquina; com o ouvido **na nuvem**,
+só as frases com "Luna" são enviadas ao serviço escolhido (Groq, OpenAI ou Gemini). O texto dos pedidos vai para a
+IA escolhida (e para o Claude, quando usado). Conversas ficam em `dados/`, também fora do git.
 
 ## Autor
 
