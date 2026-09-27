@@ -1,0 +1,22 @@
+name: testes
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  rapidos:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Sintaxe
+        run: python -m compileall -q src
+      - name: Comandos prontos (sem rede, sem GPU)
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          pip install --quiet psutil pycaw comtypes
+          python src/teste_comandos.py
