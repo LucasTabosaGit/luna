@@ -1013,6 +1013,11 @@ def _edge_streaming(texto: str, voz: str, velocidade: float):
     import queue
     import shutil
     import subprocess
+
+    from fala import limpar
+    texto = limpar(texto, pronuncia=False)   # sem isto o Edge lia "asterisco", "hífen"...
+    if not texto:
+        return
     import threading
 
     import edge_tts

@@ -18,5 +18,6 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
         run: |
-          pip install --quiet psutil pycaw comtypes
+          pip install --quiet psutil pycaw comtypes numpy sounddevice python-dotenv
           python src/teste_comandos.py
+          python src/teste_fala_limpa.py

@@ -1,5 +1,5 @@
 {
- "versao": "2026.09.27.1001",
+ "versao": "2026.09.27.1015",
  "repo": "LucasTabosaGit/luna",
  "novidades": [
   "Ativação só pelo nome \"Luna\" (detector no áudio + texto), com \"cancela\"/\"para\" para interromper.",

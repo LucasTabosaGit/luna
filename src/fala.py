@@ -92,15 +92,40 @@ def frases(fluxo: Iterator[str], min_chars: int = None) -> Iterator[str]:
         yield buf.strip()
 
 
-def limpar(texto: str) -> str:
-    """Remove o que não se fala: markdown, emoji, blocos de raciocínio."""
+# Símbolos que a voz leria pelo nome ("seta para a direita", "marcador").
+_SIMBOLOS = {"→": ", ", "←": ", ", "⇒": ", ", "•": ", ", "·": ", ", "…": "...",
+             "✓": "", "✔": "", "✗": "", "✘": ""}
+
+
+def limpar(texto: str, pronuncia: bool = True) -> str:
+    """Remove o que não se fala: markdown, emoji, blocos de raciocínio.
+
+    As respostas do Claude vêm em markdown para a tela; na voz, "**",
+    "- ", "|---|" e links viravam "asterisco", "hífen"... A tela continua
+    recebendo o texto original: isto vale só para o que vai ser falado.
+    """
     texto = re.sub(r"<think>.*?</think>", " ", texto, flags=re.S | re.I)
-    texto = re.sub(r"```.*?```", " ", texto, flags=re.S)
-    texto = re.sub(r"[*_`#>|]+", " ", texto)
-    texto = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", texto)   # links
-    texto = re.sub(r"[\U0001F000-\U0001FAFF\u2600-\u27BF]", " ", texto)
-    texto = _corrigir_pronuncia(texto)
-    return re.sub(r"\s+", " ", texto).strip()
+    texto = re.sub(r"```.*?(```|$)", " ", texto, flags=re.S)       # bloco de código
+    texto = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", texto)        # [texto](link)
+    texto = re.sub(r"https?://([^/\s]+)\S*", r"\1", texto)          # link solto: só o site
+    texto = re.sub(r"(?m)^\s*\|?\s*:?-{3,}.*$", " ", texto)         # |---|---| e ---
+    texto = re.sub(r"(?m)^\s*(?:[-*+]|\d+[.)])\s+", "", texto)     # marcadores de lista
+    texto = re.sub(r"(?m)\s*\|\s*$", ".", texto)                    # fim de linha de tabela
+    texto = texto.replace("|", ", ")
+    texto = re.sub(r"(?<=\d)\s*[*×]\s*(?=\d)", " vezes ", texto)       # 2*3
+    texto = re.sub(r"~~|[*_`#>]+", " ", texto)
+    for s, t in _SIMBOLOS.items():
+        texto = texto.replace(s, t)
+    texto = re.sub(r"[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F]", " ", texto)
+    # Quebra de linha sem pontuação vira pausa (item de lista, título).
+    texto = re.sub(r"(?<![.!?:;,])[ \t]*\n+", ". ", texto)
+    if pronuncia:                  # conserto do espeak (Kokoro); o Edge não precisa
+        texto = _corrigir_pronuncia(texto)
+    texto = re.sub(r"\s+", " ", texto)
+    texto = re.sub(r"\s+([.,!?:;])", r"\1", texto)
+    texto = re.sub(r"([.,:;])(?:\s*[.,])+", r"\1", texto)           # ". ." / ", ."
+    texto = re.sub(r"^[.,;:\s]+", "", texto).rstrip(" ,")
+    return "" if not texto.strip(" .") else texto
 
 
 # Vogal acentuada SOZINHA faz o espeak soletrar o nome do acento:

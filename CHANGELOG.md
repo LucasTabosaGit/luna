@@ -14,6 +14,7 @@
 - Funciona **sem placa de vídeo**: a fala pode ser transcrita na nuvem (Groq, OpenAI ou Gemini).
 - Ajustes reorganizados em abas: Voz, Escuta, Inteligência, Uso e gastos, Requisitos e dicas, Atalhos e Sistema.
 - Tela inicial com exemplos para clicar; o guia de Primeiros passos termina ensinando como falar, como parar e os três modos.
+- A voz não lê mais símbolos das respostas em markdown ("asterisco", "hífen", tabelas, links inteiros).
 - **Treinar com a minha voz** (aba Aprendizado): o detector do nome aprende com as suas gravações, mostra se
   ficou melhor que o atual e só passa a valer com a sua aprovação.
 - Instalação e abertura em Python puro (`instalar.py`, `src/abrir.py`): nenhum script PowerShell no projeto.
