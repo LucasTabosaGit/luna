@@ -17,7 +17,7 @@ VPY = RAIZ / ".venv" / "Scripts" / "python.exe"
 
 
 def ok(t: str) -> None:
-    print("  OK  " + t)
+    print("  OK  " + t, flush=True)
 
 
 def passo(t: str) -> None:
