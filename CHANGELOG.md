@@ -7,6 +7,8 @@
   padrão e avisa.
 - **Globo verde**: depois de ouvir "Luna", enquanto espera o seu pedido, o globo e o status ficam verdes
   (também na janelinha flutuante). Depois voltam ao azul.
+- **Legenda num bloco fixo**: a fala dela vai sendo digitada enquanto fala, em até 4 linhas; resposta longa não
+  quebra mais a tela (o texto completo continua na conversa). O que você digitou não se repete embaixo.
 
 ## Ouvido na placa AMD/Intel (experimental)
 

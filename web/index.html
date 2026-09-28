@@ -164,9 +164,13 @@
   #fila::before { content: "Na fila"; font: 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--fraco); }
   #fila li { font-size: 13.5px; color: var(--suave); padding: 5px 10px; border: 1px solid var(--linha); border-radius: 8px; max-width: 52ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #falaAtual { font: 500 23px/1.42 var(--titulo); text-wrap: pretty; margin: 0;
-               max-height: 40vh; overflow-y: auto; }
+               height: calc(1.42em * 4); overflow: hidden; overflow-wrap: anywhere;
+               -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.3em);
+                       mask-image: linear-gradient(to bottom, transparent 0, #000 1.3em); }
+  #falaAtual:empty { -webkit-mask-image: none; mask-image: none; }
   #falaAtual:empty::before { content: attr(data-vazio); color: var(--fraco); font-weight: 400; }
-  #voceDisse { color: var(--suave); font-size: 14px; margin-top: 16px; min-height: 22px; }
+  #voceDisse { color: var(--suave); font-size: 14px; margin-top: 16px; min-height: 22px;
+               display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
   .experimente { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 14px; }
   .experimente small { width: 100%; color: var(--fraco); font-size: 11.5px; }
   .experimente button { border: 1px solid var(--linha); background: transparent; color: var(--suave);
@@ -627,7 +631,7 @@
     .centro { grid-template-columns: 1fr; justify-items: center; align-content: center; text-align: center;
               gap: 22px; padding: 0 22px; }
     .orbe-caixa { width: min(300px, 34vh); height: auto; }
-    #falaAtual { font-size: 19px; max-height: 32vh; }
+    #falaAtual { font-size: 19px; }
   }
   @media (max-width: 640px) {
     .topo { padding: 12px 14px; gap: 10px; }
@@ -1143,6 +1147,28 @@ function rotuloOuvindo() {
   return Date.now() < acordadoAte ? 'pode falar' : 'diga “Luna”';
 }
 
+/* Legenda: digita a fala dela aos poucos num bloco fixo de 4 linhas; o
+   bloco acompanha o fim (as linhas antigas somem por cima). Se outra parte
+   trocar o texto no meio, a digitação para. */
+let alvoFala = '', timerFala = 0;
+function digitarFala(texto) {
+  alvoFala = texto;
+  if (!alvoFala.startsWith($fala.textContent)) $fala.textContent = '';
+  if (reduzirMov) { $fala.textContent = alvoFala; $fala.scrollTop = $fala.scrollHeight; return; }
+  if (timerFala) return;
+  timerFala = setInterval(() => {
+    const atual = $fala.textContent;
+    if (!alvoFala.startsWith(atual) || atual.length >= alvoFala.length) {
+      clearInterval(timerFala); timerFala = 0; return;
+    }
+    // ~45 letras/s; acelera se ficar muito atrás da voz
+    const falta = alvoFala.length - atual.length;
+    $fala.textContent = alvoFala.slice(0, atual.length + Math.max(1, Math.ceil(falta / 60)));
+    $fala.scrollTop = $fala.scrollHeight;
+  }, 22);
+}
+const reduzirMov = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 function mudarEstado(nome, extra) {
   estadoAtual = nome;
   $rot.textContent = extra || ROTULOS[nome] || nome;
@@ -1523,9 +1549,11 @@ function tratar(m) {
     case 'voce':
       abrirTurno();
       $voce.innerHTML = '';
-      const s1 = document.createElement('span');
-      s1.textContent = m.digitado ? 'Você digitou: ' : m.corrigido ? 'Você (corrigido): ' : 'Você: ';
-      $voce.append(s1, document.createTextNode('“' + m.texto + '”'));
+      if (!m.digitado) {
+        const s1 = document.createElement('span');
+        s1.textContent = m.corrigido ? 'Você (corrigido): ' : 'Você: ';
+        $voce.append(s1, document.createTextNode('“' + m.texto + '”'));
+      }
       if (m.corrigido && $msgs.lastElementChild?.dataset.quem === 'voce') {
         $msgs.lastElementChild.querySelector('.txt').textContent = m.texto;
       } else {
@@ -1540,7 +1568,7 @@ function tratar(m) {
     case 'bot':
       if (!falaDoTurno) $fala.textContent = '';
       falaDoTurno += (falaDoTurno ? ' ' : '') + m.texto;
-      $fala.textContent = falaDoTurno;
+      digitarFala(falaDoTurno);
       conversa('bot', m.texto);
       break;
     case 'bot_final': {
@@ -1550,7 +1578,10 @@ function tratar(m) {
       finalizarResposta(d, m.texto, m.rota);
       // Comando pronto (ex.: a lista de ajuda): a legenda fica com o que foi
       // FALADO; a lista completa mora só na conversa.
-      if (m.rota !== 'comando') $fala.textContent = d.querySelector('.txt').innerText.replace(/\s+/g, ' ').replace(/Copiar/g, '').trim();
+      // A legenda fica com o que ela FALOU (já digitado); o texto completo,
+      // formatado, mora na conversa. Só sem fala nenhuma a legenda recebe o texto.
+      if (m.rota !== 'comando' && !falaDoTurno)
+        digitarFala(d.querySelector('.txt').innerText.replace(/\s+/g, ' ').replace(/Copiar/g, '').trim());
       $listaConv.scrollTop = $listaConv.scrollHeight;
       break;
     }

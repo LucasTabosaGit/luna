@@ -1,8 +1,9 @@
 {
- "versao": "2026.09.28.1652",
+ "versao": "2026.09.28.1823",
  "repo": "LucasTabosaGit/luna",
  "novidades": [
   "Escolha do microfone em *Ajustes → Escuta*: lista os microfones do PC (ou \"Padrão do sistema\"), vale na hora",
-  "Globo verde: depois de ouvir \"Luna\", enquanto espera o seu pedido, o globo e o status ficam verdes"
+  "Globo verde: depois de ouvir \"Luna\", enquanto espera o seu pedido, o globo e o status ficam verdes",
+  "Legenda num bloco fixo: a fala dela vai sendo digitada enquanto fala, em até 4 linhas; resposta longa não"
  ]
 }
