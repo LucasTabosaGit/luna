@@ -1,5 +1,13 @@
 # Mudanças
 
+## Microfone e aviso de "ouvi você"
+
+- **Escolha do microfone** em *Ajustes → Escuta*: lista os microfones do PC (ou "Padrão do sistema"), vale na hora
+  e tem uma barrinha que mexe quando o microfone escolhido ouve você. Se ele for desconectado, a Luna volta ao
+  padrão e avisa.
+- **Globo verde**: depois de ouvir "Luna", enquanto espera o seu pedido, o globo e o status ficam verdes
+  (também na janelinha flutuante). Depois voltam ao azul.
+
 ## Ouvido na placa AMD/Intel (experimental)
 
 - Nova opção de ouvido no Windows: **Na placa AMD/Intel (Vulkan)**. Usa o whisper.cpp com Vulkan, que roda em placas

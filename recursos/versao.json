@@ -1,11 +1,8 @@
 {
- "versao": "2026.09.28.1627",
+ "versao": "2026.09.28.1652",
  "repo": "LucasTabosaGit/luna",
  "novidades": [
-  "Nova opção de ouvido no Windows: Na placa AMD/Intel (Vulkan). Usa o whisper.cpp com Vulkan, que roda em placas",
-  "Na primeira vez baixa ~600 MB (programa + modelo), conferidos por SHA-256.",
-  "Ainda não testado em placa AMD. Se não subir, a Luna usa o Whisper do processador e avisa em *Ajustes*;",
-  "O programa é compilado neste repositório (workflow whisper-vulkan) a partir do whisper.cpp oficial.",
-  "Quem tem NVIDIA não muda nada."
+  "Escolha do microfone em *Ajustes → Escuta*: lista os microfones do PC (ou \"Padrão do sistema\"), vale na hora",
+  "Globo verde: depois de ouvir \"Luna\", enquanto espera o seu pedido, o globo e o status ficam verdes"
  ]
 }
