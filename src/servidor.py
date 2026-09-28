@@ -552,7 +552,7 @@ async def reiniciar():
     print("  [reiniciar] substituto lançado; saindo em 1s", flush=True)
     # Sai depois de responder, para quem chamou receber o OK.
     asyncio.get_running_loop().call_later(1.0, os._exit, 0)
-    return {"ok": True, "volta_em_s": 30}
+    return {"ok": True, "volta_em_s": 30, "pid": os.getpid()}
 
 
 @app.get("/conexoes")
@@ -709,6 +709,14 @@ async def uso():
                 "cerebro": config.LLM_NOME, "cerebro_id": config.cerebro_id(),
                 "stt": config.STTS[config.stt_id()]["nome"], "stt_id": config.stt_id()}
     return await asyncio.to_thread(_tudo)
+
+
+@app.get("/pronto")
+async def pronto():
+    """Leve, para a tela saber que a Luna voltou de um reinício. Só responde
+    depois de os modelos carregarem (lifespan); o pid diz se é o processo
+    NOVO ou ainda o antigo saindo."""
+    return {"ok": True, "pid": os.getpid()}
 
 
 @app.get("/estado")
@@ -2893,7 +2901,7 @@ if __name__ == "__main__":
     if _espera:
         import socket
 
-        _fim = time.time() + 20
+        _fim = time.time() + 60
         while time.time() < _fim:
             with socket.socket() as _s:
                 if _s.connect_ex(("127.0.0.1", 8777)) != 0:

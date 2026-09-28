@@ -1,5 +1,11 @@
 # Mudanças
 
+## Reiniciar pela tela não trava mais
+
+- Ao clicar em reiniciar (em *Atualização*), a tela ficava em "reiniciando…" para sempre, mesmo com a Luna já de
+  volta. Agora ela confere que a Luna **nova** respondeu e recarrega sozinha (medido: ~20 s), com um contador.
+- Se passar de 4 minutos, avisa para abrir pelo atalho Luna, em vez de ficar parada.
+
 ## Microfone e aviso de "ouvi você"
 
 - **Escolha do microfone** em *Ajustes → Escuta*: lista os microfones do PC (ou "Padrão do sistema"), vale na hora

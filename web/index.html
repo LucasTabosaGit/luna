@@ -2943,14 +2943,27 @@ function montarAtualizacoes(d) {
     rod.append(msg); card.append(rod); lista.append(card);
   }
 }
-async function esperarVoltar(msg) {
-  msg.textContent = 'reiniciando… (uns 30 s)';
-  await new Promise(r => setTimeout(r, 4000));
-  for (let i = 0; i < 60; i++) {
-    try { const r = await fetch('/saude'); if (r.ok && (await r.json()).carregado) { location.reload(); return; } } catch (e) { /* ainda fora */ }
-    await new Promise(r => setTimeout(r, 2000));
+/* Espera a Luna NOVA responder (pid diferente do antigo) e recarrega.
+   Cada tentativa tem 3 s de limite: um pedido pendurado no servidor que
+   está saindo não pode travar a espera. */
+async function esperarVoltar(msg, pidAntigo) {
+  const inicio = Date.now();
+  const tick = setInterval(() => {
+    msg.textContent = 'reiniciando… ' + Math.round((Date.now() - inicio) / 1000) + ' s (costuma levar uns 30 s)';
+  }, 1000);
+  await new Promise(r => setTimeout(r, 2500));
+  while (Date.now() - inicio < 240000) {
+    try {
+      const r = await fetch('/pronto', { cache: 'no-store', signal: AbortSignal.timeout(3000) });
+      if (r.ok) {
+        const d = await r.json();
+        if (!pidAntigo || d.pid !== pidAntigo) { clearInterval(tick); msg.textContent = 'voltou!'; location.reload(); return; }
+      }
+    } catch (e) { /* ainda fora do ar */ }
+    await new Promise(r => setTimeout(r, 1500));
   }
-  msg.textContent = 'demorou demais: abra pelo atalho Luna';
+  clearInterval(tick);
+  msg.textContent = 'Não voltou sozinha. Feche esta janela e abra pelo atalho Luna.';
 }
 async function aplicarAtualizacao(it, b, msg) {
   if (it.acao === 'recarregar') { location.reload(); return; }
@@ -2964,8 +2977,12 @@ async function aplicarAtualizacao(it, b, msg) {
     if (!d.ok) { msg.textContent = d.msg; b.disabled = false; return; }
   }
   if (!confirm('Reiniciar a Luna agora? Leva uns 30 segundos.')) { b.disabled = false; msg.textContent = ''; return; }
-  try { await fetch('/reiniciar', { method: 'POST' }); } catch (e) { /* já caiu */ }
-  esperarVoltar(msg);
+  let pidAntigo = 0;
+  try {
+    const r = await fetch('/reiniciar', { method: 'POST', signal: AbortSignal.timeout(8000) });
+    pidAntigo = (await r.json()).pid || 0;
+  } catch (e) { /* já caiu */ }
+  esperarVoltar(msg, pidAntigo);
 }
 $('btnAtualizar').onclick = () => { $('dlgAtualizar').showModal(); montarAtualizacoes({}); };
 $('attChecar').onclick = async () => { $('attChecar').disabled = true; await checarAtualizacao(true); montarAtualizacoes({}); $('attChecar').disabled = false; };
