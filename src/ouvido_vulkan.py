@@ -7,7 +7,7 @@ CUDA. É EXPERIMENTAL: foi feito sem uma placa AMD para testar.
 
 Como funciona:
   * Na primeira vez baixa duas coisas para modelos/whisper-vulkan/:
-      - o whisper-server com Vulkan (~40 MB), compilado pelo workflow
+      - o whisper-server com Vulkan (~20 MB), compilado pelo workflow
         `whisper-vulkan` do repositório público da Luna;
       - o modelo large-v3-turbo quantizado em 5 bits (~550 MB, Hugging Face).
     Os dois são conferidos pelo SHA-256 antes de usar.
@@ -153,6 +153,12 @@ class TranscritorVulkan:
                 raise RuntimeError("sem Vulkan: atualize o driver da placa de vídeo")
             garantir_arquivos()
             self._subir()
+            # A 1ª frase na placa compila os shaders (medido: 16 s, depois
+            # 0,5 s). Faz isso agora, com 1 s de silêncio, e não na 1ª fala.
+            try:
+                self._placa(np.zeros(16000, dtype="float32"))
+            except Exception:  # noqa: BLE001
+                pass
             self.carga_s = time.time() - t0
             _log("pronto em %.1f s (%s)" % (self.carga_s, self._url))
         except Exception as e:  # noqa: BLE001
@@ -164,14 +170,16 @@ class TranscritorVulkan:
         import plataforma
         _encerrar_sobra()
         porta = _porta_livre()
-        args = [str(_exe()), "-m", str(_modelo()), "--host", "127.0.0.1", "--port", str(porta),
+        # Caminho RELATIVO do modelo: o whisper.cpp quebra (0xC0000409) com
+        # acento no caminho da pasta ("Aplicações", nome de usuário "João").
+        args = [str(_exe()), "-m", _modelo().name, "--host", "127.0.0.1", "--port", str(porta),
                 "-l", config.STT_IDIOMA, "-nt", "-t", str(max(2, min(8, (os.cpu_count() or 4) // 2)))]
         disp = os.environ.get("LUNA_VULKAN_PLACA", "").strip()     # PC com 2 placas: 0, 1...
         if disp.isdigit():
             args += ["-dev", disp]
         config.LOGS.mkdir(exist_ok=True)
         self._log = open(config.LOGS / "whisper-vulkan.log", "ab")
-        self._proc = subprocess.Popen(args, cwd=str(_exe().parent), stdout=self._log,
+        self._proc = subprocess.Popen(args, cwd=str(PASTA), stdout=self._log,
                                       stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
                                       **plataforma.sem_janela())
         _PID.write_text(str(self._proc.pid))

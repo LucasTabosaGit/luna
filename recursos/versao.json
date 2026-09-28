@@ -1,5 +1,5 @@
 {
- "versao": "2026.09.28.1610",
+ "versao": "2026.09.28.1627",
  "repo": "LucasTabosaGit/luna",
  "novidades": [
   "Nova opção de ouvido no Windows: Na placa AMD/Intel (Vulkan). Usa o whisper.cpp com Vulkan, que roda em placas",

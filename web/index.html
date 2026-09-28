@@ -644,6 +644,10 @@
     .lado { transition: none; }
     #btnMic.on::after { animation: none; opacity: 0; }
   }
+.nivel-mic { height: 6px; border-radius: 3px; background: var(--linha); overflow: hidden; margin: -4px 0 14px; }
+.nivel-mic span { display: block; height: 100%; width: 0; background: var(--ambar); transition: width .08s linear; }
+#microfone { flex: 1; min-width: 0; }
+#estadoRotulo.acordada { color: oklch(0.72 0.17 150); }
 </style>
 </head>
 <body>
@@ -802,6 +806,11 @@
       <section class="aj-painel" data-painel="escuta" role="tabpanel" hidden>
         <p class="aj-desc">Quando a Luna presta atenção no que você diz.</p>
         <div class="aj-bloco">
+          <label class="aj-campo">Microfone
+            <div class="linha"><select id="microfone"></select><button type="button" class="botao" id="btnMicAtualizar" title="Procurar microfones de novo">↻</button></div>
+          </label>
+          <p class="aj-nota" id="notaMic">A barrinha abaixo mexe quando o microfone escolhido ouve você.</p>
+          <div class="nivel-mic" aria-hidden="true"><span id="nivelMicBarra"></span></div>
           <label class="chave">
             <input type="checkbox" id="chkAtivacao">
             <span><b>Chamar por “Luna”</b><small>Microfone sempre aberto; só responde a frases com “Luna”. O resto (TV, conversa na sala) é descartado antes de transcrever.</small></span>
@@ -1137,6 +1146,7 @@ function rotuloOuvindo() {
 function mudarEstado(nome, extra) {
   estadoAtual = nome;
   $rot.textContent = extra || ROTULOS[nome] || nome;
+  $rot.classList.toggle('acordada', ativacao && Date.now() < acordadoAte && (nome === 'ouvindo' || nome === 'gravando'));
   $rot.classList.toggle('vivo', ['pensando', 'executando', 'falando', 'transcrevendo'].includes(nome));
   const ocupado = ['transcrevendo', 'pensando', 'executando', 'falando'].includes(nome);
   $parar.classList.toggle('visivel', ocupado || tocando.length > 0);
@@ -1250,6 +1260,8 @@ function desenhar(t) {
   } else if (e === 'ouvindo' || e === 'gravando') {
     cor2 = 'oklch(0.52 0.15 230)';
     matiz = 228; croma = 0.14;
+    // Ouviu "Luna" e está esperando o pedido: fica verde.
+    if (ativacao && Date.now() < acordadoAte) { cor2 = 'oklch(0.58 0.17 150)'; matiz = 150; croma = 0.17; }
     // Esperando "Luna": quase não reage ao som ambiente (TV, caixa) - só
     // depois de chamada o globo acompanha a sua voz.
     const reage = (ativacao && Date.now() >= acordadoAte) ? 0.2 : 1;
@@ -1585,9 +1597,19 @@ function tratar(m) {
 async function ligarMic() {
   await garantirSaida();
   // echoCancellation: sem ele o microfone capta a própria resposta.
-  stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 }
-  });
+  const audio = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 };
+  const micId = localStorage.getItem('microfone') || '';
+  if (micId) audio.deviceId = { exact: micId };
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio });
+  } catch (e) {
+    // O microfone escolhido sumiu (desconectado): volta ao padrão do Windows.
+    if (!micId || !['OverconstrainedError', 'NotFoundError', 'NotReadableError'].includes(e.name)) throw e;
+    localStorage.removeItem('microfone');
+    delete audio.deviceId;
+    stream = await navigator.mediaDevices.getUserMedia({ audio });
+    erro('O microfone escolhido não foi encontrado; usando o padrão do sistema.');
+  }
   ctxEntrada = new AudioContext();
   fonte = ctxEntrada.createMediaStreamSource(stream);
   processador = ctxEntrada.createScriptProcessor(1024, 1, 1);
@@ -1608,6 +1630,46 @@ async function ligarMic() {
   $mic.classList.add('on'); $mic.setAttribute('aria-pressed', 'true');
   $mic.title = 'Desligar microfone (Espaço)';
   if (!['pensando', 'executando', 'falando', 'transcrevendo'].includes(estadoAtual)) mudarEstado('ouvindo', rotuloOuvindo());
+}
+
+/* Escolha do microfone (Ajustes → Escuta). Fica salva nesta janela
+   (localStorage); vazio = o padrão do sistema. Os nomes só aparecem depois
+   de a janela ter permissão de usar o microfone. */
+async function montarMicrofones() {
+  const sel = $('microfone');
+  if (!sel || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  let lista = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
+  if (lista.length && !lista.some(d => d.label)) {
+    try {                                   // pede permissão só para ler os nomes
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      s.getTracks().forEach(t => t.stop());
+      lista = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
+    } catch (e) {}
+  }
+  const atual = localStorage.getItem('microfone') || '';
+  sel.innerHTML = '';
+  sel.append(new Option('Padrão do sistema', ''));
+  lista.filter(d => d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications')
+       .forEach((d, i) => sel.append(new Option(d.label || ('Microfone ' + (i + 1)), d.deviceId)));
+  sel.value = [...sel.options].some(o => o.value === atual) ? atual : '';
+  $('notaMic').textContent = lista.length
+    ? 'A barrinha abaixo mexe quando o microfone escolhido ouve você.'
+    : 'Nenhum microfone encontrado. Conecte um e clique em ↻.';
+}
+
+async function trocarMicrofone() {
+  const v = $('microfone').value;
+  if (v) localStorage.setItem('microfone', v); else localStorage.removeItem('microfone');
+  if (micLigado) {                          // aplica na hora
+    desligarMic();
+    try { await ligarMic(); } catch (e) { erro('Não consegui abrir esse microfone: ' + e.message); }
+  }
+}
+
+function animarNivelMic() {
+  const b = $('nivelMicBarra');
+  if (b) b.style.width = Math.min(100, Math.round(nivelMic * 400)) + '%';
+  if ($('dlgAjustes').open) requestAnimationFrame(animarNivelMic);
 }
 
 function desligarMic() {
@@ -3258,6 +3320,7 @@ async function montarReq() {
 
 function abrirAjustes(aba) {
   $('dlgAjustes').showModal();
+  montarMicrofones(); requestAnimationFrame(animarNivelMic);
   abaAjustes(aba || localStorage.getItem('abaAjustes') || 'voz');
 }
 document.querySelectorAll('.aj-nav [data-aba]').forEach(b => { b.onclick = () => abaAjustes(b.dataset.aba); });
@@ -3471,6 +3534,12 @@ abrirAba(localStorage.getItem('aba') || 'conv');
 checarHermes().then(conectar);
 setInterval(checarHermes, 15000);
 mudarEstado('desligado');
+
+$('microfone').addEventListener('change', trocarMicrofone);
+$('btnMicAtualizar').addEventListener('click', montarMicrofones);
+if (navigator.mediaDevices) navigator.mediaDevices.addEventListener('devicechange', () => {
+  if ($('dlgAjustes').open) montarMicrofones();
+});
 </script>
 </body>
 </html>

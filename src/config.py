@@ -492,7 +492,7 @@ STT_RESERVA = "small"          # Whisper no processador quando a nuvem falha
 # público (a partir do whisper.cpp oficial) e modelo do Hugging Face.
 VULKAN_BIN_URL = ("https://github.com/LucasTabosaGit/luna/releases/download/"
                   "whisper-vulkan-v1.9.4/whisper-vulkan-win-x64.zip")
-VULKAN_BIN_SHA256 = ""
+VULKAN_BIN_SHA256 = "855dc710495b9281bced72d9999f0bc300da39803d0f18dee55ae33ff2a8ab2d"
 VULKAN_MODELO_ARQ = "ggml-large-v3-turbo-q5_0.bin"
 VULKAN_MODELO_URL = ("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/"
                      "ggml-large-v3-turbo-q5_0.bin")

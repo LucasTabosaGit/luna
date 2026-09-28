@@ -89,7 +89,7 @@ A Luna descobre sozinha em qual sistema está e se ajusta. Escolha o jeito que c
 
 **Placa AMD ou Intel (Windows):** o Whisper de sempre só acelera em NVIDIA. Em *Ajustes → Inteligência → Ouvido*
 escolha **Na placa AMD/Intel (Vulkan, experimental)**: a Luna baixa o [whisper.cpp](https://github.com/ggml-org/whisper.cpp)
-compilado com Vulkan (~40 MB) e o modelo large-v3-turbo (~550 MB) e roda na sua placa, sem ROCm nem CUDA.
+compilado com Vulkan (~20 MB) e o modelo large-v3-turbo (~550 MB) e roda na sua placa, sem ROCm nem CUDA.
 Ainda não foi testado numa placa AMD: se não funcionar, a Luna usa o processador e o **Groq** (cota grátis) continua
 sendo a alternativa. Conte como foi numa issue.
 

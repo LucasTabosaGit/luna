@@ -135,6 +135,7 @@ class Estado:
     legenda = ""          # última frase dela (ou "Você: ...")
     rotulo = ""           # "pensando", "executando · terminal"...
     quando = 0.0
+    acordada_ate = 0.0    # ouviu "Luna": globo verde até aqui
 
 
 def _espelho():
@@ -153,6 +154,9 @@ def _espelho():
                                          "falando": "", "executando": "trabalhando…"}.get(Estado.estado, "")
                         if Estado.estado in ("pensando", "transcrevendo", "executando", "falando"):
                             Estado.quando = time.time()
+                    elif tipo == "acordado":
+                        ate = d.get("ate")
+                        Estado.acordada_ate = 0.0 if ate == 0 else time.time() + (ate or 60)
                     elif tipo == "interrompido":
                         Estado.estado = "ouvindo"
                         Estado.rotulo = ""
@@ -190,6 +194,7 @@ CORES = {
     "desligado": ((0.60, 0.05, 0.55), 0.05, 0.25),
     "ouvindo": ((0.56, 0.75, 1.0), 0.25, 0.45),
     "gravando": ((0.56, 0.75, 1.0), 0.35, 0.55),
+    "acordada": ((0.38, 0.75, 1.0), 0.35, 0.55),      # ouviu "Luna": verde
     "transcrevendo": ((0.09, 0.85, 1.0), 0.80, 1.4),
     "pensando": ((0.09, 0.85, 1.0), 0.95, 1.6),
     "executando": ((0.09, 0.85, 1.0), 0.95, 1.6),
@@ -430,7 +435,10 @@ class Globo:
 
     # -- desenho com alfa por pixel
     def _pintar(self):
-        globo = self.desenho.quadro(Estado.estado)
+        est = Estado.estado
+        if est in ("ouvindo", "gravando") and time.time() < Estado.acordada_ate:
+            est = "acordada"
+        globo = self.desenho.quadro(est)
         visivel = time.time() - Estado.quando < LEG_SEG or Estado.estado in (
             "pensando", "executando", "transcrevendo", "falando")
         rot = Estado.rotulo if Estado.estado in ("pensando", "executando", "transcrevendo") else ""
