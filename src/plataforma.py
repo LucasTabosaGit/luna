@@ -117,6 +117,30 @@ def gpu() -> dict:
     return {"tipo": "", "nome": "", "total_gb": 0.0, "usada_gb": 0.0}
 
 
+def placas_video() -> list[str]:
+    """Nomes das placas de vídeo (Windows), pelo registro. Serve para
+    reconhecer AMD/Intel, que o torch (só CUDA) não enxerga."""
+    if not WINDOWS:
+        return []
+    import winreg
+    chave = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
+    nomes = []
+    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, chave) as k:
+        for i in range(64):
+            try:
+                sub = winreg.EnumKey(k, i)
+            except OSError:
+                break
+            try:
+                with winreg.OpenKey(k, sub) as s:
+                    n = str(winreg.QueryValueEx(s, "DriverDesc")[0])
+                if n and n not in nomes:
+                    nomes.append(n)
+            except OSError:
+                continue
+    return nomes
+
+
 def liberar_gpu() -> None:
     try:
         if MAC:

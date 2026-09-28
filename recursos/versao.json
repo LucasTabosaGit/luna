@@ -1,9 +1,11 @@
 {
- "versao": "2026.09.28.0729",
+ "versao": "2026.09.28.1610",
  "repo": "LucasTabosaGit/luna",
  "novidades": [
-  "A escolha das IAs foi reorganizada em duas, com a função de cada uma explicada no guia e nos Ajustes:",
-  "O gasto da especialista paga por uso aparece em *Uso e gastos* e na barra de status.",
-  "Se a especialista estiver fora do ar ou no limite do dia, a rápida tenta e a Luna avisa."
+  "Nova opção de ouvido no Windows: Na placa AMD/Intel (Vulkan). Usa o whisper.cpp com Vulkan, que roda em placas",
+  "Na primeira vez baixa ~600 MB (programa + modelo), conferidos por SHA-256.",
+  "Ainda não testado em placa AMD. Se não subir, a Luna usa o Whisper do processador e avisa em *Ajustes*;",
+  "O programa é compilado neste repositório (workflow whisper-vulkan) a partir do whisper.cpp oficial.",
+  "Quem tem NVIDIA não muda nada."
  ]
 }

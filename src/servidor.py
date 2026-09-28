@@ -360,9 +360,20 @@ async def sistema_checar():
 
 
 @app.get("/meuhoje/status")
-async def meuhoje_status():
+async def meuhoje_status(verificar: int = 0):
     import meuhoje
-    return await asyncio.to_thread(meuhoje.status)
+    return await asyncio.to_thread(meuhoje.status, bool(verificar))
+
+
+def _hermes_religar_fundo() -> None:
+    """Depois de conectar/desconectar o Meu Hoje: o gateway do Hermes mantém a
+    conexão antiga aberta até reiniciar. Em segundo plano (~15 s)."""
+    import abrir
+
+    async def _vai():
+        ok = await asyncio.to_thread(abrir.reiniciar_hermes)
+        print("[meuhoje] hermes reiniciado:", ok, flush=True)
+    asyncio.get_running_loop().create_task(_vai())
 
 
 @app.post("/meuhoje/conectar")
@@ -389,6 +400,8 @@ async def meuhoje_retorno(code: str = "", state: str = "", error: str = ""):
         try:
             await asyncio.to_thread(meuhoje.concluir_login, code, state)
             _hoje_cache["t"] = 0.0
+            if meuhoje.status()["especialista"]:
+                _hermes_religar_fundo()
         except Exception as e:  # noqa: BLE001
             msg, ok = "Não deu certo: %s" % str(e)[:160], False
     cor = "#6fd3b8" if ok else "#ef7d6b"
@@ -407,6 +420,7 @@ async def meuhoje_desconectar():
     import meuhoje
     await asyncio.to_thread(meuhoje.desconectar)
     _hoje_cache.update(t=0.0, dados=None)
+    _hermes_religar_fundo()
     return {"ok": True}
 
 
@@ -420,6 +434,15 @@ def _hoje_ler() -> dict:
     ag = json.loads(rot.chamar("listar_agenda", {
         "de": hoje.isoformat(), "ate": (hoje + datetime.timedelta(days=7)).isoformat()}) or "{}")
     dia["proximos"] = ag.get("agendamentos", [])
+    # Em aberto fora do dia de hoje: para puxar para hoje com um clique.
+    no_dia = {t.get("id") for t in (dia.get("recorteDeHoje") or []) + (dia.get("feitasHoje") or [])}
+    try:
+        lt = json.loads(rot.chamar("listar_tarefas", {"status": "abertas", "limite": 30}) or "{}")
+        dia["abertas"] = [t for t in lt.get("tarefas", []) if t.get("id") not in no_dia]
+    except Exception:  # noqa: BLE001 - a aba funciona sem isso
+        dia["abertas"] = []
+    dia["conta"] = rot.status()          # leu o dia = login válido
+    dia["conta"]["valido"] = True
     return dia
 
 
@@ -442,10 +465,12 @@ async def hoje_ver(forcar: int = 0):
 async def hoje_acao(acao: str, corpo: dict):
     """Concluir / adiar / criar tarefa direto da aba Hoje (sem o Claude)."""
     rot = _rotina()
-    ferramentas = {"concluir": "concluir_tarefa", "adiar": "adiar_tarefa", "criar": "criar_tarefa"}
+    ferramentas = {"concluir": "concluir_tarefa", "adiar": "adiar_tarefa", "criar": "criar_tarefa",
+                   "planejar": "planejar_tarefa"}
     if acao not in ferramentas:
         return JSONResponse({"erro": "ação inválida"}, status_code=400)
-    permitidos = {"concluir": {"id"}, "adiar": {"id", "ate"}, "criar": {"titulo", "prazo", "planejadaPara"}}
+    permitidos = {"concluir": {"id"}, "adiar": {"id", "ate"}, "criar": {"titulo", "prazo", "planejadaPara"},
+                  "planejar": {"id", "dia"}}
     args = {k: v for k, v in (corpo or {}).items() if k in permitidos[acao] and v}
     try:
         r = await asyncio.to_thread(rot.chamar, ferramentas[acao], args)
@@ -612,6 +637,8 @@ def _uso_recursos() -> dict:
     partes = []
     if _ouvido is not None and getattr(_ouvido, "dispositivo", "") == "cuda":
         partes.append({"nome": "Whisper (ouvido na placa)", "gb": 2.2})
+    elif _ouvido is not None and getattr(_ouvido, "dispositivo", "") == "vulkan":
+        partes.append({"nome": "Whisper (ouvido na placa, Vulkan)", "gb": 1.0})
     elif _ouvido is not None and getattr(_ouvido, "compute", "") == "mlx":
         partes.append({"nome": "Whisper (ouvido na GPU do Mac)", "gb": round(g["usada_gb"], 1)})
     if _voz is not None and getattr(_voz, "_pipe", None) is not None:
@@ -633,9 +660,10 @@ def _dicas(rec: dict, est: dict) -> list[dict]:
                   "texto": "O ouvido na placa usa ~2,2 GB. Na nuvem (Groq, cota grátis) a placa fica livre "
                            "para jogos e outros programas, com a mesma qualidade.", "aba": "ia"})
     if stt == "local" and not tem_gpu:
-        d.append({"tipo": "leve", "titulo": "Sem placa NVIDIA: use o ouvido na nuvem",
+        d.append({"tipo": "leve", "titulo": "Sem placa NVIDIA: use o ouvido na nuvem ou o Vulkan",
                   "texto": "No processador o Whisper fica lento (vários segundos por frase). "
-                           "Groq tem cota grátis e responde em ~0,4 s.", "aba": "ia"})
+                           "Groq tem cota grátis e responde em ~0,4 s; com placa AMD/Intel, "
+                           "experimente o ouvido pelo Vulkan.", "aba": "ia"})
     if stt != "local" and tem_gpu and rec["vram_total_gb"] >= 4:
         d.append({"tipo": "leve", "titulo": "Você tem placa: o ouvido pode ser grátis",
                   "texto": "Com %s, o Whisper local é grátis e funciona sem internet." % rec["gpu"], "aba": "ia"})

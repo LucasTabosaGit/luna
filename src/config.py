@@ -457,6 +457,15 @@ STTS = {
         "dica": ("Grátis e funciona sem internet. Usa a GPU do Mac (Apple Silicon) via MLX." if _MAC
                  else "Grátis e funciona sem internet. Usa cerca de 2 GB da placa de vídeo (NVIDIA)."),
     },
+    # Placa AMD/Intel no Windows: whisper.cpp com Vulkan (ouvido_vulkan.py).
+    # Experimental: feito sem placa AMD para testar.
+    "vulkan": {
+        "nome": "Na placa AMD/Intel (Vulkan, experimental)",
+        "var": "", "url": "", "modelo": "", "link": "",
+        "dica": "Grátis e sem internet, para placa AMD Radeon ou Intel Arc (driver atualizado). "
+                "Na primeira vez baixa ~600 MB. Experimental: se não funcionar, a Luna usa o "
+                "processador e você pode trocar para o Groq.",
+    },
     "groq": {
         "nome": "Na nuvem: Groq", "var": "GROQ_API_KEY",
         "url": "https://api.groq.com/openai/v1", "modelo": "whisper-large-v3-turbo",
@@ -479,9 +488,21 @@ STTS = {
 }
 STT_RESERVA = "small"          # Whisper no processador quando a nuvem falha
 
+# Ouvido "vulkan": binário compilado pelo workflow whisper-vulkan do repo
+# público (a partir do whisper.cpp oficial) e modelo do Hugging Face.
+VULKAN_BIN_URL = ("https://github.com/LucasTabosaGit/luna/releases/download/"
+                  "whisper-vulkan-v1.9.4/whisper-vulkan-win-x64.zip")
+VULKAN_BIN_SHA256 = ""
+VULKAN_MODELO_ARQ = "ggml-large-v3-turbo-q5_0.bin"
+VULKAN_MODELO_URL = ("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/"
+                     "ggml-large-v3-turbo-q5_0.bin")
+VULKAN_MODELO_SHA256 = "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2"
+
 
 def stt_id() -> str:
     v = _env_valor("STT").lower()
+    if v == "vulkan" and _MAC:          # só existe no Windows
+        return "local"
     return v if v in STTS else "local"
 
 

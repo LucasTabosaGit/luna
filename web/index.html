@@ -144,6 +144,22 @@
   .conectar-hoje ol { margin: 0; padding-left: 20px; } .conectar-hoje li { margin: 4px 0; }
   .conectar-hoje .linha-b { display: flex; gap: 8px; flex-wrap: wrap; }
   .conectar-hoje a.botao { text-decoration: none; }
+  .conta-hoje { display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-top: 12px;
+                border: 1px solid var(--linha); border-radius: 12px; font-size: 12.5px; }
+  .conta-hoje .ponto { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--fraco); }
+  .conta-hoje.ok .ponto { background: var(--ouvir); box-shadow: 0 0 0 3px oklch(0.80 0.11 175 / .18); }
+  .conta-hoje.erro { border-color: oklch(0.70 0.17 25 / .5); } .conta-hoje.erro .ponto { background: var(--erro); }
+  .conta-hoje .txt { flex: 1; min-width: 0; line-height: 1.35; }
+  .conta-hoje .txt b { font-weight: 600; white-space: nowrap; }
+  #listaHoje .vazio { padding: 8px 0 4px; } .conta-hoje .txt small { display: block; color: var(--fraco); font-size: 11.5px; }
+  .conta-hoje .acoes { display: flex; gap: 4px; flex: none; }
+  .conta-hoje a.mini-btn { text-decoration: none; }
+  .secao h4 .qtd { color: var(--suave); margin-left: 6px; }
+  .secao h4 .esq { display: flex; align-items: baseline; }
+  .add-tarefa { display: flex; gap: 6px; margin: 0 0 6px; }
+  .add-tarefa input { flex: 1; min-width: 0; }
+  .item .hoje-btn { align-self: center; }
+  .rodape-hoje { color: var(--fraco); font-size: 11.5px; padding: 14px 0 10px; text-wrap: pretty; }
   #fila { margin: 14px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
   #fila::before { content: "Na fila"; font: 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--fraco); }
   #fila li { font-size: 13.5px; color: var(--suave); padding: 5px 10px; border: 1px solid var(--linha); border-radius: 8px; max-width: 52ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2100,21 +2116,37 @@ async function carregarHoje(forcar) {
     return;
   }
   $hoje.replaceChildren();
+  $hoje.append(cartaoConta(d.conta || {}));
   // Cabeçalho do dia
   const s1 = el('div', 'secao'), c1 = el('div', 'cartao'), topo = el('div', 'dia-topo');
   topo.append(el('b', '', new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })));
   const nv = (d.leituraDoDia || {}).nivel || '';
-  const nivel = el('span', 'nivel ' + nv, { baixa: 'energia baixa', media: 'energia média', alta: 'energia alta' }[nv] || 'dia');
-  nivel.title = 'Cabem ' + ((d.leituraDoDia || {}).limiteTarefas ?? '?') + ' tarefas hoje';
-  topo.append(nivel); c1.append(topo);
+  if (nv) {
+    const nivel = el('span', 'nivel ' + nv, { baixa: 'energia baixa', media: 'energia média', alta: 'energia alta' }[nv] || nv);
+    nivel.title = 'Cabem ' + ((d.leituraDoDia || {}).limiteTarefas ?? '?') + ' tarefas hoje';
+    topo.append(nivel);
+  }
+  c1.append(topo);
   if (d.comecePor) { const cp = el('div', 'comece'); cp.append('Comece por ', el('b', '', d.comecePor)); c1.append(cp); }
   s1.append(c1); $hoje.append(s1);
   // Tarefas de hoje
-  const s2 = el('div', 'secao'), h2 = el('h4', '', 'Tarefas de hoje');
-  const rec = el('button', 'mini-btn', 'Atualizar'); rec.onclick = () => carregarHoje(true); h2.append(rec);
-  s2.append(h2);
   const tarefas = [...(d.recorteDeHoje || []).map(t => ({ ...t, feita: false })), ...(d.feitasHoje || []).map(t => ({ ...t, feita: true }))];
-  if (!tarefas.length) s2.append(el('div', 'vazio', 'Nada para hoje. Aproveite.'));
+  const s2 = el('div', 'secao'), h2 = el('h4'), h2e = el('span', 'esq', 'Tarefas de hoje');
+  if (tarefas.length) h2e.append(el('span', 'qtd', (d.feitasHoje || []).length + '/' + tarefas.length));
+  const rec = botaoMini('Atualizar', '<path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/>', () => carregarHoje(true));
+  h2.append(h2e, rec); s2.append(h2);
+  const add = el('form', 'add-tarefa'), inp = el('input'); inp.placeholder = 'Nova tarefa para hoje…'; inp.setAttribute('aria-label', 'Nova tarefa');
+  const ok = el('button', 'botao', 'Adicionar'); ok.type = 'submit';
+  add.append(inp, ok);
+  add.onsubmit = async (e) => {
+    e.preventDefault(); const titulo = inp.value.trim(); if (!titulo) return;
+    ok.disabled = true;
+    try { await hojeAcao('criar', { titulo, planejadaPara: hojeISO() }); inp.value = ''; carregarHoje(true); }
+    catch (er) { sistema('Não consegui criar: ' + er.message); } finally { ok.disabled = false; }
+  };
+  s2.append(add);
+  if (!tarefas.length) s2.append(el('div', 'vazio', (d.abertas || []).length
+    ? 'Nada planejado para hoje. Puxe uma das tarefas em aberto abaixo.' : 'Nada para hoje. Aproveite.'));
   for (const t of tarefas) {
     const it = el('div', 'item' + (t.feita ? ' feito' : ''));
     const ck = el('button', 'check' + (t.feita ? ' feito' : ''), '✓');
@@ -2136,16 +2168,27 @@ async function carregarHoje(forcar) {
     it.append(ck, meio); if (!t.feita) it.append(adiar);
     s2.append(it);
   }
-  const add = el('form', 'add-tarefa'), inp = el('input'); inp.placeholder = 'Nova tarefa para hoje…'; inp.setAttribute('aria-label', 'Nova tarefa');
-  const ok = el('button', 'botao', 'Adicionar'); ok.type = 'submit';
-  add.append(inp, ok);
-  add.onsubmit = async (e) => {
-    e.preventDefault(); const titulo = inp.value.trim(); if (!titulo) return;
-    ok.disabled = true;
-    try { await hojeAcao('criar', { titulo, planejadaPara: new Date().toISOString().slice(0, 10) }); inp.value = ''; carregarHoje(true); }
-    catch (er) { sistema('Não consegui criar: ' + er.message); } finally { ok.disabled = false; }
-  };
-  s2.append(add); $hoje.append(s2);
+  $hoje.append(s2);
+  // Em aberto (sem ser de hoje)
+  const abertas = d.abertas || [];
+  if (abertas.length) {
+    const s4 = el('div', 'secao'), h4 = el('h4'), h4e = el('span', 'esq', 'Em aberto');
+    h4e.append(el('span', 'qtd', String(abertas.length))); h4.append(h4e); s4.append(h4);
+    for (const t of abertas) {
+      const it = el('div', 'item'), meio = el('div');
+      meio.append(el('div', 't', t.titulo));
+      const sub = [t.prazo ? 'prazo ' + dataCurta(t.prazo) : '', t.planejadaPara ? 'planejada ' + dataCurta(t.planejadaPara) : '',
+                   t.categoria || '', t.estimativaMin ? t.estimativaMin + ' min' : ''].filter(Boolean).join(' · ');
+      if (sub) meio.append(el('div', 'sub', sub));
+      const pra = botaoMini('Hoje', '<path d="M12 5v14M5 12h14"/>', async () => {
+        try { await hojeAcao('planejar', { id: t.id, dia: hojeISO() }); carregarHoje(true); }
+        catch (e) { sistema('Não consegui puxar para hoje: ' + e.message); }
+      });
+      pra.classList.add('hoje-btn'); pra.title = 'Fazer hoje';
+      it.append(el('span'), meio, pra); s4.append(it);
+    }
+    $hoje.append(s4);
+  }
   // Agenda
   const s3 = el('div', 'secao'); s3.append(el('h4', '', 'Agenda (7 dias)'));
   const ag = d.proximos || [];
@@ -2159,11 +2202,38 @@ async function carregarHoje(forcar) {
     it.append(m, el('span')); s3.append(it);
   }
   $hoje.append(s3);
-  $hoje.append(el('p', 'dica', 'Dica: fale “Luna, anota no Meu Hoje…” ou “terminei X” para mexer sem abrir aqui.'));
-  const sair = el('button', 'mini-btn', 'Desconectar conta do Meu Hoje'); sair.style.cssText = 'align-self:flex-start;margin:4px 0 8px';
-  sair.onclick = async () => { if (!confirm('Desconectar a conta do Meu Hoje desta Luna?')) return;
-    await fetch('/meuhoje/desconectar', { method: 'POST' }); carregarHoje(true); };
-  $hoje.append(sair);
+  $hoje.append(el('p', 'rodape-hoje', 'Por voz: “Luna, anota comprar pão”, “o que tenho hoje?”, “terminei a caminhada”.'));
+}
+function hojeISO() {
+  const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+// Conta: conectada de verdade? quem usa? sair.
+function cartaoConta(c) {
+  const box = el('div', 'conta-hoje ' + (c.valido === false ? 'erro' : c.conectado ? 'ok' : ''));
+  const txt = el('div', 'txt');
+  const b = el('b', '', c.valido === false ? 'Meu Hoje: login expirou' : 'Meu Hoje conectado');
+  txt.append(b, el('small', '', c.valido === false ? 'Conecte de novo para a Luna voltar a ver o seu dia.'
+    : c.especialista ? 'Verificada agora · usada aqui e pela IA especialista'
+    : 'Verificada agora · usada pela aba Hoje'));
+  const acoes = el('div', 'acoes');
+  const site = el('a', 'mini-btn', 'Abrir site'); site.href = 'https://meuhoje.com.br'; site.target = '_blank'; site.rel = 'noopener';
+  const sair = el('button', 'mini-btn', c.valido === false ? 'Conectar' : 'Desconectar');
+  sair.type = 'button';
+  sair.onclick = async () => {
+    if (c.valido === false) return conectarHoje();
+    if (!confirm('Desconectar o Meu Hoje da Luna?\n\nA aba Hoje e a IA especialista deixam de ver e mexer nas suas tarefas. Sua conta no site continua igual.')) return;
+    sair.disabled = true; sair.textContent = 'Desconectando…';
+    try {
+      const r = await fetch('/meuhoje/desconectar', { method: 'POST' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const st = await (await fetch('/meuhoje/status')).json();
+      if (st.conectado) throw new Error('o login continua salvo');
+      sistema('Meu Hoje desconectado. A IA especialista reinicia em segundo plano (~15 s) para largar a conta.');
+      carregarHoje(true);
+    } catch (e) { sistema('Não consegui desconectar: ' + e.message); sair.disabled = false; sair.textContent = 'Desconectar'; }
+  };
+  acoes.append(site, sair); box.append(el('span', 'ponto'), txt, acoes);
+  return box;
 }
 
 /* ================================================================ aba Aprendizado */
@@ -2511,7 +2581,8 @@ function cardStt(sv, alvo, so) {
       if (chave) valores[o.var] = chave;
     }
     btn.disabled = true;
-    msg.textContent = o.id === 'local' ? 'carregando o Whisper na placa…' : 'testando…';
+    msg.textContent = o.id === 'local' ? 'carregando o Whisper na placa…'
+      : o.id === 'vulkan' ? 'baixando e ligando na placa (a 1ª vez leva alguns minutos)…' : 'testando…';
     try {
       const d = await (await fetch('/conexoes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
                                                   body: JSON.stringify({ servico: 'stt', valores }) })).json();

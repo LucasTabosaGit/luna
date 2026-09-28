@@ -63,6 +63,29 @@ def ligar_hermes() -> None:
                          stdin=subprocess.DEVNULL, **plataforma.sem_janela())
 
 
+def reiniciar_hermes() -> bool:
+    """Para e religa o gateway do Hermes (ele guarda conexões MCP em memória).
+    Só age se ele estiver no ar. Espera até 90 s pela porta voltar."""
+    if not no_ar(8642):
+        return False
+    import plataforma
+    hermes = plataforma.hermes_exe()
+    if not hermes:
+        return False
+    subprocess.run([hermes, "-p", "default", "gateway", "stop"], capture_output=True,
+                   timeout=120, stdin=subprocess.DEVNULL, **plataforma.sem_janela())
+    for _ in range(40):
+        if not no_ar(8642):
+            break
+        time.sleep(0.5)
+    ligar_hermes()
+    for _ in range(90):
+        if no_ar(8642):
+            return True
+        time.sleep(1)
+    return False
+
+
 def ligar_servidor() -> subprocess.Popen | None:
     if no_ar(8777):
         return None

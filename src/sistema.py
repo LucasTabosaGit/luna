@@ -42,12 +42,15 @@ def checar() -> list[dict]:
          True, link="https://www.gyan.dev/ffmpeg/builds/")
     ok, det = _gpu()
     motor = config.stt_id()
-    if motor != "local":
+    if motor == "vulkan":
+        item("gpu", "Placa de vídeo (Vulkan)", True, "ouvido experimental na placa AMD/Intel")
+    elif motor != "local":
         item("gpu", "Placa de vídeo", True,
              "não precisa: a fala é transcrita na nuvem (%s)" % config.STTS[motor]["nome"].split(": ")[-1])
     else:
         item("gpu", "GPU do Mac (MLX)" if plataforma.MAC else "Placa de vídeo (CUDA)", ok,
-             det if ok else "sem placa NVIDIA: escolha o ouvido na nuvem (Groq tem cota grátis)",
+             det if ok else "sem placa NVIDIA: escolha o ouvido na nuvem (Groq tem cota grátis) "
+                            "ou, com placa AMD/Intel, o Vulkan (experimental)",
              acao="conexoes")
     mod_w = any((config.MODELOS / "whisper").glob("**/model.bin")) if (config.MODELOS / "whisper").exists() else False
     item("modelos", "Modelos de voz", mod_w,

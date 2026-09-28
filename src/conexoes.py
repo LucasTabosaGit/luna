@@ -299,19 +299,43 @@ def _gpu() -> tuple[bool, float]:
     return bool(g["tipo"]), g["total_gb"]
 
 
+def _placa_nao_nvidia() -> str:
+    """Nome da placa AMD/Intel (Windows), para sugerir o ouvido Vulkan."""
+    import plataforma
+    if not plataforma.WINDOWS:
+        return ""
+    try:
+        nomes = plataforma.placas_video()
+    except Exception:  # noqa: BLE001
+        return ""
+    for n in nomes:
+        b = n.lower()
+        if "radeon" in b or "amd" in b or " arc" in b or b.startswith("arc"):
+            return n
+    return ""
+
+
 def _status_stt() -> dict:
     atual = config.stt_id()
     tem_gpu, gb = _gpu()
     recomendado = "local" if tem_gpu and gb >= 4 else "groq"
+    import plataforma
+    outra = "" if tem_gpu else _placa_nao_nvidia()
     opcoes = []
     for ident, s in config.STTS.items():
+        if ident == "vulkan" and not plataforma.WINDOWS:
+            continue
         k = config.chave_stt(ident)
         opcoes.append({"id": ident, "nome": s["nome"], "dica": s["dica"], "link": s["link"],
                        "var": s["var"], "precisa_chave": bool(s["var"]), "definido": bool(k),
                        "mostrar": "" if not s["var"] else _mascara(k),
                        "recomendado": ident == recomendado})
     if atual == "local":
-        placa = ("%s, %.0f GB" % ("placa de vídeo encontrada", gb)) if tem_gpu else "sem placa de vídeo"
+        placa = (("%s, %.0f GB" % ("placa de vídeo encontrada", gb)) if tem_gpu
+                 else ("%s: sem CUDA, use Vulkan ou Groq" % outra) if outra else "sem placa de vídeo")
+        configurado = True
+    elif atual == "vulkan":
+        placa = outra or "placa de vídeo pelo Vulkan"
         configurado = True
     else:
         placa = "não usa a placa de vídeo"
@@ -324,6 +348,11 @@ def _status_stt() -> dict:
 
 def _testar_stt() -> tuple[bool, str]:
     motor = config.stt_id()
+    if motor == "vulkan":
+        import ouvido_vulkan as ov
+        if ov.ULTIMO_ERRO[0]:
+            return False, "não funcionou (%s); usando o processador" % ov.ULTIMO_ERRO[0][:90]
+        return True, "na placa pelo Vulkan (experimental)"
     if motor == "local":
         tem_gpu, _gb = _gpu()
         return (True, "na placa de vídeo") if tem_gpu else (

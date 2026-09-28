@@ -84,7 +84,14 @@ A Luna descobre sozinha em qual sistema está e se ajusta. Escolha o jeito que c
 |---|---|---|---|---|
 | **Leve** (ouvido na nuvem) | não precisa | 4 GB | sim | a IA + o ouvido (Groq tem cota grátis) |
 | **Completo** (ouvido na placa) | NVIDIA 4 GB+ · no Mac, a GPU dele | 8 GB | sim | só a IA |
+| **Placa AMD/Intel** (ouvido pelo Vulkan, *experimental*) | AMD Radeon ou Intel Arc, 4 GB+, driver atualizado | 8 GB | sim | só a IA |
 | **Sem internet** (Ollama + ouvido na placa) | NVIDIA 8 GB+ · no Mac, a GPU dele | 16 GB | só para as vozes | grátis |
+
+**Placa AMD ou Intel (Windows):** o Whisper de sempre só acelera em NVIDIA. Em *Ajustes → Inteligência → Ouvido*
+escolha **Na placa AMD/Intel (Vulkan, experimental)**: a Luna baixa o [whisper.cpp](https://github.com/ggml-org/whisper.cpp)
+compilado com Vulkan (~40 MB) e o modelo large-v3-turbo (~550 MB) e roda na sua placa, sem ROCm nem CUDA.
+Ainda não foi testado numa placa AMD: se não funcionar, a Luna usa o processador e o **Groq** (cota grátis) continua
+sendo a alternativa. Conte como foi numa issue.
 
 Medido numa RTX 5060 Ti: no modo Completo a Luna usa ~2,8 GB da placa (Whisper 2,2 + voz de reserva 0,6);
 no modo Leve, praticamente nada. As vozes convertidas (RVC, opcionais) somam ~0,7 GB só enquanto escolhidas.

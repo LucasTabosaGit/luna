@@ -1,11 +1,15 @@
 """Meu Hoje (https://meuhoje.com.br) na Luna: aba Hoje e resumo do dia.
 
-Conexão da conta, em ordem de preferência:
-  1. login próprio da Luna ("Conectar conta" na aba Hoje): OAuth 2.1 com
-     PKCE, cliente registrado sozinho (registro dinâmico) -> token em
-     dados/meuhoje/ (fora do git);
-  2. o login que o Hermes já fez (`hermes mcp add meuhoje --url ... --auth
-     oauth`): lê mcp-tokens/meuhoje.json do perfil do Hermes.
+Uma conta só, para a aba Hoje E para a IA especialista:
+  - se o Hermes tem o Meu Hoje configurado (`mcp_servers.meuhoje` no perfil),
+    o login mora no cofre dele (mcp-tokens/meuhoje.json) e as duas usam o
+    mesmo. "Conectar conta" grava ali; "Desconectar" apaga ali e desliga o
+    servidor no Hermes (`enabled: false`), senão a especialista continuava
+    mexendo nas tarefas com o login antigo;
+  - sem Hermes: login próprio da Luna em dados/meuhoje/ (fora do git).
+  O login é OAuth 2.1 com PKCE e cliente registrado sozinho (registro dinâmico).
+  Depois de conectar/desconectar, o servidor reinicia o gateway do Hermes
+  (ele guarda a conexão aberta em memória).
 
 Renovação do token: o refresh token é de USO ÚNICO. Quando o token é o do
 Hermes, a renovação pega a MESMA trava que ele (`meuhoje.json.refresh.lock`,
@@ -51,11 +55,41 @@ class Desconectado(Exception):
     """Sem token válido: conectar a conta na aba Hoje."""
 
 
+def _hermes_cfg() -> dict | None:
+    """O bloco `mcp_servers.meuhoje` do perfil do Hermes (None = não configurado)."""
+    arq = HERMES.parent / "config.yaml"
+    try:
+        import yaml
+        cfg = yaml.safe_load(arq.read_text(encoding="utf-8")) or {}
+    except (OSError, ImportError, ValueError):
+        return None
+    srv = (cfg.get("mcp_servers") or {}).get("meuhoje")
+    return srv if isinstance(srv, dict) else None
+
+
+def _hermes_ligado() -> bool:
+    srv = _hermes_cfg()
+    return bool(srv) and srv.get("enabled", True) is not False
+
+
+def _hermes_config(ligado: bool) -> None:
+    """Liga/desliga o Meu Hoje na IA especialista (pelo próprio Hermes)."""
+    exe = plataforma.hermes_exe()
+    if not exe or _hermes_cfg() is None:
+        return
+    import subprocess
+    subprocess.run([exe, "-p", config.HERMES_PERFIL, "config", "set",
+                    "mcp_servers.meuhoje.enabled", "true" if ligado else "false"],
+                   capture_output=True, timeout=60, stdin=subprocess.DEVNULL,
+                   **plataforma.sem_janela())
+
+
 def _fonte() -> dict | None:
     """Onde está o token: {"nome", "token", "cliente", "trava"}."""
-    for nome, pasta, tok, cli in (
-            ("luna", PROPRIA, "token.json", "cliente.json"),
-            ("hermes", HERMES, "meuhoje.json", "meuhoje.client.json")):
+    opcoes = [("luna", PROPRIA, "token.json", "cliente.json")]
+    if _hermes_ligado():                 # desligado no Hermes = desconectado lá
+        opcoes.insert(0, ("hermes", HERMES, "meuhoje.json", "meuhoje.client.json"))
+    for nome, pasta, tok, cli in opcoes:
         if (pasta / tok).exists():
             return {"nome": nome, "pasta": pasta, "token": pasta / tok,
                     "cliente": pasta / cli, "trava": pasta / (tok + ".refresh.lock")}
@@ -140,15 +174,29 @@ def _token() -> str:
 
 
 # ------------------------------------------------------------------ status
-def status() -> dict:
+def status(verificar: bool = False) -> dict:
+    """conectado = há login salvo; verificar=True também pergunta ao Meu Hoje
+    se ele ainda vale (`valido`). especialista = a IA especialista usa a conta."""
+    base = {"conectado": False, "fonte": None, "valido": None,
+            "especialista": False, "hermes": _hermes_cfg() is not None}
     f = _fonte()
     if f is None:
-        return {"conectado": False, "fonte": None}
+        return base
     try:
         t = _ler(f)
     except Desconectado:
-        return {"conectado": False, "fonte": None}
-    return {"conectado": bool(t.get("refresh_token") or _valido(t)), "fonte": f["nome"]}
+        return base
+    base.update(conectado=bool(t.get("refresh_token") or _valido(t)), fonte=f["nome"],
+                especialista=f["nome"] == "hermes")
+    if verificar and base["conectado"]:
+        try:
+            chamar("ver_hoje")
+            base["valido"] = True
+        except Desconectado:
+            base["valido"] = False
+        except Exception:  # noqa: BLE001 - site fora do ar: não dá para saber
+            base["valido"] = None
+    return base
 
 
 # ------------------------------------------------------------------ login próprio
@@ -209,16 +257,32 @@ def concluir_login(codigo: str, estado: str) -> None:
     })
     if r.status_code != 200:
         raise RuntimeError("o Meu Hoje recusou o código (%d)" % r.status_code)
-    _gravar(PROPRIA / "token.json", _token_novo(r.json()))
+    tok = _token_novo(r.json())
+    if _hermes_cfg() is None:
+        _gravar(PROPRIA / "token.json", tok)
+        return
+    # Hermes configurado: grava no cofre dele, no formato dele, e religa lá.
+    try:
+        meta = json.loads((HERMES / "meuhoje.meta.json").read_text(encoding="utf-8"))
+        if meta.get("issuer"):
+            tok["hermes_issuer"] = str(meta["issuer"]).rstrip("/")
+            cli = {**cli, "issuer": tok["hermes_issuer"]}
+    except (OSError, ValueError):
+        pass
+    _gravar(HERMES / "meuhoje.client.json", cli)
+    _gravar(HERMES / "meuhoje.json", tok)
+    (PROPRIA / "token.json").unlink(missing_ok=True)
+    _hermes_config(True)
 
 
 def desconectar() -> None:
-    """Apaga só o login PRÓPRIO da Luna (o do Hermes é dele)."""
-    for n in ("token.json", "token.json.refresh.lock"):
-        try:
-            (PROPRIA / n).unlink()
-        except OSError:
-            pass
+    """Desconecta a conta da Luna INTEIRA: aba Hoje e IA especialista.
+    A trava `.refresh.lock` do Hermes fica (ele exige: é presa ao arquivo)."""
+    (PROPRIA / "token.json").unlink(missing_ok=True)
+    if _hermes_cfg() is not None:
+        for n in ("meuhoje.json", "meuhoje.client.json"):
+            (HERMES / n).unlink(missing_ok=True)
+        _hermes_config(False)
 
 
 # ------------------------------------------------------------------ MCP

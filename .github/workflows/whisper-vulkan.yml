@@ -1,0 +1,65 @@
+# Compila o whisper-server do whisper.cpp com Vulkan (placas AMD, Intel e
+# NVIDIA, sem CUDA nem ROCm) e publica como release deste repositório.
+# A Luna baixa o zip daqui quando a pessoa escolhe "placa AMD/Intel (Vulkan)".
+# Roda só à mão (Actions → whisper-vulkan → Run workflow).
+name: whisper-vulkan
+
+on:
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: "Tag do whisper.cpp"
+        default: "v1.9.4"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    env:
+      VULKAN_VERSION: 1.4.357.0
+    steps:
+      - name: Baixar o whisper.cpp
+        shell: bash
+        run: git clone --depth 1 --branch "${{ inputs.versao }}" https://github.com/ggml-org/whisper.cpp w
+
+      - name: Instalar o Vulkan SDK
+        shell: pwsh
+        run: |
+          curl.exe -o $env:RUNNER_TEMP/VulkanSDK-Installer.exe -L "https://sdk.lunarg.com/sdk/download/${env:VULKAN_VERSION}/windows/vulkansdk-windows-X64-${env:VULKAN_VERSION}.exe"
+          & "$env:RUNNER_TEMP\VulkanSDK-Installer.exe" --accept-licenses --default-answer --confirm-command install
+          Add-Content $env:GITHUB_ENV "VULKAN_SDK=C:\VulkanSDK\${env:VULKAN_VERSION}"
+          Add-Content $env:GITHUB_PATH "C:\VulkanSDK\${env:VULKAN_VERSION}\bin"
+
+      - name: Compilar
+        shell: bash
+        working-directory: w
+        run: |
+          cmake -B build -DGGML_VULKAN=ON -DWHISPER_BUILD_EXAMPLES=ON -DWHISPER_BUILD_TESTS=OFF \
+                -DWHISPER_SDL2=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          cmake --build build --config Release -j 4 --target whisper-server
+
+      - name: Empacotar
+        shell: bash
+        run: |
+          mkdir pacote
+          cp w/build/bin/Release/*.exe w/build/bin/Release/*.dll pacote/ 2>/dev/null || true
+          cp w/LICENSE pacote/LICENSE-whisper.cpp.txt
+          ls pacote
+          test -f pacote/whisper-server.exe
+          cd pacote && 7z a ../whisper-vulkan-win-x64.zip . > /dev/null
+          cd .. && sha256sum whisper-vulkan-win-x64.zip | tee whisper-vulkan-win-x64.zip.sha256
+
+      - name: Publicar release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="whisper-vulkan-${{ inputs.versao }}"
+          gh release delete "$TAG" -R "${{ github.repository }}" -y --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" -R "${{ github.repository }}" --prerelease \
+            --title "whisper.cpp ${{ inputs.versao }} com Vulkan (Windows x64)" \
+            --notes "Compilado deste repositório pelo workflow whisper-vulkan a partir de ggml-org/whisper.cpp ${{ inputs.versao }} (licença MIT). Usado pela Luna no ouvido 'placa AMD/Intel (Vulkan)'." \
+            whisper-vulkan-win-x64.zip whisper-vulkan-win-x64.zip.sha256

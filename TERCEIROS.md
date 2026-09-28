@@ -10,6 +10,7 @@ todos baixam dos repositórios oficiais na primeira vez, e o uso segue a licenç
 |---|---|---|
 | [Whisper large-v3-turbo](https://huggingface.co/openai/whisper-large-v3-turbo) (conversão [CTranslate2](https://huggingface.co/deepdml/faster-whisper-large-v3-turbo-ct2)) | transcrição | MIT |
 | [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | voz de reserva, quando a internet cai | Apache-2.0 |
+| [whisper.cpp](https://github.com/ggml-org/whisper.cpp) + [modelo ggml large-v3-turbo](https://huggingface.co/ggerganov/whisper.cpp) | ouvido na placa AMD/Intel (Vulkan, opcional) | MIT |
 | [Silero VAD](https://github.com/snakers4/silero-vad) | detectar fala | MIT |
 | [openWakeWord](https://github.com/dscripka/openWakeWord) `melspectrogram.onnx` e `embedding_model.onnx` | base do detector do nome | **CC BY-NC-SA 4.0** (uso não comercial) |
 

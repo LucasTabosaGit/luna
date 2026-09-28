@@ -1,5 +1,15 @@
 # Mudanças
 
+## Ouvido na placa AMD/Intel (experimental)
+
+- Nova opção de ouvido no Windows: **Na placa AMD/Intel (Vulkan)**. Usa o whisper.cpp com Vulkan, que roda em placas
+  AMD Radeon e Intel Arc com o driver normal (sem ROCm nem CUDA). Grátis e sem internet.
+- Na primeira vez baixa ~600 MB (programa + modelo), conferidos por SHA-256.
+- **Ainda não testado em placa AMD.** Se não subir, a Luna usa o Whisper do processador e avisa em *Ajustes*;
+  o Groq continua sendo a alternativa. Quem testar, conte numa issue.
+- O programa é compilado neste repositório (workflow `whisper-vulkan`) a partir do whisper.cpp oficial.
+- Quem tem NVIDIA não muda nada.
+
 ## Duas IAs: rápida e especialista
 
 - A escolha das IAs foi reorganizada em duas, com a função de cada uma explicada no guia e nos Ajustes:

@@ -150,6 +150,9 @@ class TranscritorNuvem:
 def criar():
     """O transcritor da escolha atual (Ajustes -> Inteligência)."""
     motor = config.stt_id()
+    if motor == "vulkan":
+        from ouvido_vulkan import TranscritorVulkan
+        return TranscritorVulkan()
     if motor != "local":
         return TranscritorNuvem(motor)
     import plataforma
