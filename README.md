@@ -18,22 +18,31 @@ microfone → portão "Luna" (openWakeWord) → Whisper large-v3-turbo (placa de
   Entende "abaixa o som", "pula essa", "me lembra do bolo em 40 minutos" e até nomes mal pronunciados ("abre o espotifai").
 - **Aprende com você (com o Hermes).** Por trás dela roda o [Hermes Agent](https://hermes-agent.nousresearch.com/docs),
   e isso faz a Luna melhorar com o uso:
-  - **lembra de você entre conversas**: preferências, nomes, o jeito que você gosta das coisas (memória do Hermes);
-  - **cria habilidades**: quando o Claude resolve uma tarefa nova, ele guarda o passo a passo e da próxima vez já sabe fazer;
-  - **transforma repetição em atalho**: o que você pede várias vezes passa a rodar em segundos, sem nem chamar o Claude.
+  - **lembra de você entre conversas**: preferências, pessoas, o jeito que você gosta das coisas. A memória vale
+    para as **duas IAs**: a rápida também lê o que ela sabe de você;
+  - **revisa o dia**: uma vez por dia ela relê as conversas e **sugere** o que lembrar; uma vez por semana, o que
+    **apagar** (repetido, velho ou inútil). Nada entra nem sai da memória sem você aprovar;
+  - **cria habilidades**: quando a IA especialista resolve uma tarefa nova, guarda o passo a passo e da próxima vez já sabe fazer;
+  - **transforma repetição em atalho**: o que você pede várias vezes passa a rodar em segundos, sem nem chamar a especialista.
 
   Tudo aparece na aba **Aprendizado**, e nada muda sozinho: mudanças nela mesma passam por uma **trava de aprovação**
   (ela propõe, testa e só vale depois que você aprova). Sem o Hermes, a Luna funciona normalmente, só não aprende.
 - **Só atende quando ouve "Luna".** Um detector do nome roda no seu PC antes de qualquer coisa. TV, música e conversa
   da sala são descartadas antes de virar texto e não saem do computador.
-- **É rápida onde dá e inteligente onde precisa.** Hora, volume, timer, contas, abrir apps e sites respondem na hora,
-  sem IA. Perguntas vão para uma IA rápida e barata. Tarefas de verdade no PC (arquivos, pesquisa, textos) vão sozinhas
-  para o **Claude**, via [Hermes Agent](https://hermes-agent.nousresearch.com/docs).
-- **Você escolhe as peças.** A IA principal pode ser DeepSeek, Gemini, OpenAI, Groq, OpenRouter, Ollama (no seu PC)
-  ou **a assinatura que você já paga** (ChatGPT Plus/Pro e outras, pelo Hermes). O ouvido pode rodar na placa de
-  vídeo (grátis, sem internet) ou na nuvem (sem placa). Tudo se troca em Ajustes, sem reiniciar.
-- **Mostra quanto custa.** Ajustes → *Uso e gastos* mostra o gasto de hoje e do mês e quanto o seu uso custaria em
-  cada IA. Com o DeepSeek, o uso normal fica em centavos por mês.
+- **Duas IAs, cada uma no seu lugar.** A Luna trabalha em três níveis:
+  1. **Comandos prontos** — hora, volume, timer, contas, abrir apps e sites: na hora, sem IA, grátis.
+  2. **IA rápida** — conversa, perguntas, resumos. Atende quase tudo, então deve ser barata e ágil:
+     a recomendação é uma **chave de API** (DeepSeek, Gemini, OpenAI, Groq, OpenRouter) ou o Ollama no seu PC.
+  3. **IA especialista** — só entra quando o pedido precisa **agir no computador** (arquivos, programas, pesquisa longa)
+     ou quando a rápida não dá conta. Roda pelo [Hermes Agent](https://hermes-agent.nousresearch.com/docs).
+     Pode ser **assinatura** (Claude ou ChatGPT Plus/Pro) ou **chave de API**, com **limite de gasto por dia**.
+     Se o uso for frequente, a assinatura sai mais barata do que pagar pela API.
+
+  Cada uma aceita assinatura ou chave. Sem a especialista, a Luna conversa e faz comandos, e avisa quando um pedido
+  precisaria dela. O ouvido pode rodar na placa de vídeo (grátis, sem internet) ou na nuvem. Tudo se troca em
+  Ajustes, sem reiniciar.
+- **Mostra quanto custa.** Ajustes → *Uso e gastos* mostra o gasto de hoje e do mês (IA rápida e especialista paga por
+  uso) e quanto o seu uso custaria em cada IA. Com o DeepSeek, o uso normal fica em centavos por mês.
 - **É sua.** Código aberto (MIT), chaves só no seu PC, conversas salvas em arquivos seus.
 
 ## Como usar
@@ -49,16 +58,16 @@ microfone → portão "Luna" (openWakeWord) → Whisper large-v3-turbo (placa de
 | "Luna, me lembra de tirar o bolo em 40 minutos" | timer com aviso falado |
 | "Luna, quanto é 15% de 200?" / "vai chover hoje?" | contas e clima, sem IA |
 | "Luna, me explica o que é inflação" | conversa com a IA escolhida |
-| "Luna, organiza os PDFs da pasta Downloads" | o Claude faz a tarefa no PC (com o Hermes) |
+| "Luna, organiza os PDFs da pasta Downloads" | a IA especialista faz a tarefa no PC (com o Hermes) |
 
 3. Não sabe o que pedir? Diga **"Luna, o que você sabe fazer?"**: ela mostra a lista completa.
 4. Para parar a qualquer momento: **"Luna, para"** ou **"cancela"**.
 5. Também dá para digitar, colar um print (Ctrl+V) ou anexar um PDF e perguntar sobre ele.
 
 **Os três modos** (botões ao lado do microfone):
-- **Auto**: o normal. Escolhe sozinho entre comando, IA rápida ou Claude.
-- **Expert**: tudo direto para o **Claude ou o ChatGPT** (com a assinatura que você já paga, pelo Hermes). Mais lento, mais capaz.
-  Escolha qual em Ajustes → Inteligência → *Modelo do Expert*.
+- **Auto**: o normal. Escolhe sozinho entre comando, IA rápida ou IA especialista.
+- **Expert**: tudo direto para a **IA especialista** (Claude, ChatGPT ou outra, pelo Hermes). Mais lento, mais capaz.
+  Escolha qual em Ajustes → Inteligência → *Modelo da IA especialista*.
 - **Live**: conversa falada de ida e volta com o Gemini.
 
 **Atalhos de teclado**: `Ctrl+Alt+L` chama a Luna de qualquer programa · `Ctrl+K` busca qualquer ação ·
@@ -115,15 +124,21 @@ Ele fica em **Ajustes → Primeiros passos** (ou Ctrl+K). Para desligar: **Ajust
 
 Permita o microfone e diga "**Luna**, …".
 
-### Ligar o Expert: Claude ou ChatGPT (opcional)
+### Ligar a IA especialista (opcional)
 
 1. Instale o Hermes Agent e crie um perfil (ex.: `hermes profile create assistente`).
 2. No `.env` do perfil: `API_SERVER_ENABLED=true` e anote a `API_SERVER_KEY`.
 3. Rode `hermes gateway run`.
-4. Na Luna: Ajustes → Inteligência → Expert: endereço `http://127.0.0.1:8642/p/assistente/v1` e a chave.
-5. Entre com a sua assinatura: `hermes -p assistente model` e escolha **Anthropic** (Claude) ou
-   **ChatGPT or Codex Subscription** (ChatGPT Plus/Pro). Pode conectar os dois; em *Modelo do Expert* aparecem
-   só os que estão conectados.
+4. Na Luna: Ajustes → Inteligência → *Hermes Agent*: endereço `http://127.0.0.1:8642/p/assistente/v1` e a chave.
+5. Em *IA especialista*, escolha:
+   - **Minha assinatura**: `hermes -p assistente model` e escolha **Anthropic** (Claude) ou
+     **ChatGPT or Codex Subscription** (ChatGPT Plus/Pro). Pode conectar os dois.
+   - **Chave de API**: Anthropic, OpenAI, OpenRouter ou DeepSeek. Cole a chave e defina o limite por dia.
+     A Luna guarda a chave no cofre do próprio Hermes.
+
+   Se o uso for frequente, a assinatura sai mais barata do que pagar pela API.
+
+   Em *Modelo da IA especialista* aparecem só os que estão conectados.
 
 ### Meu Hoje (opcional)
 
@@ -169,6 +184,7 @@ Luna.bat              abrir no Windows (instala na primeira vez)
 Luna.command          abrir no Mac (instala na primeira vez)
 instalar.py           .venv + dependências + .env + atalho (Windows ou Mac)
 src/plataforma.py     o que muda entre Windows e Mac (volume, teclas, apps, GPU)
+src/memoria.py        memória para as duas IAs, revisão do dia e sugestões de limpeza
 src/abrir.py          liga Hermes (se houver) e o servidor; abre a janela (é o que o atalho chama)
 src/criar_atalho.py   atalho "Luna" (Windows: área de trabalho e Iniciar; Mac: Aplicativos)
 src/                  servidor e módulos (ver CONTRIBUTING.md)

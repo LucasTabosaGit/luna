@@ -48,6 +48,14 @@ ESPECIAIS = [
     ("E em Curitiba?",
      "última resposta (de a Luna): Em São Paulo está fazendo 22 graus e nublado.",
      {"conversa", "acao"}),
+    # Registro real: iam ao Hermes sem usar ferramenta nenhuma.
+    ("Vamos ver o filme amanhã à noite.", "", {"conversa"}),
+    ("E meu nome é Marcos, o Rafael foi um erro.", "", {"conversa"}),
+    ("Dá bom dia pra minha avó", "", {"conversa"}),
+    ("Dá boa tarde para meu amigo Bruno", "", {"conversa"}),
+    ("gosto mais de filme de terror do que de comédia", "", {"conversa"}),
+    ("lembra que eu prefiro respostas curtas", "", {"claude"}),
+    ("Eu já tomei as vitaminas", "", {"claude"}),
 ]
 
 

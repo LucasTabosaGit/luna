@@ -1,5 +1,24 @@
 # Mudanças
 
+## Duas IAs: rápida e especialista
+
+- A escolha das IAs foi reorganizada em duas, com a função de cada uma explicada no guia e nos Ajustes:
+  - **IA rápida** (a do dia a dia): conversa e pedidos simples. Recomendada por chave de API, por ser mais ágil.
+  - **IA especialista** (mexe no PC, pelo Hermes): assinatura (mais barata se o uso for frequente) ou, agora,
+    **chave de API** (Anthropic, OpenAI, OpenRouter, DeepSeek), com **limite de gasto por dia**.
+- O gasto da especialista paga por uso aparece em *Uso e gastos* e na barra de status.
+- Se a especialista estiver fora do ar ou no limite do dia, a rápida tenta e a Luna avisa.
+
+## Memória que aprende (e se limpa)
+
+- A **IA rápida** agora também lê o que a Luna sabe de você (nome, preferências, pessoas).
+- **Revisão do dia**: com a Luna parada, ela relê as conversas e sugere o que lembrar. Você aprova ou descarta
+  na aba **Aprendizado** (medido: sozinha, ela chegou a gravar um nome que era erro de transcrição).
+- **Limpeza semanal**: sugere apagar lembranças repetidas, velhas ou inúteis. Também só com a sua aprovação.
+- Na aba Aprendizado dá para ver tudo o que ela lembra e **esquecer** qualquer item.
+- O roteador deixa na IA rápida conversa, recados e fatos que você conta de si; "lembra que…" continua indo à
+  especialista, que grava na hora.
+
 ## Mac (beta)
 
 - A Luna agora roda também no **Mac com Apple Silicon**: descobre o sistema sozinha e se ajusta.

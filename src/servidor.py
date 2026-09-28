@@ -60,10 +60,37 @@ _vad = None
 _llm = None
 
 
+async def _revisao_memoria() -> None:
+    """Uma vez por dia, com a Luna parada há 10 min: a IA rápida relê as
+    conversas e PROPÕE o que lembrar; uma vez por semana sugere limpeza.
+    Nada entra nem sai da memória sem você (aba Aprendizado)."""
+    import memoria
+    await asyncio.sleep(120)
+    while True:
+        try:
+            parada = time.time() - _ultimo_turno[0] > 600
+            if parada and config.chave_cerebro():
+                cli, modelo, extra = _cerebro_rapido()
+                r = await asyncio.to_thread(memoria.revisar, cli, modelo, extra)
+                if "pulou" not in r:
+                    print("  [memoria] revisão: %d falas, %d lembranças propostas"
+                          % (r["falas"], len(r["novos"])), flush=True)
+                    if time.time() - memoria._estado().get("limpeza_em", 0) > 6 * 86400:
+                        sug = await asyncio.to_thread(memoria.sugerir_limpeza, cli, modelo, extra)
+                        print("  [memoria] %d sugestões de limpeza" % len(sug), flush=True)
+        except Exception as e:  # noqa: BLE001 - tenta de novo na próxima volta
+            print("  [memoria] revisão falhou: %s" % str(e)[:120], flush=True)
+        await asyncio.sleep(1800)
+
+
+_ultimo_turno = [time.time()]
+
+
 @asynccontextmanager
 async def _ciclo(app: FastAPI):
     await asyncio.to_thread(_modelos)
     laco = asyncio.get_running_loop()
+    revisao = asyncio.create_task(_revisao_memoria())
     try:
         import atalho_global
         if atalho_global.iniciar(lambda: laco.call_soon_threadsafe(
@@ -74,6 +101,7 @@ async def _ciclo(app: FastAPI):
     except Exception as e:  # noqa: BLE001
         print("  [atalho] indisponível: %s" % str(e)[:80], flush=True)
     yield
+    revisao.cancel()
     try:
         import atalho_global
         atalho_global.parar()
@@ -215,6 +243,38 @@ async def treino_voz_acao(acao: str):
         return JSONResponse({"erro": "ação desconhecida"}, status_code=404)
     r = await asyncio.to_thread(feito)
     return {"ok": r is not False}
+
+
+@app.get("/memoria")
+async def memoria_ver():
+    import memoria
+    return await asyncio.to_thread(memoria.resumo)
+
+
+@app.post("/memoria/{acao}")
+async def memoria_acao(acao: str, req: Request):
+    """Aba Aprendizado: aprovar/descartar proposta, apagar lembrança,
+    revisar agora, sugerir limpeza."""
+    import memoria
+    corpo = await req.json() if acao in ("apagar", "aprovar", "descartar") else {}
+    texto = str(corpo.get("texto", ""))
+    if acao == "apagar":
+        return await asyncio.to_thread(memoria.apagar, str(corpo.get("nome", "")), texto)
+    if acao == "aprovar":
+        return await asyncio.to_thread(memoria.aprovar, texto)
+    if acao == "descartar":
+        await asyncio.to_thread(memoria.descartar, texto)
+        return {"ok": True}
+    if acao in ("revisar", "limpeza"):
+        if not config.chave_cerebro():
+            return JSONResponse({"ok": False, "erro": "configure a IA rápida primeiro"}, status_code=400)
+        cli, modelo, extra = _cerebro_rapido()
+        if acao == "revisar":
+            r = await asyncio.to_thread(memoria.revisar, cli, modelo, extra, True)
+        else:
+            r = {"limpeza": await asyncio.to_thread(memoria.sugerir_limpeza, cli, modelo, extra)}
+        return {"ok": True, **r}
+    return JSONResponse({"ok": False, "erro": "ação desconhecida"}, status_code=404)
 
 
 @app.post("/aprendizado/atalho/{nome}/{estado}")
@@ -493,7 +553,19 @@ async def conexoes_salvar(req: Request):
         from openai import OpenAI
         _llm = custo.embrulhar(OpenAI(base_url=config.LLM_URL or "http://127.0.0.1:9/v1",
                                       api_key=config.LLM_API_KEY or "sem-chave", timeout=30))
-    if nome == "hermes":
+    if nome == "especialista":
+        # Chave por API: vai para o cofre do Hermes (vale sem reiniciar).
+        # Voltou para "só assinatura": tira a chave da Luna de lá, para
+        # nenhum pedido cair na conta paga sem querer.
+        api = config.especialista_api()
+        antigas = [p for p in conexoes.provedores_da_luna() if p != api]
+        for p in antigas:
+            await asyncio.to_thread(conexoes._hermes_cli, ["auth", "remove", p, conexoes._ROTULO_HERMES])
+        if api:
+            ok, msg = await asyncio.to_thread(conexoes.registrar_especialista, api)
+            if not ok:
+                return {"ok": False, "msg": msg}
+    if nome in ("hermes", "especialista"):
         _hermes_cache[0] = 0.0
     if nome == "stt" and _ouvido is not None:
         await asyncio.to_thread(_trocar_stt)
@@ -1397,12 +1469,21 @@ def _hermes_stream(mensagens: list, ao_ferramenta, cancelar: threading.Event,
         "messages": ([{"role": "system", "content": config.SISTEMA_HERMES}]
                      + [m for m in mensagens if m["role"] != "system"]),
     }
-    # Modelo escolhido na tela (Opus, Fable, Sonnet, Haiku...). O API server
-    # só honra um `model` diferente do virtual quando vem `provider` junto,
-    # então os dois andam sempre em par; vazio = padrão do perfil do Hermes.
-    if modelo and config.modelo_claude_valido(modelo):
-        corpo["model"] = modelo
-        corpo["provider"] = config.provedor_modelo(modelo)
+    # Modelo escolhido na tela (Opus, Sonnet, GPT, DeepSeek por chave...). O
+    # API server só honra um `model` diferente do virtual quando vem
+    # `provider` junto, então os dois andam sempre em par; None = padrão do
+    # perfil do Hermes (a assinatura).
+    m = config.modelo_expert_efetivo(modelo or "")
+    por_uso = bool(m) and config.modelo_por_uso(config._chave_modelo(m))
+    if m:
+        corpo["model"] = m["id"]
+        corpo["provider"] = m["provedor"]
+    if por_uso:
+        import custo
+        teto = config.especialista_limite_brl()
+        if teto and custo.especialista_hoje_brl() >= teto:
+            raise RuntimeError("limite do dia da IA especialista (R$ %.2f) atingido; "
+                               "aumente em Ajustes > Inteligência" % teto)
     cab = {"Authorization": "Bearer %s" % config.chave_hermes(),
            "Content-Type": "application/json"}
     evento = None
@@ -1436,6 +1517,9 @@ def _hermes_stream(mensagens: list, ao_ferramenta, cancelar: threading.Event,
             if evento == "hermes.tool.progress":
                 ao_ferramenta(j)
                 continue
+            if por_uso and j.get("usage"):
+                import custo
+                custo.somar_especialista(j["usage"], m["id"])
             for c in j.get("choices") or []:
                 t = (c.get("delta") or {}).get("content")
                 if t:
@@ -1446,6 +1530,21 @@ def _hermes_stream(mensagens: list, ao_ferramenta, cancelar: threading.Event,
 # vários segundos parece travamento; um "deixa eu ver" parece trabalho.
 
 _hermes_cache = [0.0, False]
+
+
+def _especialista_indisponivel(modelo: str) -> str:
+    """"" = pode chamar a IA especialista; senão o motivo, em palavras."""
+    if not config.chave_hermes():
+        return "não configurada"
+    if not _hermes_online():
+        return "fora do ar"
+    m = config.modelo_expert_efetivo(modelo or "")
+    if m and config.modelo_por_uso(config._chave_modelo(m)):
+        import custo
+        teto = config.especialista_limite_brl()
+        if teto and custo.especialista_hoje_brl() >= teto:
+            return "no limite de gasto do dia (R$ %s)" % ("%.2f" % teto).replace(".", ",")
+    return ""
 
 
 def _hermes_online() -> bool:
@@ -1969,9 +2068,14 @@ async def _responder(s: Sessao, audio: np.ndarray | None = None,
                 rota = "rapido"
             else:
                 rota = "hermes" if d["destino"] == "claude" else "rapido"
-        if rota == "hermes" and not await asyncio.to_thread(_hermes_online):
-            print("  [juiz] Hermes fora do ar, fica no local", flush=True)
-            rota = "rapido"
+        if rota == "hermes":
+            motivo = await asyncio.to_thread(_especialista_indisponivel, s.modelo_claude)
+            if motivo:
+                # A IA rápida tenta, e a pessoa sabe que talvez não dê conta.
+                print("  [juiz] especialista indisponível (%s), fica no rápido" % motivo, flush=True)
+                await s.enviar(tipo="aviso", texto="IA especialista %s: a rápida vai tentar, "
+                               "mas talvez não consiga fazer tudo." % motivo)
+                rota = "rapido"
         print("  [juiz] %s (%.2fs): %s" % (rota, t_juiz, texto[:60]), flush=True)
     elif cerebro == "rapido":
         # Modo "só local": ações continuam valendo, nunca vai ao Claude.
@@ -1996,6 +2100,13 @@ async def _responder(s: Sessao, audio: np.ndarray | None = None,
     # fala só o começo (resumo) e o resto fica na conversa.
     digitado = texto_digitado is not None and not falado
     msgs_llm = list(s.historico)
+    if rota != "hermes" and msgs_llm and msgs_llm[0].get("role") == "system":
+        # O que a memória (do Hermes) sabe de você vai junto: as duas IAs
+        # conhecem você, só a especialista e a revisão do dia escrevem.
+        import memoria
+        extra_mem = await asyncio.to_thread(memoria.para_rapida)
+        if extra_mem:
+            msgs_llm[0] = dict(msgs_llm[0], content=msgs_llm[0]["content"] + extra_mem)
     if digitado and msgs_llm and msgs_llm[-1].get("role") == "user":
         msgs_llm[-1] = dict(msgs_llm[-1], content=str(msgs_llm[-1]["content"]) + config.NOTA_DIGITADO)
     falados = [0]
@@ -2231,6 +2342,7 @@ async def _turno(s: Sessao, audio=None, texto=None, falado=False,
                  imagens=None, forcar=None, contexto=None, nomes=None) -> None:
     """Roda um turno como tarefa, para o comando `interromper` alcançar."""
     s.ocupado = True
+    _ultimo_turno[0] = time.time()
     s.pendente, s.so_nome = None, False
     try:
         await _responder(s, audio, texto, falado, imagens, forcar, contexto, nomes)

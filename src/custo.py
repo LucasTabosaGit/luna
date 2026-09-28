@@ -67,12 +67,45 @@ def somar(usage) -> None:
         ARQ.write_text(json.dumps(d), encoding="utf-8")
 
 
+def somar_especialista(usage: dict, modelo: str) -> float:
+    """IA especialista paga por uso (chave de API via Hermes): soma o custo
+    estimado do pedido no dia, separado da IA rápida. Devolve US$.
+
+    Estimativa pelo preço cheio (sem desconto de cache): o Hermes manda
+    ~15 mil tokens de instruções por pedido e parte disso sai mais barato
+    no provedor, então o valor real tende a ser MENOR que o mostrado."""
+    import config
+    p_in, p_out = config.PRECO_ESPECIALISTA.get(modelo, (3.0, 15.0))
+    ent = int(usage.get("prompt_tokens") or 0)
+    sai = int(usage.get("completion_tokens") or 0)
+    usd = (ent * p_in + sai * p_out) / 1e6
+    hoje_ = dt.date.today().isoformat()
+    with _trava:
+        d = _ler()
+        dia = d.setdefault(hoje_, {"usd": 0.0, "chamadas": 0, "entrada": 0, "saida": 0})
+        dia["esp_usd"] = dia.get("esp_usd", 0.0) + usd
+        dia["esp_chamadas"] = dia.get("esp_chamadas", 0) + 1
+        ARQ.parent.mkdir(parents=True, exist_ok=True)
+        ARQ.write_text(json.dumps(d), encoding="utf-8")
+    return usd
+
+
+def especialista_hoje_brl() -> float:
+    dia = _ler().get(dt.date.today().isoformat(), {})
+    return dia.get("esp_usd", 0.0) * DOLAR
+
+
 def hoje() -> dict:
     d = _ler()
     dia = d.get(dt.date.today().isoformat(), {"usd": 0.0, "chamadas": 0})
-    mes = sum(v.get("usd", 0) for k, v in d.items() if k[:7] == dt.date.today().isoformat()[:7])
+    mes_ = dt.date.today().isoformat()[:7]
+    mes = sum(v.get("usd", 0) for k, v in d.items() if k[:7] == mes_)
+    esp_mes = sum(v.get("esp_usd", 0) for k, v in d.items() if k[:7] == mes_)
     return {"usd": round(dia["usd"], 5), "brl": round(dia["usd"] * DOLAR, 4),
-            "chamadas": dia["chamadas"], "mes_brl": round(mes * DOLAR, 3)}
+            "chamadas": dia["chamadas"], "mes_brl": round(mes * DOLAR, 3),
+            "esp_brl": round(dia.get("esp_usd", 0.0) * DOLAR, 4),
+            "esp_chamadas": dia.get("esp_chamadas", 0),
+            "esp_mes_brl": round(esp_mes * DOLAR, 3)}
 
 
 def historico(dias: int = 30) -> list[dict]:
@@ -85,6 +118,8 @@ def historico(dias: int = 30) -> list[dict]:
         v = d.get(dia, {})
         saida.append({"dia": dia, "usd": round(v.get("usd", 0.0), 5),
                       "brl": round(v.get("usd", 0.0) * DOLAR, 4), "chamadas": v.get("chamadas", 0),
+                      "esp_brl": round(v.get("esp_usd", 0.0) * DOLAR, 4),
+                      "esp_chamadas": v.get("esp_chamadas", 0),
                       "entrada": v.get("entrada", 0), "saida": v.get("saida", 0)})
     return saida
 
@@ -94,7 +129,7 @@ def estimativas() -> dict:
 
     Serve para a dica "mais barato": mesmos tokens, preço de cada uma."""
     import config
-    usados = [h for h in historico(30) if h["chamadas"]]
+    usados = [h for h in historico(30) if h["chamadas"]]   # só a IA rápida
     if not usados:
         return {"dias_com_uso": 0, "chamadas_dia": 0, "ias": []}
     n = len(usados)

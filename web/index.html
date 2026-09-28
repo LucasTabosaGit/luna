@@ -350,6 +350,9 @@
   .item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start;
           padding: 9px 0; border-bottom: 1px solid var(--linha); font-size: 13.5px; }
   .item:last-child { border-bottom: 0; }
+  .mem-acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mem-barra { height: 4px; border-radius: 4px; background: var(--linha); overflow: hidden; margin: 2px 0 8px; }
+  .mem-barra i { display: block; height: 100%; background: var(--ambar); }
   .item .sub { font-size: 12px; color: var(--fraco); margin-top: 2px; text-wrap: pretty; }
   .item .quando { font: 11px var(--mono); color: var(--fraco); white-space: nowrap; }
   .check { width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid var(--suave); background: none;
@@ -580,6 +583,9 @@
   .cx .op-stt:has(input:checked) { border-color: var(--ambar-esc); background: color-mix(in oklch, var(--ambar) 7%, transparent); }
   .cx .op-stt input { margin-top: 2px; accent-color: var(--ambar); }
   .cx .op-stt small { display: block; color: var(--suave); font-size: 11.5px; margin-top: 2px; line-height: 1.4; }
+  .cx .esp-extra { display: grid; gap: 8px; margin-bottom: 8px; }
+  .cx .esp-extra[hidden] { display: none; }
+  .cx .esp-aviso { font-size: 12px; color: var(--suave); line-height: 1.45; margin: 0 0 8px; }
   .cx .op-stt .rec { font: 10px var(--mono); color: var(--ambar); margin-left: 6px; text-transform: uppercase; letter-spacing: .05em; }
   @media (max-width: 620px) {
     .aj { grid-template-columns: 1fr; }
@@ -632,10 +638,10 @@
       <b>Luna</b>
       <div class="status" role="status" aria-label="Status">
         <span class="st-item" id="pillConexao" title="Servidor da Luna (voz, transcrição)">servidor</span>
-        <span class="st-item" id="pillHermes" title="Claude via Hermes: modo Expert e tarefas no PC">Claude</span>
-        <span class="st-item so-largo" id="pillDeepseek" title="A IA principal (cérebro do modo Auto)">IA</span>
+        <span class="st-item" id="pillHermes" title="IA especialista (via Hermes): modo Expert e tarefas no PC">Especialista</span>
+        <span class="st-item so-largo" id="pillDeepseek" title="A IA rápida (a do dia a dia, no modo Auto)">IA</span>
         <span class="st-sep so-largo"></span>
-        <span class="st-item so-largo" id="stCusto" title="Gasto estimado de hoje na IA principal (o Claude usa sua assinatura)">R$ 0,00 hoje</span>
+        <span class="st-item so-largo" id="stCusto" title="Gasto estimado de hoje (IA rápida + especialista paga por uso)">R$ 0,00 hoje</span>
       </div>
       <div class="dir">
         <span class="so-largo" id="rotuloVoz" style="font-size:12.5px"></span>
@@ -675,7 +681,7 @@
             <path d="M12 3l1.9 4.3L18 9l-4.1 1.7L12 15l-1.9-4.3L6 9l4.1-1.7z"/><path d="M18.5 15.5l.8 1.8 1.7.7-1.7.7-.8 1.8-.8-1.8-1.7-.7 1.7-.7z"/></svg>
           <span>Auto</span>
         </button>
-        <button data-modo="hermes" aria-pressed="false" title="Expert: tudo direto para o Claude ou o ChatGPT (escolha em Ajustes → Inteligência), sem atalhos nem cérebro rápido. Mais lento, mais capaz.">
+        <button data-modo="hermes" aria-pressed="false" title="Expert: tudo direto para a IA especialista (escolha em Ajustes → Inteligência), sem atalhos nem IA rápida. Mais lento, mais capaz.">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
           <span>Expert</span>
@@ -796,10 +802,12 @@
       </section>
 
       <section class="aj-painel" data-painel="ia" role="tabpanel" hidden>
-        <p class="aj-desc">As IAs que ouvem e respondem. As chaves ficam só no seu PC (arquivo <code>.env</code>) e nunca aparecem aqui inteiras.</p>
+        <p class="aj-desc">A Luna trabalha em três níveis: <b>comandos prontos</b> (hora, volume, abrir app: grátis e na hora),
+          a <b>IA rápida</b> (conversa e pedidos simples: barata) e a <b>IA especialista</b> (mexe no PC e resolve o difícil: cara,
+          só entra quando precisa). As chaves ficam só no seu PC (arquivo <code>.env</code>) e nunca aparecem aqui inteiras.</p>
         <div class="conexoes" id="cxAjustes"></div>
         <div class="aj-bloco">
-          <label class="aj-campo">Modelo do Expert <small>(via Hermes: Claude ou ChatGPT, com a sua assinatura)</small>
+          <label class="aj-campo">Modelo da IA especialista <small>(o que atende no Expert e nas tarefas no PC)</small>
             <select id="modeloClaude" aria-label="Modelo do Expert" disabled></select>
           </label>
           <small class="leg" id="expertDica"></small>
@@ -807,7 +815,8 @@
       </section>
 
       <section class="aj-painel" data-painel="uso" role="tabpanel" hidden>
-        <p class="aj-desc">O que está no ar e quanto a Luna gastou. O Claude (modo Expert) usa a sua assinatura e não entra na conta.</p>
+        <p class="aj-desc">O que está no ar e quanto a Luna gastou. A IA especialista entra na conta só quando é paga por uso
+          (chave de API); pela assinatura ela já está no que você paga.</p>
         <div class="uso-status" id="usoStatus"></div>
         <div class="uso-grade">
           <div class="uso-num"><small>Hoje</small><b id="usoHoje">—</b><span id="usoHojeCh"></span></div>
@@ -893,9 +902,12 @@
     </section>
 
     <section class="etapa" data-etapa="1" hidden>
-      <h3>1. O cérebro: escolha a IA</h3>
+      <h3>1. A IA rápida: a do dia a dia</h3>
       <div class="guia">
-        <p>É a IA que entende os pedidos e conversa. Use a que você já tem, ou:</p>
+        <p>A Luna usa <b>duas IAs</b>. Esta é a <b>rápida</b>: conversa, responde perguntas e decide quando chamar a outra.
+          Ela atende quase tudo, então é a que precisa ser <b>barata e ágil</b> — por isso a recomendação é uma
+          <b>chave de API</b> (centavos por mês). Comandos prontos, como hora, volume e abrir app, nem chegam a ela.</p>
+        <p>Use a que você já tem, ou:</p>
         <ul>
           <li><b>DeepSeek</b> (recomendado): centavos por dia. Conta em
             <a href="https://platform.deepseek.com" target="_blank" rel="noopener">platform.deepseek.com</a>, crédito de US$ 2 dura meses.</li>
@@ -919,7 +931,7 @@
             A chave é como uma senha: não mande para ninguém.</p>
         </details>
         <details class="passo-a-passo">
-          <summary>Usar a minha assinatura (ChatGPT etc.) em vez de chave</summary>
+          <summary>Usar a minha assinatura (ChatGPT etc.) em vez de chave — funciona, mas fica mais lenta</summary>
           <ol>
             <li>Siga a <b>próxima etapa</b> (Hermes) até ele estar conectado.</li>
             <li>No terminal, rode <code>hermes -p assistente model</code> e escolha
@@ -946,14 +958,19 @@
     </section>
 
     <section class="etapa" data-etapa="2" hidden>
-      <h3>2. As mãos: Claude via Hermes <small style="color:var(--suave);font-weight:400">(opcional)</small></h3>
+      <h3>2. A IA especialista: a que mexe no PC <small style="color:var(--suave);font-weight:400">(opcional)</small></h3>
       <div class="guia">
-        <p>Com o <b>Hermes Agent</b>, a Luna passa tarefas de verdade para o Claude: arquivos, programas, pesquisa, memória
-          do que você gosta. Sem ele, ela conversa e faz comandos simples.</p>
+        <p>A <b>segunda IA</b> só entra quando o pedido precisa <b>agir</b> — mexer em arquivos, abrir e usar programas,
+          pesquisar a fundo — ou quando a rápida não dá conta. É a mais capaz e a mais cara, por isso fica guardada
+          para isso. Ela trabalha pelo <b>Hermes Agent</b>, que dá as “mãos” para a IA. Sem ela, a Luna conversa e faz
+          comandos simples; quando um pedido precisar dela, a Luna avisa.</p>
+        <p>Pode ser <b>assinatura</b> (Claude ou ChatGPT Plus/Pro) ou <b>chave de API</b>. Se o uso for frequente, a
+          assinatura sai mais barata do que pagar pela API. Por chave de API há um <b>limite de gasto por dia</b>
+          para não ter surpresa.</p>
         <ol>
           <li>Baixe e instale o Hermes em <a href="https://hermes-agent.nousresearch.com/" target="_blank" rel="noopener">hermes-agent.nousresearch.com</a>
             (siga o instalador do site).</li>
-          <li>Conecte um modelo (o Claude): <code>hermes setup</code> — siga o guia
+          <li>Conecte a sua assinatura: <code>hermes setup</code> — siga o guia (ou pule e use uma chave de API no fim desta etapa)
             (<a href="https://hermes-agent.nousresearch.com/docs/getting-started/quickstart" target="_blank" rel="noopener">passo a passo</a>).</li>
           <li>Crie um perfil só para a Luna: <code>hermes profile create assistente</code>
             (a memória e as habilidades dela ficam separadas das suas).</li>
@@ -962,10 +979,11 @@
             <pre>API_SERVER_ENABLED=true
 API_SERVER_KEY=&lt;invente uma senha longa&gt;</pre></li>
           <li>Suba o Hermes: <code>hermes gateway run</code> (<a href="https://hermes-agent.nousresearch.com/docs/user-guide/features/api-server" target="_blank" rel="noopener">detalhes</a>).</li>
-          <li>Cole abaixo o endereço e a mesma senha.</li>
+          <li>Cole abaixo o endereço e a mesma senha, e depois escolha assinatura ou chave.</li>
         </ol>
       </div>
       <div class="conexoes" id="cxHermes"></div>
+      <div class="conexoes" id="cxEspTut" style="margin-top:12px"></div>
     </section>
 
     <section class="etapa" data-etapa="3" hidden>
@@ -996,7 +1014,7 @@ API_SERVER_KEY=&lt;invente uma senha longa&gt;</pre></li>
         </ol>
         <div class="modos-guia">
           <div><b>Auto</b> (o normal). Comandos do PC saem na hora, perguntas vão para a IA rápida e tarefas maiores vão sozinhas para o Claude.</div>
-          <div><b>Expert</b>. Tudo vai direto para o Claude: mais lento e mais capaz. Bom para mexer em arquivos, pesquisar e escrever.</div>
+          <div><b>Expert</b>. Tudo vai direto para a IA especialista: mais lento e mais capaz. Bom para mexer em arquivos, pesquisar e escrever.</div>
           <div><b>Live</b>. Conversa falada de ida e volta com o Gemini, sem esperar a vez.</div>
         </div>
         <p class="dica">Atalhos: <span class="kbd">Ctrl+Alt+L</span> chama a Luna de qualquer programa ·
@@ -2166,6 +2184,7 @@ async function carregarAprendizado() {
     c.append(ir); s0.append(c);
   }
   $apr.append(s0);
+  $apr.append(await secaoMemoria());
   $apr.append(secaoTreinoVoz());
   // Atalhos
   const s1 = el('div', 'secao'); s1.append(el('h4', '', 'Atalhos prontos (sem o Claude)'));
@@ -2204,6 +2223,80 @@ async function carregarAprendizado() {
     it.append(el('span'), m, b); s3.append(it);
   }
   $apr.append(s3);
+}
+
+/* ---- Memória: o que ela sabe de você (src/memoria.py) ----
+   Propostas da revisão do dia e sugestões de limpeza esperam você aqui:
+   nada entra nem sai da memória sozinho. */
+const ICO_OK = '<path d="M5 12.5l4.5 4.5L19 7.5"/>', ICO_X = '<path d="M6 6l12 12M18 6L6 18"/>',
+      ICO_LIXO = '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>';
+async function memoriaPost(acao, corpo) {
+  const r = await fetch('/memoria/' + acao, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify(corpo || {}) });
+  return r.json();
+}
+async function secaoMemoria() {
+  const s = el('div', 'secao');
+  let d;
+  try { d = await (await fetch('/memoria')).json(); }
+  catch (e) { s.append(el('h4', '', 'O que ela sabe de você'), el('div', 'dica', 'Não consegui ler a memória.')); return s; }
+  const recarregar = () => carregarAprendizado();
+  const h = el('h4', '', 'O que ela sabe de você');
+  const acoes = el('span', 'mem-acoes');
+  const bRev = botaoMini('Revisar conversas', '<path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/>', async () => {
+    bRev.disabled = true; bRev.querySelector('span').textContent = 'lendo…';
+    const r = await memoriaPost('revisar');
+    sistema(r.ok ? (r.novos && r.novos.length ? r.novos.length + ' lembrança(s) para você aprovar, na aba Aprendizado.' : 'Nada novo para lembrar nas conversas recentes.') : (r.erro || 'Não deu para revisar agora.'));
+    recarregar();
+  });
+  const bLimpa = botaoMini('Sugerir limpeza', ICO_LIXO, async () => {
+    bLimpa.disabled = true; bLimpa.querySelector('span').textContent = 'olhando…';
+    const r = await memoriaPost('limpeza');
+    sistema(r.ok ? (r.limpeza.length ? r.limpeza.length + ' sugestão(ões) de limpeza, na aba Aprendizado.' : 'A memória está enxuta: nada para limpar.') : (r.erro || 'Não deu agora.'));
+    recarregar();
+  });
+  acoes.append(bRev, bLimpa); h.append(acoes); s.append(h);
+  s.append(el('div', 'dica', 'As duas IAs usam isto. Uma vez por dia ela relê as conversas e sugere o que lembrar; '
+    + 'por semana, o que apagar. Nada entra nem sai sem você.' + (d.revisado ? ' Última revisão: ' + d.revisado + '.' : '')));
+  // Propostas: aprovar entra na memória
+  for (const t of d.propostas || []) {
+    const it = el('div', 'item'), m = el('div');
+    const tt = el('div', 't', t); tt.append(el('span', 'chip forte', 'lembrar?')); m.append(tt);
+    const bs = el('span', 'mem-acoes');
+    bs.append(botaoMini('Lembrar', ICO_OK, async () => { const r = await memoriaPost('aprovar', { texto: t }); if (!r.ok) sistema('Não gravei: ' + (r.erro || '')); recarregar(); }),
+              botaoMini('Descartar', ICO_X, async () => { await memoriaPost('descartar', { texto: t }); recarregar(); }));
+    it.append(el('span'), m, bs); s.append(it);
+  }
+  // Sugestões de limpeza: apagar sai da memória
+  for (const x of d.limpeza || []) {
+    const it = el('div', 'item'), m = el('div');
+    const tt = el('div', 't', x.texto); tt.append(el('span', 'chip', 'apagar?')); m.append(tt);
+    if (x.motivo) m.append(el('div', 'sub', x.motivo));
+    const bs = el('span', 'mem-acoes');
+    bs.append(botaoMini('Apagar', ICO_LIXO, async () => { await memoriaPost('apagar', { nome: x.nome, texto: x.texto }); recarregar(); }),
+              botaoMini('Manter', ICO_OK, async () => { await memoriaPost('descartar', { texto: x.texto }); recarregar(); }));
+    it.append(el('span'), m, bs); s.append(it);
+  }
+  // O que está guardado
+  const sugeridas = new Set((d.limpeza || []).map(x => x.texto));
+  for (const [nome, titulo] of [['usuario', 'Sobre você'], ['trabalho', 'Anotações de trabalho dela']]) {
+    const itens = d.itens.filter(i => i.nome === nome && !sugeridas.has(i.texto));
+    const cab = el('div', 'sub', `${titulo} · ${d.uso[nome] || 0}% do espaço`); cab.style.marginTop = '10px';
+    const barra = el('div', 'mem-barra'), fill = el('i'); fill.style.width = Math.min(100, d.uso[nome] || 0) + '%'; barra.append(fill);
+    s.append(cab, barra);
+    if (!itens.length) s.append(el('div', 'dica', 'Nada guardado ainda.'));
+    for (const i of itens) {
+      const it = el('div', 'item'), m = el('div'), tt = el('div', 't', i.texto);
+      if (i.novo) tt.append(el('span', 'chip', 'novo'));
+      m.append(tt);
+      it.append(el('span'), m, botaoMini('Esquecer', ICO_LIXO, async () => {
+        if (!confirm('Esquecer isto?\n\n' + i.texto)) return;
+        await memoriaPost('apagar', { nome, texto: i.texto }); recarregar();
+      }));
+      s.append(it);
+    }
+  }
+  return s;
 }
 
 /* ---- "Treinar com a minha voz": detector do nome (src/treino_voz.py) ---- */
@@ -2311,6 +2404,7 @@ async function montarConexoes(alvo, testar, so) {
     if (so && id !== so) continue;
     if (sv.tipo === 'cerebro') { caixa.append(cardCerebro(sv, alvo, so)); continue; }
     if (sv.tipo === 'stt') { caixa.append(cardStt(sv, alvo, so)); continue; }
+    if (sv.tipo === 'especialista') { caixa.append(cardEspecialista(sv, alvo, so)); continue; }
     const card = document.createElement('div');
     card.className = 'cx' + (sv.obrigatorio ? ' obrig' : '') + (sv.configurado ? ' pronto' : '');
     const t = sv.teste;
@@ -2430,6 +2524,86 @@ function cardStt(sv, alvo, so) {
   return card;
 }
 
+// IA especialista: assinatura (pelo Hermes) ou chave de API (vai para o
+// cofre do Hermes; a Luna guarda a cópia no .env). Com chave aparece o
+// limite de gasto por dia. O "Salvar e testar" faz um pedido de verdade.
+function cardEspecialista(sv, alvo, so) {
+  const card = el('div', 'cx' + (sv.configurado ? ' pronto' : ''));
+  const t = sv.teste;
+  const sit = !sv.hermes ? 'conecte o Hermes primeiro' : !sv.configurado ? 'desligada'
+            : t ? (t.ok ? 'no ar' : t.msg) : 'configurada';
+  const cls = t ? (t.ok ? 'ok' : 'falha') : (sv.configurado ? 'ok' : '');
+  card.innerHTML = `<header><b></b><span class="sit ${cls}"></span></header><p></p>
+    <div class="opcoes-stt" role="radiogroup"></div>
+    <div class="esp-extra">
+      <label class="campo" data-l="chave">Chave<input type="password" autocomplete="off" spellcheck="false"></label>
+      <label class="campo" data-l="limite">Limite de gasto por dia (R$) <small style="color:var(--suave)">— passou, a Luna para de chamar a especialista até amanhã (0 = sem limite)</small>
+        <input type="number" min="0" max="1000" step="1" inputmode="decimal"></label>
+    </div>
+    <p class="esp-aviso"></p>
+    <div class="rodape-cx"><button type="button" class="botao">Salvar e testar</button>
+    <a target="_blank" rel="noopener">onde pego a chave?</a><span class="msg-cx"></span></div>`;
+  card.querySelector('b').textContent = sv.nome;
+  card.querySelector('.sit').textContent = sit;
+  card.querySelector('p').textContent = sv.papel;
+  const grupo = card.querySelector('.opcoes-stt');
+  const nomeGrupo = 'esp-' + alvo;
+  const radio = (valor, titulo, dica, selos) => {
+    const l = el('label', 'op-stt');
+    const r = document.createElement('input'); r.type = 'radio'; r.name = nomeGrupo; r.value = valor;
+    const txt = el('span'); txt.append(el('b', '', titulo));
+    for (const s of selos) txt.append(el('span', 'rec', s));
+    txt.append(el('small', '', dica));
+    l.append(r, txt); grupo.append(l); return r;
+  };
+  const assin = sv.assinaturas || [];
+  radio('', 'Minha assinatura', assin.length
+      ? 'Conectada: ' + assin.join(', ') + '. Se o uso for frequente, sai mais barata do que pagar pela API.'
+      : 'Nenhuma conectada ainda. No terminal: hermes -p assistente model  e escolha a sua (Claude, ChatGPT Plus/Pro…). Se o uso for frequente, sai mais barata do que pagar pela API.',
+    assin.length ? ['conectada ✓'] : []);
+  for (const o of sv.opcoes) radio(o.id, 'Chave de API: ' + o.nome, o.dica + ' Pago por uso.', o.definido ? ['chave ✓'] : []);
+  const marcado = grupo.querySelector(`input[value="${sv.escolhido || ''}"]`);
+  if (marcado) marcado.checked = true;
+  const inp = card.querySelector('[data-l="chave"] input'), lim = card.querySelector('[data-l="limite"] input');
+  lim.value = sv.limite;
+  const a = card.querySelector('a'), aviso = card.querySelector('.esp-aviso');
+  const escolha = () => (grupo.querySelector('input:checked') || {}).value || '';
+  const mostrar = () => {
+    const id = escolha(), o = sv.opcoes.find(x => x.id === id);
+    card.querySelector('.esp-extra').hidden = !o;
+    a.hidden = !o; a.href = o ? o.link : '#';
+    inp.value = '';
+    inp.placeholder = o && o.definido ? 'salva (' + o.mostrar + ') — cole outra para trocar' : 'cole a chave aqui';
+    aviso.textContent = o
+      ? 'Pago por pedido: tarefas longas no PC fazem várias chamadas e custam mais. Se o uso for frequente, a assinatura sai mais barata. O teste ao salvar faz um pedido de verdade.'
+      : 'Qual modelo da assinatura atende (Claude, ChatGPT…) você escolhe em “Modelo da IA especialista”, no fim desta página.';
+  };
+  grupo.onchange = mostrar; mostrar();
+  const btn = card.querySelector('button'), msg = card.querySelector('.msg-cx');
+  btn.onclick = async () => {
+    if (!sv.hermes) { msg.textContent = 'Conecte o Hermes primeiro (acima).'; return; }
+    const id = escolha(), o = sv.opcoes.find(x => x.id === id);
+    const valores = { ESPECIALISTA_API: id };
+    if (o) {
+      const chave = inp.value.trim();
+      if (!chave && !o.definido) { msg.textContent = 'Cole a chave primeiro.'; return; }
+      if (chave) valores[o.var] = chave;
+      valores.ESPECIALISTA_LIMITE = String(lim.value === '' ? 5 : lim.value);
+    } else if (!assin.length) { msg.textContent = 'Conecte uma assinatura no Hermes primeiro (veja a dica).'; return; }
+    btn.disabled = true; msg.textContent = 'testando (um pedido de verdade)…';
+    try {
+      const d = await (await fetch('/conexoes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                  body: JSON.stringify({ servico: 'especialista', valores }) })).json();
+      await montarConexoes(alvo, false, so);
+      const novo = [...$(alvo).querySelectorAll('.cx')].find(c => c.querySelector(`input[name="${nomeGrupo}"]`));
+      if (novo) { const st = novo.querySelector('.sit'); st.textContent = d.msg; st.className = 'sit ' + (d.ok ? 'ok' : 'falha'); }
+      $modeloClaude.replaceChildren();          // a lista de modelos muda com a chave
+      checarHermes();
+    } catch (e) { msg.textContent = 'falhou: ' + e.message; btn.disabled = false; }
+  };
+  return card;
+}
+
 // Cérebro: a pessoa escolhe a IA; o card mostra só os campos que ela pede.
 function cardCerebro(sv, alvo, so) {
   const card = el('div', 'cx obrig' + (sv.configurado ? ' pronto' : ''));
@@ -2544,6 +2718,7 @@ function irEtapa(n) {
   if (etapa === 0) carregarChecks();
   if (MONTAR[etapa]) montarConexoes(MONTAR[etapa][0], etapa === 1, MONTAR[etapa][1]);
   if (etapa === 1) montarConexoes('cxOuvidoTut', false, 'stt');
+  if (etapa === 2) montarConexoes('cxEspTut', false, 'especialista');
   if (etapa === 3) atualizarStatusHoje();
 }
 
@@ -2675,11 +2850,14 @@ async function checarHermes() {
 
     if (!d.cerebro && !$('dlgBoasVindas').open && !sessionStorage.getItem('bvFechado')) { sessionStorage.setItem('bvFechado', '1'); checarPrimeiroUso(); }
     if (d.custo) {
-      $('stCusto').textContent = reais(d.custo.brl) + ' hoje';
-      $('stCusto').title = `${d.cerebro_nome || 'IA'} hoje (estimativa): ${d.custo.chamadas} chamadas, US$ ${d.custo.usd.toFixed(4)}. No mês: ${reais(d.custo.mes_brl)}. O Claude usa sua assinatura.`;
+      const esp = d.custo.esp_brl || 0;
+      $('stCusto').textContent = reais(d.custo.brl + esp) + ' hoje';
+      $('stCusto').title = `IA rápida (${d.cerebro_nome || 'IA'}) hoje: ${reais(d.custo.brl)} em ${d.custo.chamadas} chamadas.`
+        + (d.custo.esp_chamadas ? ` IA especialista (paga por uso): ${reais(esp)} em ${d.custo.esp_chamadas} pedidos.` : ' A especialista pela assinatura não entra na conta.')
+        + ` No mês: ${reais(d.custo.mes_brl + (d.custo.esp_mes_brl || 0))}. Estimativa.`;
     }
   } catch (e) { hermesOnline = false; }
-  pill('pillHermes', hermesOnline ? 'on' : 'off', hermesOnline ? 'Claude' : 'Claude fora do ar');
+  pill('pillHermes', hermesOnline ? 'on' : 'off', hermesOnline ? 'Especialista' : 'Especialista fora do ar');
   $modeloClaude.disabled = !hermesOnline;
   if (!hermesOnline && cerebro === 'hermes' && conectado) enviar({ tipo: 'cerebro', cerebro: 'auto' });
   marcarModo();
@@ -2864,28 +3042,38 @@ function montarModelosClaude(lista) {
   // Servidor antigo (ainda sem a lista): some com a caixa em vez de
   // mostrar uma setinha vazia.
   $modeloClaude.hidden = !(lista && lista.length);
-  if (!lista || !lista.length || $modeloClaude.children.length) return;
-  // Agrupa por assinatura (Claude, ChatGPT). Só vêm os grupos que estão
-  // logados no Hermes; o resto a dica embaixo ensina a conectar.
+  // Remonta quando a lista muda (conectou uma chave, entrou numa assinatura).
+  const assinatura = lista ? lista.map(m => m.chave || m.id).join(',') : '';
+  if (!lista || !lista.length || $modeloClaude.dataset.lista === assinatura) return;
+  $modeloClaude.dataset.lista = assinatura;
+  $modeloClaude.replaceChildren();
+  // Agrupa por assinatura (Claude, ChatGPT) e por chave de API. Só vêm os
+  // grupos conectados; o resto a dica embaixo ensina a conectar.
   const grupos = {};
   for (const mo of lista) {
     const op = document.createElement('option');
-    op.value = mo.id; op.textContent = mo.nome; op.dataset.grupo = mo.grupo || '';
+    op.value = mo.chave || mo.id; op.textContent = mo.nome + (mo.por_uso ? ' · pago por uso' : '');
+    op.dataset.grupo = mo.grupo || '';
     if (!mo.grupo) { $modeloClaude.appendChild(op); continue; }
     if (!grupos[mo.grupo]) { grupos[mo.grupo] = document.createElement('optgroup'); grupos[mo.grupo].label = mo.grupo; $modeloClaude.appendChild(grupos[mo.grupo]); }
     grupos[mo.grupo].appendChild(op);
   }
   const tem = g => lista.some(m => m.grupo === g);
-  $('expertDica').textContent = tem('ChatGPT') && tem('Claude') ? 'Claude e ChatGPT conectados: escolha qual responde no Expert.'
+  const pago = lista.some(m => m.por_uso);
+  $('expertDica').textContent = (pago ? 'Os marcados “pago por uso” saem da sua chave de API, com o limite por dia do card acima. ' : '')
+    + (tem('ChatGPT') && tem('Claude') ? 'Claude e ChatGPT conectados: escolha qual responde no Expert.'
     : tem('ChatGPT') ? 'Para usar também o Claude: rode  hermes -p assistente model  e escolha Anthropic.'
-    : 'Paga o ChatGPT Plus/Pro? Rode  hermes -p assistente model , escolha "ChatGPT or Codex Subscription", entre no navegador e reabra os Ajustes.';
+    : pago ? '“Padrão” usa o modelo recomendado da sua chave.'
+    : 'Paga o ChatGPT Plus/Pro? Rode  hermes -p assistente model , escolha "ChatGPT or Codex Subscription", entre no navegador e reabra os Ajustes.');
   const salvo = localStorage.getItem('modeloClaude') || '';
   $modeloClaude.value = [...$modeloClaude.options].some(o => o.value === salvo) ? salvo : '';
 }
 
 function nomeExpert() {
   const op = $modeloClaude.selectedOptions && $modeloClaude.selectedOptions[0];
-  return op && op.dataset.grupo === 'ChatGPT' ? 'ChatGPT' : 'Claude';
+  const g = op ? op.dataset.grupo : '';
+  return g === 'ChatGPT' ? 'ChatGPT' : g === 'OpenAI (API)' ? 'GPT' : g === 'DeepSeek (API)' ? 'DeepSeek'
+    : g === 'OpenRouter (API)' ? 'especialista' : g === 'Claude' ? 'Claude' : 'especialista';
 }
 
 function aplicarModeloClaude() {
@@ -2923,7 +3111,7 @@ function statusUso() {
   const itens = [
     ['Servidor da Luna', $('pillConexao'), 'voz e transcrição'],
     ['IA principal', $('pillDeepseek'), usoCache ? usoCache.cerebro : ''],
-    ['Claude (Expert)', $('pillHermes'), 'via Hermes'],
+    ['IA especialista', $('pillHermes'), 'via Hermes'],
     ['Ouvido', null, usoCache ? usoCache.stt : ''],
   ];
   for (const [nome, pillEl, sub] of itens) {
@@ -2940,7 +3128,8 @@ async function montarUso() {
   const usados = hist.filter(h => h.chamadas);
   const media = usados.length ? usados.reduce((a, h) => a + h.brl, 0) / usados.length : 0;
   $('usoHoje').textContent = reais(hoje.brl);
-  $('usoHojeCh').textContent = hoje.chamadas + (hoje.chamadas === 1 ? ' pedido' : ' pedidos');
+  $('usoHojeCh').textContent = hoje.chamadas + (hoje.chamadas === 1 ? ' pedido' : ' pedidos')
+    + (hoje.esp_chamadas ? ` · especialista: ${reais(hoje.esp_brl)} em ${hoje.esp_chamadas}` : '');
   $('usoMes').textContent = reais(hoje.mes_brl);
   $('usoMesMedia').textContent = usados.length ? 'média ' + reais(media) + ' por dia de uso' : 'sem uso ainda';
   const dia = new Date().getDate(), fimMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();

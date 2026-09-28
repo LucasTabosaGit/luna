@@ -113,7 +113,71 @@ HERMES_MODELOS = [
     {"id": "gpt-6-astra", "nome": "GPT-6 Astra", "provedor": "openai-codex", "grupo": "ChatGPT"},
     {"id": "gpt-5.6-sol", "nome": "GPT-5.6 Sol", "provedor": "openai-codex", "grupo": "ChatGPT"},
     {"id": "gpt-5.6-luna", "nome": "GPT-5.6 Luna (mais rápido)", "provedor": "openai-codex", "grupo": "ChatGPT"},
+    # Por CHAVE DE API (cobrado por uso). Só aparecem depois que a pessoa
+    # conecta a chave em Ajustes (ver ESPECIALISTAS_API / modelos_expert).
+    {"id": "gpt-5.6-luna", "nome": "GPT-5.6 Luna (mais barato)", "provedor": "openai-api", "grupo": "OpenAI (API)"},
+    {"id": "gpt-5.6-terra", "nome": "GPT-5.6 Terra", "provedor": "openai-api", "grupo": "OpenAI (API)"},
+    {"id": "gpt-5.6-sol", "nome": "GPT-5.6 Sol (mais forte)", "provedor": "openai-api", "grupo": "OpenAI (API)"},
+    {"id": "anthropic/claude-sonnet-5", "nome": "Claude Sonnet 5", "provedor": "openrouter", "grupo": "OpenRouter (API)"},
+    {"id": "openai/gpt-5.6-sol", "nome": "GPT-5.6 Sol", "provedor": "openrouter", "grupo": "OpenRouter (API)"},
+    {"id": "deepseek-v4-pro", "nome": "DeepSeek V4 Pro (mais barato)", "provedor": "deepseek", "grupo": "DeepSeek (API)"},
 ]
+
+# IA ESPECIALISTA por chave de API. A chave vai para o cofre do Hermes
+# (`hermes -p assistente auth add <provedor> --type api-key`), que vale sem
+# reiniciar; a Luna guarda uma cópia no .env dela só para mostrar "…abcd".
+# Anthropic por chave usa os modelos do grupo "Claude" acima (mesmo
+# provedor da assinatura). Preço: US$ por 1M tokens (entrada, saída), da
+# tabela do próprio Hermes (agent/usage_pricing.py) em 28/09.
+# CUIDADO: cada pedido leva ~15 mil tokens de instruções do Hermes, então
+# até um "oi" custa. Por isso há um limite por dia (ESPECIALISTA_LIMITE).
+ESPECIALISTAS_API = {
+    "anthropic": {"nome": "Anthropic (Claude)", "var": "ANTHROPIC_API_KEY", "grupo": "Claude",
+                  "modelo": "claude-sonnet-5", "link": "https://console.anthropic.com/settings/keys",
+                  "dica": "O mais capaz para mexer no PC."},
+    "openai-api": {"nome": "OpenAI (API)", "var": "OPENAI_API_KEY", "grupo": "OpenAI (API)",
+                   "modelo": "gpt-5.6-luna", "link": "https://platform.openai.com/api-keys",
+                   "dica": "A API é paga à parte da assinatura do ChatGPT."},
+    "openrouter": {"nome": "OpenRouter", "var": "OPENROUTER_API_KEY", "grupo": "OpenRouter (API)",
+                   "modelo": "anthropic/claude-sonnet-5", "link": "https://openrouter.ai/keys",
+                   "dica": "Uma chave para Claude, GPT e outros."},
+    "deepseek": {"nome": "DeepSeek", "var": "DEEPSEEK_API_KEY", "grupo": "DeepSeek (API)",
+                 "modelo": "deepseek-v4-pro", "link": "https://platform.deepseek.com/api_keys",
+                 "dica": "O mais barato, porém menos capaz em tarefas longas."},
+}
+PRECO_ESPECIALISTA = {       # US$ / 1M tokens (entrada, saída)
+    "claude-opus-5.5": (5.0, 25.0), "claude-opus-5": (5.0, 25.0), "claude-fable-5.1": (3.0, 15.0),
+    "claude-sonnet-5": (2.0, 10.0), "claude-haiku-4.5": (1.0, 5.0),
+    "gpt-5.6-sol": (5.0, 30.0), "gpt-5.6-terra": (2.5, 15.0), "gpt-5.6-luna": (1.0, 6.0),
+    "anthropic/claude-sonnet-5": (2.0, 10.0), "openai/gpt-5.6-sol": (2.0, 10.0),
+    "deepseek-v4-pro": (0.66, 1.98),
+}
+ASSINATURAS = {"openai-codex", "xai-oauth", "nous", "qwen-oauth", "copilot"}
+
+
+def especialista_api() -> str:
+    """Provedor que a pessoa conectou por CHAVE na Luna ("" = só assinatura)."""
+    v = _env_valor("ESPECIALISTA_API")
+    return v if v in ESPECIALISTAS_API else ""
+
+
+def especialista_limite_brl() -> float:
+    """Teto de gasto por dia da IA especialista paga por uso (R$). 0 = sem teto."""
+    try:
+        return max(0.0, float(_env_valor("ESPECIALISTA_LIMITE").replace(",", ".") or 5))
+    except ValueError:
+        return 5.0
+
+
+def modelo_por_uso(ident: str) -> bool:
+    """O modelo do Expert é cobrado por uso (chave de API)? Assinatura = não.
+    Claude conta como pago só quando a Luna conectou a chave da Anthropic."""
+    m = modelo_da_chave(ident)          # aceita "provedor|id" ou só o id
+    if not m or not m["provedor"]:
+        return False
+    if m["provedor"] == "anthropic":
+        return especialista_api() == "anthropic"
+    return m["provedor"] not in ASSINATURAS
 
 
 def _hermes_logados() -> set[str]:
@@ -141,19 +205,70 @@ def _hermes_logados() -> set[str]:
 
 
 def modelos_expert() -> list[dict]:
-    """Modelos do Expert que dá para usar AGORA (grupo logado no Hermes)."""
+    """Modelos do Expert que dá para usar AGORA: assinaturas logadas no
+    Hermes + o provedor que a pessoa conectou por chave NA LUNA (um pool
+    antigo no Hermes sem chave válida não conta)."""
     logados = _hermes_logados()
-    return [m for m in HERMES_MODELOS if not m["provedor"] or m["provedor"] in logados]
+    api = especialista_api()
+    saida = []
+    for m in HERMES_MODELOS:
+        p = m["provedor"]
+        ok = (not p or (p in ASSINATURAS or p == "anthropic") and p in logados
+              or p == api and p != "anthropic")
+        if ok:
+            saida.append({**m, "por_uso": modelo_por_uso(_chave_modelo(m)) if p else False,
+                          "chave": _chave_modelo(m)})
+    return saida
+
+
+def _chave_modelo(m: dict) -> str:
+    """Identidade única na tela: o mesmo id existe na assinatura e na API
+    (gpt-5.6-sol), então a opção carrega provedor|id."""
+    return (m["provedor"] + "|" + m["id"]) if m["provedor"] else ""
+
+
+def modelo_da_chave(chave: str) -> dict | None:
+    """'provedor|id' (ou '' = padrão do Hermes) -> entrada de HERMES_MODELOS."""
+    if not chave:
+        return HERMES_MODELOS[0]
+    prov, _, ident = chave.partition("|")
+    if not _:                      # formato antigo: só o id (assume o 1º provedor)
+        ident, prov = chave, ""
+    return next((m for m in HERMES_MODELOS if m["id"] == ident and (not prov or m["provedor"] == prov)), None)
 
 
 def provedor_modelo(ident: str) -> str:
-    return next((m["provedor"] for m in HERMES_MODELOS if m["id"] == ident), "") or HERMES_PROVEDOR
+    m = modelo_da_chave(ident)
+    return (m["provedor"] if m else "") or HERMES_PROVEDOR
 HERMES_MODELO_PADRAO = os.environ.get("HERMES_MODELO_CLAUDE", "").strip()
 
 
+def _tem_assinatura() -> bool:
+    """Alguma assinatura logada no Hermes? (Claude conta só se não foi a
+    Luna que pôs uma chave da Anthropic lá.)"""
+    logados = _hermes_logados()
+    if logados & ASSINATURAS:
+        return True
+    return "anthropic" in logados and especialista_api() != "anthropic"
+
+
+def modelo_expert_efetivo(escolha: str) -> dict | None:
+    """O modelo que a IA especialista vai usar de fato. None = padrão do
+    perfil do Hermes (a assinatura). Sem assinatura e com chave conectada
+    na Luna, o "padrão" vira o modelo recomendado dessa chave."""
+    m = modelo_da_chave(escolha) if modelo_claude_valido(escolha) else None
+    if m and m["provedor"]:
+        return m
+    api = especialista_api()
+    if api and not _tem_assinatura():
+        ident = ESPECIALISTAS_API[api]["modelo"]
+        return next((x for x in HERMES_MODELOS if x["id"] == ident and x["provedor"] == api), None)
+    return None
+
+
 def modelo_claude_valido(escolha: str) -> bool:
-    """A tela só pode pedir um id desta lista (nada de texto solto no corpo)."""
-    return escolha in {m["id"] for m in HERMES_MODELOS}
+    """A tela só pode pedir um modelo desta lista (nada de texto solto no corpo)."""
+    return modelo_da_chave(escolha) is not None
 
 
 def chave_hermes() -> str:

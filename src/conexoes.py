@@ -17,7 +17,9 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import urllib.request
+from pathlib import Path
 
 import config
 
@@ -25,8 +27,8 @@ ENV = config.RAIZ / ".env"
 
 SERVICOS = {
     "hermes": {
-        "nome": "Expert: Claude ou ChatGPT (via Hermes Agent)",
-        "papel": "Modo Expert e tarefas no PC (arquivos, apps, memória), com a sua assinatura do Claude ou do ChatGPT. Opcional.",
+        "nome": "Hermes Agent (as mãos da IA especialista)",
+        "papel": "O programa que deixa a IA especialista mexer no PC: arquivos, apps, pesquisa, memória. Opcional.",
         "campos": [
             {"var": "HERMES_URL", "rotulo": "Endereço", "segredo": False,
              "exemplo": "http://127.0.0.1:8642/p/assistente/v1"},
@@ -39,7 +41,10 @@ SERVICOS = {
 _VARS_CEREBRO = {"CEREBRO", "CEREBRO_MODELO", "CEREBRO_URL"} | {
     c["var"] for c in config.CEREBROS.values() if c["var"]}
 _VARS = ({c["var"] for s in SERVICOS.values() for c in s["campos"]} | _VARS_CEREBRO
-         | {"STT"} | {s["var"] for s in config.STTS.values() if s["var"]})
+         | {"STT"} | {s["var"] for s in config.STTS.values() if s["var"]}
+         | {"ESPECIALISTA_API", "ESPECIALISTA_LIMITE"}
+         | {e["var"] for e in config.ESPECIALISTAS_API.values()})
+_ROTULO_HERMES = "luna"      # nome da chave que a Luna põe no cofre do Hermes
 
 
 # ------------------------------------------------------------------ .env
@@ -154,12 +159,138 @@ def _status_cerebro() -> dict:
                        "sem_modelo": ident == "assinatura",
                        "mostrar": "" if not c["var"] else _mascara(k)})
     chave_ok = bool(config.chave_cerebro())
-    return {"nome": "Cérebro (IA principal)", "tipo": "cerebro", "obrigatorio": True,
-            "papel": "A IA que entende os pedidos e conversa. Escolha a que preferir.",
+    return {"nome": "IA rápida (a do dia a dia)", "tipo": "cerebro", "obrigatorio": True,
+            "papel": ("Conversa, perguntas, resumos e a decisão de chamar a especialista. "
+                      "Responde quase tudo, então é a que mais gasta: prefira uma chave "
+                      "de API barata (a assinatura passa pelo Hermes e fica mais lenta)."),
             "link": atual["link"], "escolhido": atual["id"],
             "modelo": config._env_valor("CEREBRO_MODELO"), "url": config._env_valor("CEREBRO_URL"),
             "opcoes": opcoes, "campos": [],
             "configurado": chave_ok and bool(atual["url"]) and bool(atual["modelo"])}
+
+
+def _assinaturas() -> list[str]:
+    """Assinaturas logadas no Hermes (só nomes; nenhum token é lido)."""
+    logados = config._hermes_logados()
+    saida = []
+    if "anthropic" in logados and config.especialista_api() != "anthropic":
+        saida.append("Claude")
+    if "openai-codex" in logados:
+        saida.append("ChatGPT")
+    if "xai-oauth" in logados:
+        saida.append("Grok")
+    return saida
+
+
+def _status_especialista() -> dict:
+    api = config.especialista_api()
+    assin = _assinaturas()
+    hermes_ok = bool(config.chave_hermes())
+    opcoes = []
+    for ident, e in config.ESPECIALISTAS_API.items():
+        k = _valor(e["var"])
+        opcoes.append({"id": ident, "nome": e["nome"], "dica": e["dica"], "link": e["link"],
+                       "var": e["var"], "definido": bool(k), "mostrar": _mascara(k)})
+    return {"nome": "IA especialista (mexe no PC)", "tipo": "especialista", "obrigatorio": False,
+            "papel": ("Entra só quando o pedido precisa agir no computador (arquivos, programas, "
+                      "pesquisa longa) ou quando a IA rápida não dá conta. Roda pelo Hermes."),
+            "hermes": hermes_ok, "assinaturas": assin, "modo": "api" if api else "assinatura",
+            "escolhido": api, "opcoes": opcoes, "limite": config.especialista_limite_brl(),
+            "configurado": hermes_ok and bool(assin or api)}
+
+
+def _hermes_py() -> Path | None:
+    """O Python do Hermes (ao lado do executável `hermes`)."""
+    import plataforma
+    exe = plataforma.hermes_exe()
+    if not exe:
+        return None
+    p = Path(exe).with_name("python.exe" if os.name == "nt" else "python")
+    return p if p.exists() else None
+
+
+def _hermes_cli(args: list[str], entrada: str = "") -> tuple[bool, str]:
+    """Roda `hermes -p <perfil> ...` sem console. A chave, quando há, vai
+    pela entrada padrão (não aparece na lista de processos)."""
+    import plataforma
+    py = _hermes_py()
+    if not py:
+        return False, "Hermes não encontrado neste PC"
+    cod = ("import sys\n"
+           "a = sys.argv[1:]\n"
+           "if '--api-key' in a:\n"
+           "    a[a.index('--api-key') + 1] = sys.stdin.readline().strip()\n"
+           "sys.argv = ['hermes'] + a\n"
+           "from hermes_cli.main import main\n"
+           "main()\n")
+    env = dict(os.environ, HERMES_HOME=str(plataforma.hermes_home()), PYTHONIOENCODING="utf-8")
+    try:
+        r = subprocess.run([str(py), "-c", cod, "-p", config.HERMES_PERFIL, *args],
+                           input=entrada, capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=60, env=env, **plataforma.sem_janela())
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return False, str(e)[:100]
+    return r.returncode == 0, (r.stdout + r.stderr).strip()[-200:]
+
+
+def provedores_da_luna() -> list[str]:
+    """Provedores em que a Luna deixou uma chave no cofre do Hermes (só os
+    rótulos são lidos, nunca a chave)."""
+    import plataforma
+    arq = plataforma.hermes_home() / "profiles" / config.HERMES_PERFIL / "auth.json"
+    try:
+        pool = json.loads(arq.read_text(encoding="utf-8")).get("credential_pool") or {}
+    except (OSError, ValueError):
+        return []
+    return [p for p, itens in pool.items()
+            if any(isinstance(c, dict) and c.get("label") == _ROTULO_HERMES for c in itens)]
+
+
+def registrar_especialista(prov: str) -> tuple[bool, str]:
+    """Põe a chave (lida do .env da Luna) no cofre do Hermes, trocando a
+    anterior da Luna. O Hermes lê o cofre a cada pedido: vale sem reiniciar."""
+    e = config.ESPECIALISTAS_API[prov]
+    k = _valor(e["var"])
+    if not k:
+        return False, "falta a chave"
+    if prov in provedores_da_luna():
+        _hermes_cli(["auth", "remove", prov, _ROTULO_HERMES])
+    ok, saida = _hermes_cli(["auth", "add", prov, "--type", "api-key", "--label",
+                             _ROTULO_HERMES, "--api-key", "-"], k + "\n")
+    return ok, "" if ok else "o Hermes não aceitou a chave: " + saida.replace(k, "[chave]")[-120:]
+
+
+def _testar_especialista() -> tuple[bool, str]:
+    """Pedido de verdade pela IA especialista (confere Hermes + chave +
+    modelo). Custa um pedido (~15 mil tokens), por isso só no "Salvar e
+    testar", nunca ao abrir os Ajustes."""
+    if not config.chave_hermes():
+        return False, "conecte o Hermes primeiro"
+    m = config.modelo_expert_efetivo("")
+    corpo = {"model": config.HERMES_MODELO, "stream": False,
+             "messages": [{"role": "user", "content": "Responda só: ok"}]}
+    if m:
+        corpo["model"], corpo["provider"] = m["id"], m["provedor"]
+    import httpx
+    try:
+        r = httpx.post(config.HERMES_URL + "/chat/completions", json=corpo, timeout=120,
+                       headers={"Authorization": "Bearer " + config.chave_hermes()})
+    except httpx.HTTPError as ex:
+        t = str(ex).lower()
+        return False, ("o Hermes não respondeu (está aberto?)" if "connect" in t or "refused" in t
+                       else "demorou demais para responder" if "timed out" in t else "sem conexão")
+    try:
+        j = r.json()
+    except ValueError:
+        return False, "resposta estranha do Hermes (HTTP %d)" % r.status_code
+    if r.status_code != 200:
+        return False, "erro do Hermes: %s" % str((j.get("error") or {}).get("message", ""))[:100]
+    txt = str(((j.get("choices") or [{}])[0].get("message") or {}).get("content") or "")
+    if "authentication failed" in txt.lower() or "no usable credentials" in txt.lower():
+        return False, "chave recusada"
+    if txt.startswith("⚠️"):
+        return False, txt[:120]
+    return True, "conectado (%s)" % (m["nome"] if m else "assinatura")
 
 
 def _gpu() -> tuple[bool, float]:
@@ -217,6 +348,8 @@ def testar(nome: str) -> dict:
         ok, msg = _testar_stt()
     elif nome == "cerebro":
         ok, msg = _testar_cerebro()
+    elif nome == "especialista":
+        ok, msg = _testar_especialista()
     elif nome == "hermes":
         k = config.chave_hermes()
         if not k:
@@ -230,11 +363,16 @@ def testar(nome: str) -> dict:
 
 def status(testar_agora: bool = False) -> dict:
     """Para a tela: sem valores secretos (só máscara)."""
-    saida = {"cerebro": _status_cerebro(), "stt": _status_stt()}
+    saida = {"cerebro": _status_cerebro(), "stt": _status_stt(),
+             "especialista": _status_especialista()}
     if testar_agora and saida["cerebro"]["configurado"]:
         saida["cerebro"]["teste"] = testar("cerebro")
     if testar_agora and saida["stt"]["configurado"]:
         saida["stt"]["teste"] = testar("stt")
+    if testar_agora and saida["especialista"]["configurado"]:
+        # Ao abrir os Ajustes: só "o Hermes está no ar?" (grátis). O pedido
+        # de verdade (pago, na chave) fica para o "Salvar e testar".
+        saida["especialista"]["teste"] = testar("hermes")
     for nome, s in SERVICOS.items():
         campos = []
         for c in s["campos"]:
@@ -247,6 +385,7 @@ def status(testar_agora: bool = False) -> dict:
         if testar_agora and item["configurado"]:
             item["teste"] = testar(nome)
         saida[nome] = item
+    saida["especialista"] = saida.pop("especialista")   # depois do Hermes: depende dele
     return saida
 
 
@@ -256,10 +395,18 @@ def salvar(valores: dict) -> dict:
         if var not in _VARS:
             raise ValueError("campo desconhecido: %s" % var)
         valor = (valor or "").strip().strip('"').strip("'")
-        if var == "CEREBRO_MODELO" and not valor:
-            _gravar_env(var, "")          # vazio = modelo padrão da IA escolhida
+        if var in ("CEREBRO_MODELO", "ESPECIALISTA_API") and not valor:
+            _gravar_env(var, "")          # vazio = padrão (modelo da IA / só assinatura)
             os.environ.pop(var, None)
             continue
+        if var == "ESPECIALISTA_API" and valor not in config.ESPECIALISTAS_API:
+            raise ValueError("opção desconhecida: %s" % valor)
+        if var == "ESPECIALISTA_LIMITE":
+            try:
+                if not 0 <= float(valor.replace(",", ".")) <= 1000:
+                    raise ValueError
+            except ValueError:
+                raise ValueError("limite por dia: use um número de 0 a 1000") from None
         if not valor or "\n" in valor or len(valor) > 400:
             raise ValueError("valor inválido para %s" % var)
         if var == "CEREBRO" and valor not in config.CEREBROS:

@@ -56,6 +56,9 @@ EXEMPLOS = [
      {"acao": "timer", "args": {"quantidade": 20, "unidade": "minutos"}}),
     ("segura a música aí rapidinho", {"acao": "midia", "args": {"comando": "pausar_ou_tocar"}}),
     ("abre a calculadora", {"acao": "abrir", "args": {"nome": "calculadora"}}),
+    ("quero ver a pasta de imagens", {"acao": "abrir", "args": {"nome": "imagens"}}),
+    ("dá uma pesquisada no google sobre a previsão do tempo",
+     {"acao": "google_pesquisar", "args": {"o_que": "previsão do tempo"}}),
     ("me conta uma piada", {"acao": "conversa"}),
     ("por que o mar é salgado", {"acao": "conversa"}),
     ("me conta uma curiosidade sobre o spotify", {"acao": "conversa"}),
@@ -65,6 +68,18 @@ EXEMPLOS = [
     ("o que eu tenho pra hoje", {"acao": "claude"}),
     ("salva isso como skill pra próxima vez", {"acao": "claude"}),
     ("monta um plano de treino de dois meses", {"acao": "claude"}),
+    # Conversa com fatos da pessoa: fica na rápida (a revisão do dia guarda).
+    ("dá um oi pro meu amigo joão", {"acao": "conversa"}),
+    ("prefiro série de suspense a novela", {"acao": "conversa"}),
+    ("vou no mercado mais tarde", {"acao": "conversa"}),
+    ("na verdade meu nome é ana, o outro foi erro", {"acao": "conversa"}),
+    ("não é carlos, meu nome é pedro, você entendeu errado", {"acao": "conversa"}),
+    ("manda um boa noite pra minha mãe", {"acao": "conversa"}),
+    ("amanhã a gente vai assistir aquela série", {"acao": "conversa"}),
+    # Conta que FEZ algo da rotina: a especialista marca no app de tarefas.
+    ("já fiz a caminhada de hoje", {"acao": "claude"}),
+    # Pedido EXPLÍCITO para lembrar: vai à especialista, que grava na hora.
+    ("guarda que eu sou alérgico a camarão", {"acao": "claude"}),
 ]
 
 _DESTRUTIVO = acoes.destrutivo

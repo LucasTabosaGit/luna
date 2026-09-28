@@ -1,8 +1,9 @@
 {
- "versao": "2026.09.27.1435",
+ "versao": "2026.09.28.0729",
  "repo": "LucasTabosaGit/luna",
  "novidades": [
-  "A Luna agora roda também no Mac com Apple Silicon: descobre o sistema sozinha e se ajusta.",
-  "src/plataforma.py junta num lugar só o que muda entre Windows e Mac."
+  "A escolha das IAs foi reorganizada em duas, com a função de cada uma explicada no guia e nos Ajustes:",
+  "O gasto da especialista paga por uso aparece em *Uso e gastos* e na barra de status.",
+  "Se a especialista estiver fora do ar ou no limite do dia, a rápida tenta e a Luna avisa."
  ]
 }
