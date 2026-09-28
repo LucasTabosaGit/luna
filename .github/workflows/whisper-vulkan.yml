@@ -37,9 +37,13 @@ jobs:
         shell: bash
         working-directory: w
         run: |
-          cmake -B build -DGGML_VULKAN=ON -DWHISPER_BUILD_EXAMPLES=ON -DWHISPER_BUILD_TESTS=OFF \
-                -DWHISPER_SDL2=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
-          cmake --build build --config Release -j 4 --target whisper-server
+          # GGML_NATIVE=OFF + variantes de CPU: sem isso o binário usa as
+          # instruções da máquina do GitHub (AVX-512) e fecha com 0xC000001D
+          # em processador comum. Os backends viram DLLs escolhidas na hora.
+          cmake -B build -DGGML_VULKAN=ON -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON \
+                -DWHISPER_BUILD_EXAMPLES=ON -DWHISPER_BUILD_TESTS=OFF -DWHISPER_SDL2=OFF \
+                -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          cmake --build build --config Release -j 4
 
       - name: Empacotar
         shell: bash
