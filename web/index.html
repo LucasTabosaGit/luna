@@ -835,6 +835,98 @@ form.campo textarea { height: 40px; max-height: 160px; padding: 8px 4px 4px; fon
 .menu-mover button:hover { background: oklch(1 0 0 / .06); }
 .menu-mover button svg { width: 15px; height: 15px; color: var(--fraco); }
 .menu-mover button.atual::after { content: "✓"; margin-left: auto; color: var(--ambar); }
+
+/* ================================================================ aba Aprendizado */
+#listaApr { padding-top: 0; }
+.apr-abas { position: sticky; top: 0; z-index: 2; display: flex; gap: 2px; padding: 2px 0 10px; background: var(--fundo);
+            border-bottom: 1px solid var(--linha); margin-bottom: 4px; }
+.apr-abas button { flex: 1; border: 0; background: none; color: var(--fraco); font-size: 12.5px; padding: 7px 4px;
+                   border-radius: 8px; display: inline-flex; justify-content: center; align-items: center; gap: 5px; white-space: nowrap; }
+.apr-abas button:hover { color: var(--tinta); background: oklch(1 0 0 / .05); }
+.apr-abas button[aria-selected="true"] { color: var(--tinta); background: var(--painel); }
+.apr-abas .n { min-width: 17px; height: 17px; padding: 0 5px; border-radius: 9px; background: var(--ambar); color: oklch(0.2 0.02 70);
+               font: 600 10.5px/17px var(--texto); }
+.apr-corpo { display: flex; flex-direction: column; gap: 14px; padding-top: 10px; }
+.apr-bloco { display: flex; flex-direction: column; gap: 8px; }
+.apr-cab { display: flex; align-items: center; gap: 8px; }
+.apr-bloco h5 { margin: 0; font: 600 13.5px var(--titulo); color: var(--tinta); }
+.apr-cont { font: 11px var(--mono); color: var(--ambar); }
+.apr-vazio { font-size: 12.5px; color: var(--fraco); padding: 10px 12px; border: 1px dashed var(--linha); border-radius: 10px; }
+.apr-nota { margin: 0; font-size: 12px; line-height: 1.5; color: var(--fraco); text-wrap: pretty; }
+.rev-cartao { background: var(--painel); border: 1px solid var(--linha); border-radius: 12px; padding: 12px 13px;
+              display: flex; flex-direction: column; gap: 8px; transition: opacity .2s, transform .2s; }
+.rev-cartao.novo { border-color: oklch(0.82 0.15 75 / .35); }
+.rev-cartao.limpar { border-color: oklch(0.70 0.17 25 / .3); }
+.rev-cartao.saindo, .mem-linha.saindo { opacity: 0; transform: translateX(8px); }
+.rev-tipo { font: 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ambar); }
+.rev-cartao.limpar .rev-tipo { color: var(--erro); }
+.rev-txt { font-size: 13.5px; line-height: 1.5; color: var(--tinta); overflow-wrap: anywhere; border-radius: 6px; outline: 0; }
+.rev-txt.editando { background: var(--fundo); box-shadow: inset 0 0 0 1px var(--ambar-esc); padding: 6px 8px; }
+.rev-motivo { font-size: 12px; color: var(--fraco); overflow-wrap: anywhere; }
+.rev-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
+button.ac { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: 8px;
+            border: 1px solid var(--linha); background: none; color: var(--suave); font-size: 12.5px; }
+button.ac svg { width: 14px; height: 14px; }
+button.ac:hover:not(:disabled) { color: var(--tinta); border-color: var(--suave); }
+button.ac.prim { background: var(--ambar); border-color: var(--ambar); color: oklch(0.2 0.02 70); font-weight: 500; }
+button.ac.prim:hover:not(:disabled) { filter: brightness(1.07); color: oklch(0.2 0.02 70); }
+button.ac.perigo:hover:not(:disabled) { color: var(--erro); border-color: var(--erro); }
+button.ac:disabled { opacity: .55; }
+.apr-ferr { display: flex; flex-wrap: wrap; gap: 6px; }
+.apr-busca { background: none; border: 1px solid var(--linha); border-radius: 9px; padding: 7px 10px; font-size: 13px;
+             color: var(--tinta); outline: 0; }
+.apr-busca:focus { border-color: var(--ambar-esc); }
+.mem-grupo { border-top: 1px solid var(--linha); padding-top: 4px; }
+.mem-grupo summary { list-style: none; display: flex; align-items: center; gap: 8px; padding: 8px 2px; cursor: pointer; }
+.mem-grupo summary::-webkit-details-marker { display: none; }
+.mem-grupo summary::before { content: "›"; color: var(--fraco); transition: transform .15s; display: inline-block; width: 8px; }
+.mem-grupo[open] summary::before { transform: rotate(90deg); }
+.mem-grupo summary .nome { font: 600 13.5px var(--titulo); color: var(--tinta); }
+.mem-grupo summary .qtd { font-size: 12px; color: var(--fraco); }
+.medidor { margin-left: auto; width: 54px; height: 4px; border-radius: 4px; background: var(--linha); overflow: hidden; }
+.medidor i { display: block; height: 100%; background: var(--ouvir); }
+.medidor.cheio i { background: var(--erro); }
+.mem-linha { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: start; padding: 8px 4px 8px 10px;
+             border-radius: 8px; transition: background .12s, opacity .2s, transform .2s; }
+.mem-linha[hidden] { display: none; }
+.mem-linha:hover { background: oklch(1 0 0 / .035); }
+.mem-txt { font-size: 13px; line-height: 1.5; color: var(--suave); overflow-wrap: anywhere; }
+.mem-linha:hover .mem-txt { color: var(--tinta); }
+.novo-ponto { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--ambar); margin: 0 7px 1px 0; vertical-align: middle; }
+.mem-apagar { width: 26px; height: 26px; border: 0; border-radius: 7px; background: none; color: var(--fraco); display: grid; place-items: center;
+              opacity: 0; transition: opacity .12s; }
+.mem-apagar svg { width: 14px; height: 14px; }
+.mem-linha:hover .mem-apagar, .mem-apagar:focus-visible { opacity: 1; }
+.mem-apagar:hover { color: var(--erro); background: oklch(0.70 0.17 25 / .1); }
+@media (hover: none) { .mem-apagar { opacity: 1; } }
+.apr-linha { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 10px;
+             border: 1px solid var(--linha); border-radius: 10px; }
+.apr-linha .t { font-size: 13.5px; color: var(--tinta); overflow-wrap: anywhere; }
+.apr-linha .s { font-size: 12px; color: var(--fraco); margin-top: 2px; overflow-wrap: anywhere; text-wrap: pretty; }
+.apr-linha .dir { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.apr-linha .usos { font: 11px var(--mono); color: var(--fraco); white-space: nowrap; }
+.apr-linha .usos.forte { color: var(--ambar); }
+.apr-linha .qd { font: 10.5px var(--mono); color: var(--fraco); white-space: nowrap; }
+
+.apr-corpo .secao { padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.apr-corpo .secao h4 { font: 600 13.5px var(--titulo); color: var(--tinta); text-transform: none; letter-spacing: 0; margin: 0; }
+.apr-corpo .secao > .dica { font-size: 12px; line-height: 1.5; margin: 0; }
+.apr-corpo .cartao { display: flex; flex-direction: column; gap: 6px; }
+.apr-corpo .cartao b { font-size: 13.5px; }
+.apr-corpo .cartao .sub { font-size: 12.5px; line-height: 1.5; color: var(--fraco); }
+.apr-corpo .cartao .botao { align-self: flex-start; margin-top: 4px !important; }
+
+/* ================================================================ divisor arrastável da barra lateral */
+.app { position: relative; grid-template-columns: 52px var(--lado-w, 290px) minmax(0, 1fr); }
+.divisor { position: absolute; top: 0; bottom: 0; left: calc(52px + var(--lado-w, 290px) - 4px); width: 8px; z-index: 20;
+           cursor: col-resize; touch-action: none; }
+.divisor::after { content: ""; position: absolute; top: 0; bottom: 0; left: 3px; width: 2px; background: transparent; transition: background .15s; }
+.divisor:hover::after, .divisor.arrastando::after, .divisor:focus-visible::after { background: var(--ambar-esc); }
+.divisor:focus-visible { outline: 0; }
+.app.recolhido .divisor { display: none; }
+body.redimensionando { cursor: col-resize; user-select: none; }
+body.redimensionando iframe, body.redimensionando canvas { pointer-events: none; }
+@media (max-width: 1000px) { .divisor { display: none; } }
 </style>
 </head>
 <body>
@@ -871,6 +963,8 @@ form.campo textarea { height: 40px; max-height: 160px; padding: 8px 4px 4px; fon
     <div class="lista" id="listaApr" hidden></div>
     <footer id="rodape">—</footer>
   </aside>
+  <div class="divisor" id="divisor" role="separator" aria-orientation="vertical" aria-label="Largura da barra lateral"
+       tabindex="0" title="Arraste para mudar a largura · dois cliques volta ao padrão"></div>
 
   <main class="palco vazio" id="palco">
     <div class="topo">
@@ -2707,133 +2801,203 @@ function cartaoConta(c) {
 const $apr = $('listaApr');
 async function carregarAprendizado() {
   if (!$apr.childElementCount) $apr.innerHTML = '<div class="vazio">Carregando…</div>';
-  let d;
-  try { d = await (await fetch('/aprendizado')).json(); }
-  catch (e) { $apr.replaceChildren(el('div', 'vazio', 'Não consegui carregar.')); return; }
-  $apr.replaceChildren();
-  // Propostas pendentes
-  const s0 = el('div', 'secao'); s0.append(el('h4', '', 'Esperando sua aprovação'));
-  if (!propostasPendentes.size) s0.append(el('div', 'dica', 'Nenhuma. Quando ela quiser mudar algo nela mesma, aparece aqui e na conversa.'));
-  for (const m of propostasPendentes.values()) {
-    const c = el('div', 'cartao'); c.append(el('b', '', m.titulo));
-    c.append(el('div', 'sub', 'Muda: ' + (m.arquivos || []).join(', ')));
-    const ir = el('button', 'botao', 'Ver na conversa'); ir.style.marginTop = '8px'; ir.onclick = () => abrirAba('conv');
-    c.append(ir); s0.append(c);
+  let d, mem;
+  try {
+    [d, mem] = await Promise.all([fetch('/aprendizado').then(r => r.json()), fetch('/memoria').then(r => r.json()).catch(() => null)]);
+  } catch (e) { $apr.replaceChildren(el('div', 'vazio', 'Não consegui carregar.')); return; }
+  const pend = (mem?.propostas?.length || 0) + (mem?.limpeza?.length || 0) + propostasPendentes.size;
+  $('pontoApr').hidden = !pend;
+  const abas = [['mem', 'Memória', pend], ['atalhos', 'Atalhos', d.candidatos.length], ['hab', 'Habilidades', 0], ['voz', 'Voz', 0]];
+  let atual = localStorage.getItem('aprAba') || 'mem';
+  if (!abas.some(a => a[0] === atual)) atual = 'mem';
+  const barra = el('div', 'apr-abas'); barra.setAttribute('role', 'tablist');
+  for (const [id, nome, n] of abas) {
+    const b = el('button', '', nome); b.type = 'button'; b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(id === atual));
+    if (n) b.append(el('span', 'n', String(n)));
+    b.onclick = () => { localStorage.setItem('aprAba', id); carregarAprendizado(); };
+    barra.append(b);
   }
-  $apr.append(s0);
-  $apr.append(await secaoMemoria());
-  $apr.append(secaoTreinoVoz());
-  // Atalhos
-  const s1 = el('div', 'secao'); s1.append(el('h4', '', 'Atalhos prontos (sem o Claude)'));
-  if (!d.atalhos.length) s1.append(el('div', 'dica', 'Nenhum ainda. Uma tarefa que você repete vira atalho e passa a rodar em segundos.'));
-  for (const a of d.atalhos) {
-    const it = el('div', 'item'), m = el('div');
-    const t = el('div', 't', a.nome); if (a.skill) t.append(el('span', 'chip', a.skill));
-    m.append(t); if (a.exemplo) m.append(el('div', 'sub', a.exemplo));
-    const tr = el('label', 'troca'); tr.title = a.ligado ? 'Ligado' : 'Desligado';
-    const cb = el('input'); cb.type = 'checkbox'; cb.checked = a.ligado; cb.setAttribute('aria-label', 'Atalho ' + a.nome);
-    cb.onchange = async () => { await fetch('/aprendizado/atalho/' + encodeURIComponent(a.nome) + '/' + (cb.checked ? 'ligar' : 'desligar'), { method: 'POST' }); tr.title = cb.checked ? 'Ligado' : 'Desligado'; };
-    tr.append(cb, el('span'));
-    it.append(el('span'), m, tr); s1.append(it);
-  }
-  $apr.append(s1);
-  // Skills
-  const s2 = el('div', 'secao'); s2.append(el('h4', '', 'Habilidades que o Claude aprendeu'));
-  for (const k of d.skills) {
-    const it = el('div', 'item'), m = el('div');
-    const t = el('div', 't', k.nome); t.append(el('span', 'chip' + (k.usos >= 5 ? ' forte' : ''), k.usos + (k.usos === 1 ? ' uso' : ' usos')));
-    m.append(t); if (k.descricao) m.append(el('div', 'sub', k.descricao));
-    const qd = k.ultimo ? quando(Date.parse(k.ultimo) / 1000) : '';
-    it.append(el('span'), m, el('span', 'quando', qd === 'Hoje' ? new Date(k.ultimo).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : qd));
-    s2.append(it);
-  }
-  $apr.append(s2);
-  // Candidatos
-  const s3 = el('div', 'secao'); s3.append(el('h4', '', 'Pedidos que se repetem'));
-  if (!d.candidatos.length) s3.append(el('div', 'dica', 'Nada se repetindo ainda.'));
-  for (const c of d.candidatos) {
-    const it = el('div', 'item'), m = el('div'); m.append(el('div', 't', c.texto), el('div', 'sub', c.vezes + ' vezes pelo Claude'));
-    const b = botaoMini('Virar atalho', '<path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12z"/>', () => {
-      $entrada.value = 'Luna, transforma em atalho rápido o pedido “' + c.texto + '” (propõe com teste, eu aprovo).';
-      ajustarEntrada(); $entrada.focus();
-    });
-    it.append(el('span'), m, b); s3.append(it);
-  }
-  $apr.append(s3);
+  const corpo = el('div', 'apr-corpo');
+  if (atual === 'mem') corpo.append(...painelMemoria(mem));
+  else if (atual === 'atalhos') corpo.append(...painelAtalhos(d));
+  else if (atual === 'hab') corpo.append(...painelHabilidades(d));
+  else corpo.append(secaoTreinoVoz());
+  $apr.replaceChildren(barra, corpo);
 }
 
 /* ---- Memória: o que ela sabe de você (src/memoria.py) ----
    Propostas da revisão do dia e sugestões de limpeza esperam você aqui:
    nada entra nem sai da memória sozinho. */
 const ICO_OK = '<path d="M5 12.5l4.5 4.5L19 7.5"/>', ICO_X = '<path d="M6 6l12 12M18 6L6 18"/>',
-      ICO_LIXO = '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>';
+      ICO_LIXO = '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+      ICO_LAPIS = '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>';
 async function memoriaPost(acao, corpo) {
   const r = await fetch('/memoria/' + acao, { method: 'POST', headers: { 'Content-Type': 'application/json' },
                                               body: JSON.stringify(corpo || {}) });
   return r.json();
 }
-async function secaoMemoria() {
-  const s = el('div', 'secao');
-  let d;
-  try { d = await (await fetch('/memoria')).json(); }
-  catch (e) { s.append(el('h4', '', 'O que ela sabe de você'), el('div', 'dica', 'Não consegui ler a memória.')); return s; }
+function botaoAcao(rotulo, icone, cls, acao) {
+  const b = el('button', 'ac ' + (cls || '')); b.type = 'button';
+  b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + icone + '</svg>';
+  b.append(document.createTextNode(rotulo));
+  b.onclick = async (e) => {
+    e.stopPropagation(); b.disabled = true;
+    try { await acao(b); } finally { b.disabled = false; }
+  };
+  return b;
+}
+function painelMemoria(d) {
+  const out = [];
+  if (!d) { out.push(el('div', 'dica', 'Não consegui ler a memória.')); return out; }
   const recarregar = () => carregarAprendizado();
-  const h = el('h4', '', 'O que ela sabe de você');
-  const acoes = el('span', 'mem-acoes');
-  const bRev = botaoMini('Revisar conversas', '<path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/>', async () => {
-    bRev.disabled = true; bRev.querySelector('span').textContent = 'lendo…';
-    const r = await memoriaPost('revisar');
-    sistema(r.ok ? (r.novos && r.novos.length ? r.novos.length + ' lembrança(s) para você aprovar, na aba Aprendizado.' : 'Nada novo para lembrar nas conversas recentes.') : (r.erro || 'Não deu para revisar agora.'));
-    recarregar();
-  });
-  const bLimpa = botaoMini('Sugerir limpeza', ICO_LIXO, async () => {
-    bLimpa.disabled = true; bLimpa.querySelector('span').textContent = 'olhando…';
-    const r = await memoriaPost('limpeza');
-    sistema(r.ok ? (r.limpeza.length ? r.limpeza.length + ' sugestão(ões) de limpeza, na aba Aprendizado.' : 'A memória está enxuta: nada para limpar.') : (r.erro || 'Não deu agora.'));
-    recarregar();
-  });
-  acoes.append(bRev, bLimpa); h.append(acoes); s.append(h);
-  s.append(el('div', 'dica', 'As duas IAs usam isto. Uma vez por dia ela relê as conversas e sugere o que lembrar; '
-    + 'por semana, o que apagar. Nada entra nem sai sem você.' + (d.revisado ? ' Última revisão: ' + d.revisado + '.' : '')));
-  // Propostas: aprovar entra na memória
+  // 1) Para revisar: cartões grandes, texto inteiro, botões embaixo
+  const revisar = el('div', 'apr-bloco');
+  const nRev = (d.propostas || []).length + (d.limpeza || []).length + propostasPendentes.size;
+  const cabR = el('div', 'apr-cab'); cabR.append(el('h5', '', 'Para revisar'));
+  if (nRev) cabR.append(el('span', 'apr-cont', String(nRev)));
+  revisar.append(cabR);
+  if (!nRev) revisar.append(el('div', 'apr-vazio', 'Nada esperando você. Quando ela achar algo para lembrar ou esquecer, aparece aqui.'));
   for (const t of d.propostas || []) {
-    const it = el('div', 'item'), m = el('div');
-    const tt = el('div', 't', t); tt.append(el('span', 'chip forte', 'lembrar?')); m.append(tt);
-    const bs = el('span', 'mem-acoes');
-    bs.append(botaoMini('Lembrar', ICO_OK, async () => { const r = await memoriaPost('aprovar', { texto: t }); if (!r.ok) sistema('Não gravei: ' + (r.erro || '')); recarregar(); }),
-              botaoMini('Descartar', ICO_X, async () => { await memoriaPost('descartar', { texto: t }); recarregar(); }));
-    it.append(el('span'), m, bs); s.append(it);
+    const c = el('div', 'rev-cartao novo');
+    c.append(el('div', 'rev-tipo', 'Lembrar isto?'));
+    const txt = el('div', 'rev-txt', t); c.append(txt);
+    const bs = el('div', 'rev-acoes');
+    const ok = botaoAcao('Lembrar', ICO_OK, 'prim', async () => {
+      const editado = txt.isContentEditable ? txt.innerText.trim() : '';
+      const r = await memoriaPost('aprovar', { texto: t, editado });
+      if (!r.ok) { sistema('Não gravei: ' + (r.erro || '')); return; }
+      c.classList.add('saindo'); setTimeout(recarregar, 220);
+    });
+    const edt = botaoAcao('Editar', ICO_LAPIS, '', async () => {
+      txt.contentEditable = 'true'; txt.classList.add('editando'); txt.focus();
+      const sel = getSelection(); sel.selectAllChildren(txt); sel.collapseToEnd();
+      edt.remove(); ok.lastChild.textContent = 'Lembrar assim';
+    });
+    const no = botaoAcao('Descartar', ICO_X, '', async () => {
+      await memoriaPost('descartar', { texto: t }); c.classList.add('saindo'); setTimeout(recarregar, 220);
+    });
+    bs.append(ok, edt, no); c.append(bs); revisar.append(c);
   }
-  // Sugestões de limpeza: apagar sai da memória
   for (const x of d.limpeza || []) {
-    const it = el('div', 'item'), m = el('div');
-    const tt = el('div', 't', x.texto); tt.append(el('span', 'chip', 'apagar?')); m.append(tt);
-    if (x.motivo) m.append(el('div', 'sub', x.motivo));
-    const bs = el('span', 'mem-acoes');
-    bs.append(botaoMini('Apagar', ICO_LIXO, async () => { await memoriaPost('apagar', { nome: x.nome, texto: x.texto }); recarregar(); }),
-              botaoMini('Manter', ICO_OK, async () => { await memoriaPost('descartar', { texto: x.texto }); recarregar(); }));
-    it.append(el('span'), m, bs); s.append(it);
+    const c = el('div', 'rev-cartao limpar');
+    c.append(el('div', 'rev-tipo', 'Esquecer isto?'), el('div', 'rev-txt', x.texto));
+    if (x.motivo) c.append(el('div', 'rev-motivo', x.motivo));
+    const bs = el('div', 'rev-acoes');
+    bs.append(botaoAcao('Esquecer', ICO_LIXO, 'perigo', async () => {
+      await memoriaPost('apagar', { nome: x.nome, texto: x.texto }); c.classList.add('saindo'); setTimeout(recarregar, 220);
+    }), botaoAcao('Manter', ICO_OK, '', async () => {
+      await memoriaPost('descartar', { texto: x.texto }); c.classList.add('saindo'); setTimeout(recarregar, 220);
+    }));
+    c.append(bs); revisar.append(c);
   }
-  // O que está guardado
+  for (const m of propostasPendentes.values()) {
+    const c = el('div', 'rev-cartao');
+    c.append(el('div', 'rev-tipo', 'Mudar algo nela mesma'), el('div', 'rev-txt', m.titulo),
+             el('div', 'rev-motivo', 'Muda: ' + (m.arquivos || []).join(', ')));
+    const bs = el('div', 'rev-acoes');
+    bs.append(botaoAcao('Ver na conversa', '<path d="M5 12h14M13 6l6 6-6 6"/>', '', async () => abrirAba('conv')));
+    c.append(bs); revisar.append(c);
+  }
+  out.push(revisar);
+  // 2) Ações e explicação, compactas
+  const ferr = el('div', 'apr-ferr');
+  ferr.append(botaoAcao('Revisar conversas agora', '<path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/>', '', async (b) => {
+    b.lastChild.textContent = 'Lendo…';
+    const r = await memoriaPost('revisar');
+    sistema(r.ok ? (r.novos && r.novos.length ? r.novos.length + ' lembrança(s) para você revisar.' : 'Nada novo para lembrar nas conversas recentes.') : (r.erro || 'Não deu para revisar agora.'));
+    recarregar();
+  }), botaoAcao('Sugerir limpeza', ICO_LIXO, '', async (b) => {
+    b.lastChild.textContent = 'Olhando…';
+    const r = await memoriaPost('limpeza');
+    sistema(r.ok ? (r.limpeza.length ? r.limpeza.length + ' sugestão(ões) de limpeza para revisar.' : 'A memória está enxuta: nada para limpar.') : (r.erro || 'Não deu agora.'));
+    recarregar();
+  }));
+  out.push(ferr);
+  out.push(el('p', 'apr-nota', 'As duas IAs usam o que está guardado. Uma vez por dia ela relê as conversas e sugere o que lembrar; '
+    + 'por semana, o que esquecer. Nada entra nem sai sem você.' + (d.revisado ? ' Última revisão: ' + d.revisado + '.' : '')));
+  // 3) O que está guardado: lista limpa, com busca
   const sugeridas = new Set((d.limpeza || []).map(x => x.texto));
-  for (const [nome, titulo] of [['usuario', 'Sobre você'], ['trabalho', 'Anotações de trabalho dela']]) {
-    const itens = d.itens.filter(i => i.nome === nome && !sugeridas.has(i.texto));
-    const cab = el('div', 'sub', `${titulo} · ${d.uso[nome] || 0}% do espaço`); cab.style.marginTop = '10px';
-    const barra = el('div', 'mem-barra'), fill = el('i'); fill.style.width = Math.min(100, d.uso[nome] || 0) + '%'; barra.append(fill);
-    s.append(cab, barra);
-    if (!itens.length) s.append(el('div', 'dica', 'Nada guardado ainda.'));
-    for (const i of itens) {
-      const it = el('div', 'item'), m = el('div'), tt = el('div', 't', i.texto);
-      if (i.novo) tt.append(el('span', 'chip', 'novo'));
-      m.append(tt);
-      it.append(el('span'), m, botaoMini('Esquecer', ICO_LIXO, async () => {
-        if (!confirm('Esquecer isto?\n\n' + i.texto)) return;
-        await memoriaPost('apagar', { nome, texto: i.texto }); recarregar();
-      }));
-      s.append(it);
-    }
+  const todos = d.itens.filter(i => !sugeridas.has(i.texto));
+  if (todos.length > 6) {
+    const busca = el('input', 'apr-busca'); busca.type = 'search'; busca.placeholder = 'Buscar no que ela lembra';
+    busca.oninput = () => {
+      const q = busca.value.trim().toLowerCase();
+      document.querySelectorAll('.mem-linha').forEach(li => { li.hidden = !!q && !li.dataset.t.includes(q); });
+    };
+    out.push(busca);
   }
-  return s;
+  for (const [nome, titulo, aberto] of [['usuario', 'Sobre você', true], ['trabalho', 'Anotações de trabalho dela', false]]) {
+    const itens = todos.filter(i => i.nome === nome);
+    const g = el('details', 'mem-grupo'); g.open = aberto || localStorage.getItem('memAberto_' + nome) === '1';
+    g.ontoggle = () => localStorage.setItem('memAberto_' + nome, g.open ? '1' : '0');
+    const sm = el('summary');
+    const uso = d.uso[nome] || 0;
+    sm.append(el('span', 'nome', titulo), el('span', 'qtd', itens.length + (itens.length === 1 ? ' item' : ' itens')));
+    const medidor = el('span', 'medidor' + (uso >= 85 ? ' cheio' : '')); medidor.title = uso + '% do espaço usado';
+    const f = el('i'); f.style.width = Math.min(100, uso) + '%'; medidor.append(f); sm.append(medidor);
+    g.append(sm);
+    if (!itens.length) g.append(el('div', 'apr-vazio', 'Nada guardado ainda.'));
+    for (const i of itens) {
+      const li = el('div', 'mem-linha'); li.dataset.t = i.texto.toLowerCase();
+      const t = el('div', 'mem-txt', i.texto);
+      if (i.novo) t.prepend(el('span', 'novo-ponto', ''));
+      const x = el('button', 'mem-apagar'); x.type = 'button'; x.title = 'Esquecer'; x.setAttribute('aria-label', 'Esquecer: ' + i.texto);
+      x.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + ICO_LIXO + '</svg>';
+      x.onclick = async () => {
+        if (!confirm('Esquecer isto?\n\n' + i.texto)) return;
+        await memoriaPost('apagar', { nome, texto: i.texto }); li.classList.add('saindo'); setTimeout(recarregar, 220);
+      };
+      li.append(t, x); g.append(li);
+    }
+    out.push(g);
+  }
+  return out;
+}
+function painelAtalhos(d) {
+  const b1 = el('div', 'apr-bloco');
+  b1.append(el('h5', '', 'Atalhos prontos'),
+    el('p', 'apr-nota', 'Rodam em segundos, sem chamar a IA especialista.'));
+  if (!d.atalhos.length) b1.append(el('div', 'apr-vazio', 'Nenhum ainda. Uma tarefa que você repete vira atalho.'));
+  for (const a of d.atalhos) {
+    const li = el('div', 'apr-linha'), m = el('div', 'meio');
+    m.append(el('div', 't', a.nome)); if (a.exemplo) m.append(el('div', 's', a.exemplo));
+    const tr = el('label', 'troca'); tr.title = a.ligado ? 'Ligado' : 'Desligado';
+    const cb = el('input'); cb.type = 'checkbox'; cb.checked = a.ligado; cb.setAttribute('aria-label', 'Atalho ' + a.nome);
+    cb.onchange = async () => { await fetch('/aprendizado/atalho/' + encodeURIComponent(a.nome) + '/' + (cb.checked ? 'ligar' : 'desligar'), { method: 'POST' }); tr.title = cb.checked ? 'Ligado' : 'Desligado'; };
+    tr.append(cb, el('span')); li.append(m, tr); b1.append(li);
+  }
+  const b2 = el('div', 'apr-bloco');
+  b2.append(el('h5', '', 'Pedidos que se repetem'),
+    el('p', 'apr-nota', 'Coisas que você pediu várias vezes à especialista. Dá para virar atalho.'));
+  if (!d.candidatos.length) b2.append(el('div', 'apr-vazio', 'Nada se repetindo ainda.'));
+  for (const c of d.candidatos) {
+    const li = el('div', 'apr-linha'), m = el('div', 'meio');
+    m.append(el('div', 't', c.texto), el('div', 's', c.vezes + ' vezes'));
+    li.append(m, botaoAcao('Virar atalho', '<path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12z"/>', '', async () => {
+      abrirAba('conv');
+      $entrada.value = 'Luna, transforma em atalho rápido o pedido “' + c.texto + '” (propõe com teste, eu aprovo).';
+      ajustarEntrada(); $entrada.focus();
+    }));
+    b2.append(li);
+  }
+  return [b1, b2];
+}
+function painelHabilidades(d) {
+  const b = el('div', 'apr-bloco');
+  b.append(el('h5', '', 'O que a especialista aprendeu'),
+    el('p', 'apr-nota', 'Procedimentos que ela guardou para repetir melhor. Os mais usados primeiro.'));
+  if (!d.skills.length) b.append(el('div', 'apr-vazio', 'Nenhum ainda.'));
+  for (const k of [...d.skills].sort((a, b) => (b.usos || 0) - (a.usos || 0))) {
+    const li = el('div', 'apr-linha'), m = el('div', 'meio');
+    m.append(el('div', 't', k.nome)); if (k.descricao) m.append(el('div', 's', k.descricao));
+    const qd = k.ultimo ? quando(Date.parse(k.ultimo) / 1000) : '';
+    const dir = el('div', 'dir');
+    dir.append(el('span', 'usos' + (k.usos >= 5 ? ' forte' : ''), k.usos + (k.usos === 1 ? ' uso' : ' usos')));
+    if (qd) dir.append(el('span', 'qd', qd === 'Hoje' ? new Date(k.ultimo).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : qd));
+    li.append(m, dir); b.append(li);
+  }
+  return [b];
 }
 
 /* ---- "Treinar com a minha voz": detector do nome (src/treino_voz.py) ---- */
@@ -3843,6 +4007,45 @@ document.querySelectorAll('.trilho [data-aba]').forEach(b => b.onclick = () => {
   abrirAba(b.dataset.aba);
 });
 $('btnAtividade').onclick = () => $lado.classList.toggle('aberto');
+// Divisor entre a barra lateral e o chat: arrastar muda a largura (fica salva).
+(() => {
+  const d = $('divisor'), app = $('app'), MIN = 220, PADRAO = 290;
+  const max = () => Math.max(MIN, Math.min(640, innerWidth - 52 - 420));   // o chat nunca fica espremido
+  const aplicar = (w, salvar) => {
+    w = Math.round(Math.min(max(), Math.max(MIN, w)));
+    app.style.setProperty('--lado-w', w + 'px');
+    d.setAttribute('aria-valuenow', String(w));
+    if (salvar) localStorage.setItem('ladoW', String(w));
+    return w;
+  };
+  aplicar(parseInt(localStorage.getItem('ladoW') || PADRAO, 10), false);
+  d.setAttribute('aria-valuemin', String(MIN));
+  let x0 = 0, w0 = 0;
+  d.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault(); d.setPointerCapture(e.pointerId);
+    x0 = e.clientX; w0 = $lado.getBoundingClientRect().width;
+    d.classList.add('arrastando'); document.body.classList.add('redimensionando');
+  });
+  d.addEventListener('pointermove', (e) => { if (d.classList.contains('arrastando')) aplicar(w0 + e.clientX - x0, false); });
+  const soltar = () => {
+    if (!d.classList.contains('arrastando')) return;
+    d.classList.remove('arrastando'); document.body.classList.remove('redimensionando');
+    aplicar($lado.getBoundingClientRect().width, true);
+    window.dispatchEvent(new Event('resize'));        // o globo redesenha no tamanho novo
+  };
+  d.addEventListener('pointerup', soltar); d.addEventListener('pointercancel', soltar);
+  d.addEventListener('dblclick', () => { aplicar(PADRAO, true); window.dispatchEvent(new Event('resize')); });
+  d.addEventListener('keydown', (e) => {
+    const passo = e.shiftKey ? 40 : 16, w = $lado.getBoundingClientRect().width;
+    if (e.key === 'ArrowLeft') { aplicar(w - passo, true); e.preventDefault(); }
+    if (e.key === 'ArrowRight') { aplicar(w + passo, true); e.preventDefault(); }
+  });
+  addEventListener('resize', () => {
+    const w = parseInt(localStorage.getItem('ladoW') || PADRAO, 10);
+    if (w > max()) aplicar(max(), false);
+  });
+})();
 $('btnFecharLado').onclick = () => $lado.classList.remove('aberto');
 // Sem mensagens: globo grande no meio ("Como posso ajudar?"). Com mensagens:
 // globo pequeno em cima e a conversa ocupa o meio.

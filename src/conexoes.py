@@ -202,10 +202,16 @@ def _status_especialista() -> dict:
 def _hermes_py() -> Path | None:
     """O Python do Hermes (ao lado do executável `hermes`)."""
     import plataforma
+    nome = "python.exe" if os.name == "nt" else "python"
     exe = plataforma.hermes_exe()
-    if not exe:
-        return None
-    p = Path(exe).with_name("python.exe" if os.name == "nt" else "python")
+    if exe:
+        p = Path(exe).with_name(nome)
+        if p.exists():
+            return p
+    # O `hermes` do PATH pode ser só um atalho (hermes.cmd em hermes\bin, posto
+    # pelo app do Hermes): o Python de verdade fica no venv da instalação.
+    pasta = "Scripts" if os.name == "nt" else "bin"
+    p = plataforma.hermes_home() / "hermes-agent" / "venv" / pasta / nome
     return p if p.exists() else None
 
 

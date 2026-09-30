@@ -1,5 +1,15 @@
 # Mudanças
 
+## Aprendizado reformado e barra lateral ajustável
+
+- **Aba Aprendizado** com sub-abas (Memória, Atalhos, Habilidades, Voz). O que espera você aparece em cartões com o
+  texto inteiro: **Lembrar**, **Editar** (corrige o texto antes de gravar) ou **Descartar**; sugestões de limpeza
+  mostram o motivo. O que já está guardado fica numa lista limpa, com busca e medidor de espaço.
+- **Divisão arrastável** entre a barra lateral e o chat: arraste a linha (a largura fica salva); dois cliques voltam ao
+  padrão; setas ←/→ também funcionam.
+- **Corrigido "Hermes não encontrado"** ao aprovar uma lembrança: com o app do Hermes instalado, a Luna achava o atalho
+  `hermes.cmd` em vez do programa de verdade. Agora usa o da instalação primeiro (vale também para o Meu Hoje).
+
 ## Tela nova no estilo chat e projetos
 
 - **Layout novo**: trilho de ícones à esquerda (Conversas, Hoje, Atividade, Aprendizado, Mini, Ajustes), conversas na

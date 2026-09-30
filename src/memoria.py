@@ -241,13 +241,17 @@ def revisar(cli, modelo: str, extra: dict, forcar: bool = False) -> dict:
     return {"novos": novos, "falas": len(falas)}
 
 
-def aprovar(texto: str) -> dict:
-    """Você aprovou uma lembrança proposta: entra na memória (USER.md)."""
+def aprovar(texto: str, editado: str = "") -> dict:
+    """Você aprovou uma lembrança proposta: entra na memória (USER.md).
+    `editado`: o texto como você corrigiu antes de aprovar (vale no lugar do sugerido)."""
     with _trava:
         d = _estado()
         if texto not in {p["texto"] for p in d.get("propostas", [])}:
             return {"ok": False, "erro": "proposta não encontrada"}
-    r = _aplicar([{"acao": "add", "alvo": "user", "texto": texto}])[0]
+    final = " ".join((editado or texto).split())[:500]
+    if not final:
+        return {"ok": False, "erro": "texto vazio"}
+    r = _aplicar([{"acao": "add", "alvo": "user", "texto": final}])[0]
     if r.get("ok"):
         with _trava:
             d = _estado()

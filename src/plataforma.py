@@ -84,14 +84,16 @@ def hermes_home() -> Path:
 
 
 def hermes_exe() -> str | None:
+    # O executável real da instalação vem primeiro: o `hermes` do PATH pode ser
+    # só um atalho (hermes.cmd em hermes\bin, posto pelo app do Hermes), sem o
+    # Python ao lado - e aí gravar a memória dava "Hermes não encontrado".
+    real = hermes_home() / "hermes-agent" / "venv" / ("Scripts/hermes.exe" if WINDOWS else "bin/hermes")
+    if real.is_file():
+        return str(real)
     achado = shutil.which("hermes")
     if achado:
         return achado
-    if WINDOWS:
-        p = hermes_home() / "hermes-agent" / "venv" / "Scripts" / "hermes.exe"
-        return str(p) if p.is_file() else None
-    p = hermes_home() / "hermes-agent" / "venv" / "bin" / "hermes"
-    return str(p) if p.is_file() else None
+    return None
 
 
 # ------------------------------------------------------------ placa de vídeo

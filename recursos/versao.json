@@ -1,10 +1,9 @@
 {
- "versao": "2026.09.30.0832",
+ "versao": "2026.09.30.1106",
  "repo": "LucasTabosaGit/luna",
  "novidades": [
-  "Layout novo: trilho de ícones à esquerda (Conversas, Hoje, Atividade, Aprendizado, Mini, Ajustes), conversas na",
-  "Barra do chat num cartão só: texto em cima; anexo, modo, microfone e enviar embaixo. Os modos",
-  "Projetos: pastas de conversas. Cada projeto tem instruções (como a Luna deve agir nele), uma pasta do PC",
-  "A especialista continua a mesma sessão do Hermes em cada conversa (cabeçalho X-Hermes-Session-Id): ela lembra"
+  "Aba Aprendizado com sub-abas (Memória, Atalhos, Habilidades, Voz). O que espera você aparece em cartões com o",
+  "Divisão arrastável entre a barra lateral e o chat: arraste a linha (a largura fica salva); dois cliques voltam ao",
+  "Corrigido \"Hermes não encontrado\" ao aprovar uma lembrança: com o app do Hermes instalado, a Luna achava o atalho"
  ]
 }

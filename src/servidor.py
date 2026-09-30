@@ -329,7 +329,7 @@ async def memoria_acao(acao: str, req: Request):
     if acao == "apagar":
         return await asyncio.to_thread(memoria.apagar, str(corpo.get("nome", "")), texto)
     if acao == "aprovar":
-        return await asyncio.to_thread(memoria.aprovar, texto)
+        return await asyncio.to_thread(memoria.aprovar, texto, str(corpo.get("editado", "")))
     if acao == "descartar":
         await asyncio.to_thread(memoria.descartar, texto)
         return {"ok": True}
