@@ -1,8 +1,10 @@
 {
- "versao": "2026.09.28.1923",
+ "versao": "2026.09.30.0832",
  "repo": "LucasTabosaGit/luna",
  "novidades": [
-  "Ao clicar em reiniciar (em *Atualização*), a tela ficava em \"reiniciando…\" para sempre, mesmo com a Luna já de",
-  "Se passar de 4 minutos, avisa para abrir pelo atalho Luna, em vez de ficar parada."
+  "Layout novo: trilho de ícones à esquerda (Conversas, Hoje, Atividade, Aprendizado, Mini, Ajustes), conversas na",
+  "Barra do chat num cartão só: texto em cima; anexo, modo, microfone e enviar embaixo. Os modos",
+  "Projetos: pastas de conversas. Cada projeto tem instruções (como a Luna deve agir nele), uma pasta do PC",
+  "A especialista continua a mesma sessão do Hermes em cada conversa (cabeçalho X-Hermes-Session-Id): ela lembra"
  ]
 }

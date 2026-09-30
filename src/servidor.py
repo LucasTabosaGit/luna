@@ -206,6 +206,74 @@ async def conversas_apagar(cid: str):
     return {"ok": await asyncio.to_thread(conv.apagar, cid)}
 
 
+@app.get("/projetos")
+async def projetos_lista():
+    import conversas as conv
+    return {"projetos": await asyncio.to_thread(conv.projetos)}
+
+
+@app.post("/projetos")
+async def projetos_salvar(req: Request):
+    import conversas as conv
+    try:
+        p = await asyncio.to_thread(conv.salvar_projeto, await req.json())
+    except ValueError as e:
+        return JSONResponse({"erro": str(e)}, status_code=400)
+    return {"ok": True, "projeto": p}
+
+
+@app.delete("/projetos/{pid}")
+async def projetos_apagar(pid: str):
+    import conversas as conv
+    return {"ok": await asyncio.to_thread(conv.apagar_projeto, pid)}
+
+
+@app.post("/conversas/{cid}/mover")
+async def conversas_mover(cid: str, req: Request):
+    import conversas as conv
+    pid = str((await req.json()).get("projeto") or "")
+    ok = await asyncio.to_thread(conv.mover, cid, pid)
+    if ok:
+        for tela in list(_TELAS):
+            if tela.conversa == cid:
+                tela.projeto = pid
+    return {"ok": ok}
+
+
+@app.post("/projetos/{pid}/sugerir_resumo")
+async def projetos_sugerir_resumo(pid: str):
+    """A IA rápida lê as conversas do projeto e SUGERE um resumo. Não grava:
+    o usuário revisa e salva (a memória do projeto só muda com aprovação)."""
+    import conversas as conv
+    p = conv.projeto(pid)
+    if not p:
+        return JSONResponse({"erro": "projeto não existe"}, status_code=404)
+    material = await asyncio.to_thread(conv.material_resumo, pid)
+    if not material.strip():
+        return JSONResponse({"erro": "o projeto ainda não tem conversas"}, status_code=400)
+    instr = ("Você mantém o resumo de um projeto do usuário, chamado \"%s\". Abaixo estão o "
+             "resumo atual (pode estar vazio) e as conversas recentes do projeto. Escreva o "
+             "resumo NOVO, em português, com no máximo 12 tópicos curtos começando com \"- \": "
+             "o que já foi feito, decisões tomadas, preferências e o que ficou pendente. Mantenha "
+             "o que continua válido do resumo atual. Sem introdução, só os tópicos. Não invente "
+             "nada que não esteja no texto. Ignore perguntas avulsas sem relação com o projeto "
+             "e não descreva a conversa (\"o usuário perguntou...\"): registre o conteúdo útil." % p["nome"])
+    conteudo = "Resumo atual -\n%s\n\nConversas -\n%s" % (p.get("resumo") or "(vazio)", material[:24000])
+
+    def _gerar():
+        cli, modelo, extra = _cerebro_rapido()
+        r = cli.chat.completions.create(
+            model=modelo, temperature=0.3, max_tokens=700, extra_body=extra,
+            messages=[{"role": "system", "content": instr}, {"role": "user", "content": conteudo}])
+        return (r.choices[0].message.content or "").strip()
+    try:
+        texto = await asyncio.to_thread(_gerar)
+    except Exception as e:  # noqa: BLE001 - IA rápida fora do ar etc.
+        return JSONResponse({"erro": "não consegui gerar: %s" % str(e)[:120]}, status_code=502)
+    texto = re.sub(r"<think>.*?</think>", "", texto, flags=re.S | re.I).strip()
+    return {"ok": True, "resumo": texto[:conv.LIMITE_CAMPO]}
+
+
 @app.get("/conversas/img/{nome}")
 async def conversas_img(nome: str):
     import conversas as conv
@@ -872,6 +940,7 @@ class Sessao:
         # Conversa salva em dados/conversas (sobrevive a recarregar a tela).
         import conversas as _conv
         self.conversa = _conv.novo_id()
+        self.projeto = ""          # projeto (pasta) da conversa atual; "" = Recentes
         self.fotos_pendentes: list[str] = []   # imagens do próximo "você"
         self.resto = np.zeros(0, dtype=np.float32)
         self.pre: list = []        # áudio logo antes do início da fala
@@ -975,7 +1044,7 @@ class Sessao:
                 fotos, self.fotos_pendentes = self.fotos_pendentes, []
                 conv.registrar(self.conversa, "voce", dados.get("texto", ""),
                                substituir=bool(dados.get("corrigido")), fotos=fotos,
-                               arquivos=dados.get("arquivos"))
+                               arquivos=dados.get("arquivos"), projeto=self.projeto)
             elif tipo == "bot":
                 conv.registrar(self.conversa, "bot", dados.get("texto", ""), juntar=True)
             elif tipo == "bot_final":
@@ -1484,7 +1553,7 @@ def _sintetizar(frase: str, voz_id: str = None, velocidade: float = None):
 
 
 def _hermes_stream(mensagens: list, ao_ferramenta, cancelar: threading.Event,
-                   modelo: str = ""):
+                   modelo: str = "", sessao: str = "", sistema_extra: str = ""):
     """Streaming do API server do Hermes, lido direto em SSE.
 
     O cliente `openai` descarta eventos com nome próprio; o Hermes manda
@@ -1502,9 +1571,13 @@ def _hermes_stream(mensagens: list, ao_ferramenta, cancelar: threading.Event,
     corpo = {
         "model": config.HERMES_MODELO,
         "stream": True,
-        "messages": ([{"role": "system", "content": config.SISTEMA_HERMES}]
+        "messages": ([{"role": "system", "content": config.SISTEMA_HERMES + sistema_extra}]
                      + [m for m in mensagens if m["role"] != "system"]),
     }
+    if sessao:
+        # Com X-Hermes-Session-Id o Hermes usa o histórico DELE e ignora o
+        # que vai no corpo: basta o sistema e o pedido atual.
+        corpo["messages"] = [corpo["messages"][0], corpo["messages"][-1]]
     # Modelo escolhido na tela (Opus, Sonnet, GPT, DeepSeek por chave...). O
     # API server só honra um `model` diferente do virtual quando vem
     # `provider` junto, então os dois andam sempre em par; None = padrão do
@@ -1522,12 +1595,22 @@ def _hermes_stream(mensagens: list, ao_ferramenta, cancelar: threading.Event,
                                "aumente em Ajustes > Inteligência" % teto)
     cab = {"Authorization": "Bearer %s" % config.chave_hermes(),
            "Content-Type": "application/json"}
+    if sessao:
+        cab["X-Hermes-Session-Id"] = sessao
     evento = None
     with httpx.stream("POST", config.HERMES_URL + "/chat/completions",
                       json=corpo, headers=cab,
                       timeout=httpx.Timeout(300, connect=8)) as r:
         if r.status_code != 200:
             r.read()
+            if sessao and r.status_code in (400, 403, 404):
+                # Hermes sem suporte a sessão contínua (versão antiga ou sem
+                # chave): cai para o jeito antigo, com o histórico no corpo.
+                print("  [hermes] sessão contínua recusada (%s); mandando o histórico"
+                      % r.status_code, flush=True)
+                yield from _hermes_stream(mensagens, ao_ferramenta, cancelar, modelo,
+                                          sessao="", sistema_extra=sistema_extra)
+                return
             raise RuntimeError("Hermes HTTP %s: %s"
                                % (r.status_code, r.text[:150]))
         for linha in r.iter_lines():
@@ -2143,6 +2226,23 @@ async def _responder(s: Sessao, audio: np.ndarray | None = None,
         extra_mem = await asyncio.to_thread(memoria.para_rapida)
         if extra_mem:
             msgs_llm[0] = dict(msgs_llm[0], content=msgs_llm[0]["content"] + extra_mem)
+    import conversas as _cv
+    extra_proj = _cv.contexto_projeto(getattr(s, "projeto", ""))
+    if rota != "hermes" and extra_proj and msgs_llm and msgs_llm[0].get("role") == "system":
+        msgs_llm[0] = dict(msgs_llm[0], content=msgs_llm[0]["content"] + extra_proj)
+    # Especialista: continua a MESMA sessão do Hermes nesta conversa (ele guarda
+    # o histórico dele, com as ferramentas que usou, e o cache do provedor rende).
+    sessao_h = ""
+    if rota == "hermes" and config.HERMES_SESSAO_CONTINUA:
+        sessao_h, pendentes = _cv.sessao_hermes(s.conversa)
+        pre = _cv.preambulo_hermes(pendentes)
+        if pre and msgs_llm and msgs_llm[-1].get("role") == "user":
+            c0 = msgs_llm[-1]["content"]
+            if isinstance(c0, list):
+                c0 = [{"type": "text", "text": pre}] + c0
+            else:
+                c0 = pre + str(c0)
+            msgs_llm[-1] = dict(msgs_llm[-1], content=c0)
     if digitado and msgs_llm and msgs_llm[-1].get("role") == "user":
         msgs_llm[-1] = dict(msgs_llm[-1], content=str(msgs_llm[-1]["content"]) + config.NOTA_DIGITADO)
     falados = [0]
@@ -2168,7 +2268,8 @@ async def _responder(s: Sessao, audio: np.ndarray | None = None,
         def deltas():
             if rota == "hermes":
                 fonte = _hermes_stream(msgs_llm, ao_ferramenta, cancelar,
-                                       s.modelo_claude)
+                                       s.modelo_claude, sessao=sessao_h,
+                                       sistema_extra=extra_proj)
             else:
                 cli, modelo_r, extra_r = _cerebro_rapido()
                 fluxo = cli.chat.completions.create(
@@ -2297,6 +2398,8 @@ async def _responder(s: Sessao, audio: np.ndarray | None = None,
     final = re.sub(r"<think>.*?</think>", "", "".join(bruto), flags=re.S | re.I).strip()
     if completa and final and not cancelar.is_set():
         await s.enviar(tipo="bot_final", texto=final[:20000], rota=rota)
+        if sessao_h:
+            _cv.hermes_viu(s.conversa, sessao_h)
     if completa:
         s.historico.append({"role": "assistant", "content": completa})
         # Histórico curto: cada turno entra no prompt e atrasa o
@@ -2510,7 +2613,10 @@ async def ws_conversa(ws: WebSocket):
                     import conversas as conv
                     s.historico[:] = s.historico[:1]
                     s.conversa = conv.novo_id()
-                    await s.enviar(tipo="conversa", id=s.conversa, titulo="", mensagens=[])
+                    pid = str(cmd.get("projeto") or "")
+                    s.projeto = pid if conv.projeto(pid) else ""
+                    await s.enviar(tipo="conversa", id=s.conversa, titulo="", mensagens=[],
+                                   projeto=s.projeto)
                     await s.enviar(tipo="estado", estado="ouvindo")
 
                 elif acao == "conversa_abrir":
@@ -2520,9 +2626,10 @@ async def ws_conversa(ws: WebSocket):
                     c = conv.carregar(cmd.get("id") or "")
                     if c:
                         s.conversa = c["id"]
+                        s.projeto = c.get("projeto") or ""
                         s.historico[:] = conv.historico_llm(c, config.SISTEMA)
                         await s.enviar(tipo="conversa", id=c["id"], titulo=c.get("titulo", ""),
-                                       mensagens=c.get("mensagens", []))
+                                       mensagens=c.get("mensagens", []), projeto=s.projeto)
                     else:
                         await s.enviar(tipo="conversa", id=s.conversa, titulo="", mensagens=[])
 

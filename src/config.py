@@ -547,6 +547,10 @@ FALA_MAX_DIGITADO = 260   # caracteres falados, no máximo, de uma resposta digi
 # Instrução para o cérebro Hermes. O API server do Hermes SOMA esta
 # mensagem ao prompt dele (não substitui): ele mantém ferramentas,
 # memória e skills. Aqui só entra o que muda por ser voz.
+# Especialista continua a mesma sessão do Hermes em cada conversa da Luna
+# (cabeçalho X-Hermes-Session-Id). Desligar = volta a mandar o histórico.
+HERMES_SESSAO_CONTINUA = os.environ.get("LUNA_HERMES_SESSAO", "1") != "0"
+
 SISTEMA_HERMES = (
     "Nesta conversa seu nome é Luna: é assim que o usuário chama a "
     "assistente de voz, e é como você se apresenta. "

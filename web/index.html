@@ -638,9 +638,6 @@
     .topo .dir { gap: 2px; }
     .topo .icone { padding: 6px 7px; }
     .topo .so-largo { display: none; }
-    .doca { flex-wrap: wrap; padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); gap: 10px; }
-    .seg { order: -1; width: 100%; }
-    .seg button { flex: 1; justify-content: center; padding: 8px 6px; }
     .orbe-caixa { width: min(240px, 30vh); height: auto; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -652,14 +649,233 @@
 .nivel-mic span { display: block; height: 100%; width: 0; background: var(--ambar); transition: width .08s linear; }
 #microfone { flex: 1; min-width: 0; }
 #estadoRotulo.acordada { color: oklch(0.72 0.17 150); }
+
+/* ================================================================ layout novo (trilho + lateral + conversa no meio) */
+.app { grid-template-columns: 52px 290px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); overflow: hidden; }
+.app > * { min-height: 0; }
+#listaRecentes { overflow-y: auto; }
+.app.recolhido { grid-template-columns: 52px 0 minmax(0, 1fr); }
+.app.recolhido .lado { visibility: hidden; }
+.trilho { background: oklch(0.14 0.008 70); border-right: 1px solid var(--linha); display: flex; flex-direction: column;
+          align-items: center; gap: 4px; padding: 12px 0; min-height: 0; }
+.trilho .tri { width: 38px; height: 38px; border-radius: 10px; border: 0; background: none; color: var(--fraco);
+               display: grid; place-items: center; position: relative; transition: background .15s, color .15s; }
+.trilho .tri svg { width: 19px; height: 19px; }
+.trilho .tri:hover { color: var(--tinta); background: oklch(1 0 0 / .05); }
+.trilho .tri.on { color: var(--tinta); background: var(--painel); box-shadow: inset 2px 0 0 var(--ambar); }
+.trilho .tri .cont { position: absolute; bottom: 2px; right: 1px; font: 9.5px var(--mono); color: var(--fraco); }
+.trilho .tri .cont:empty, .trilho .tri .cont[data-zero] { display: none; }
+.trilho .tri .ponto { position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--ambar); }
+.trilho .tri .ponto[hidden] { display: none; }
+.tri-esp { flex: 1; }
+.lado { border-left: 0; border-right: 1px solid var(--linha); grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
+.lado-cab { display: flex; align-items: center; gap: 8px; padding: 16px 18px 10px; }
+.lado-cab b { flex: 1; font: 600 15px var(--titulo); }
+.lado-cab .fechar { display: none; }
+#listaRecentes { padding: 0 10px 14px; display: flex; flex-direction: column; }
+.nova-conv { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 10px; border: 0;
+             background: var(--painel); color: var(--tinta); font-size: 13.5px; text-align: left; }
+.nova-conv:hover { background: oklch(0.26 0.012 70); }
+.nova-conv svg { width: 16px; height: 16px; }
+#buscaConv { margin: 10px 0 2px; background: none; border: 1px solid var(--linha); border-radius: 9px; padding: 7px 10px;
+             font-size: 13px; color: var(--tinta); outline: 0; }
+#buscaConv:focus { border-color: var(--ambar-esc); }
+.sec-lado { font-size: 12px; color: var(--fraco); padding: 14px 10px 4px; }
+#listaConversas { overflow: visible; padding: 0; }
+#listaConversas .conv-item { padding: 7px 10px; border-radius: 8px; }
+#listaConversas .conv-item .t { font-size: 13.5px; color: var(--suave); }
+#listaConversas .conv-item:hover .t, #listaConversas .conv-item.atual .t { color: var(--tinta); }
+#listaConversas .conv-item .q { display: none; }
+#listaConversas .conv-dia { padding: 12px 10px 3px; }
+.palco { grid-template-rows: auto minmax(0, 1fr) auto; }
+.topo .titulo-conv { color: var(--tinta); font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                     min-width: 0; max-width: 40%; }
+#btnAtividade { display: none; }
+/* centro: vazio = globo grande no meio; com conversa = globo pequeno em cima e as mensagens */
+.centro { display: grid; grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: 0; padding: 0; min-height: 0; align-items: stretch; }
+.palco.vazio .cabeca { align-self: center; }
+.cabeca { display: flex; align-items: center; gap: 16px; width: min(780px, 100%); margin: 0 auto; padding: 4px 24px 8px; }
+.saudacao { display: none; font: 500 27px/1.2 var(--titulo); margin: 6px 0 4px; }
+#listaConv { overflow-y: auto; padding: 8px 24px 24px; display: block; }
+#mensagens { display: flex; flex-direction: column; gap: 14px; width: min(760px, 100%); margin: 0 auto; }
+.msg { font-size: 15px; max-width: 86%; }
+.msg.bot { max-width: 100%; }
+.palco:not(.vazio) .orbe-caixa { width: 58px; }
+.palco:not(.vazio) .legenda { flex: 1; max-width: none; }
+.palco:not(.vazio) #estadoRotulo { margin-bottom: 2px; }
+.palco:not(.vazio) #falaAtual { font: 400 14px/1.45 var(--texto); color: var(--suave); height: calc(1.45em * 2);
+                                -webkit-mask-image: none; mask-image: none; }
+.palco:not(.vazio) #falaAtual:empty::before { content: ""; }
+.palco:not(.vazio) #voceDisse, .palco:not(.vazio) .experimente { display: none; }
+.palco.vazio .centro { grid-template-rows: minmax(0, 1fr) 0; }
+.palco.vazio .cabeca { flex-direction: column; justify-content: center; text-align: center; gap: 6px; padding-bottom: 20px; }
+.palco.vazio .orbe-caixa { width: min(250px, 30vh); }
+.palco.vazio .saudacao { display: block; }
+.palco.vazio .legenda { max-width: 620px; }
+.palco.vazio #falaAtual { font-size: 18px; height: calc(1.42em * 3); color: var(--suave); }
+.palco.vazio #falaAtual:empty { height: auto; }
+.palco.vazio .experimente { justify-content: center; }
+.palco.vazio .experimente small { display: none; }
+.palco.vazio #listaConv { display: none; }
+.doca { width: min(820px, 100%); margin: 0 auto; border-top: 0; background: none; padding-top: 6px; }
+.lado .abas { display: none; }
+@media (max-width: 1000px) {
+  .app, .app.recolhido { grid-template-columns: 52px minmax(0, 1fr); }
+  .app.recolhido .lado { visibility: visible; }
+  .lado { position: fixed; left: 52px; top: 0; bottom: 0; right: auto; height: auto; width: min(320px, 86vw);
+          border-radius: 0; border-top: 0; transform: translateX(-120%); box-shadow: 20px 0 50px oklch(0 0 0 / .45); }
+  .lado.aberto { transform: none; }
+  .lado-cab .fechar { display: block; }
+  .centro { grid-template-columns: 1fr; text-align: left; justify-items: stretch; align-content: stretch; }
+  .palco.vazio .orbe-caixa { width: min(220px, 28vh); }
+  .palco:not(.vazio) .orbe-caixa { width: 50px; }
+}
+@media (max-width: 640px) {
+  .trilho { display: none; }
+  .app, .app.recolhido { grid-template-columns: minmax(0, 1fr); }
+  .lado { left: 0; }
+  #btnAtividade { display: inline-flex; }
+  .topo .titulo-conv { max-width: 55%; }
+}
+
+/* ================================================================ barra do chat (um cartão; modos num seletor) */
+.doca { display: block; padding: 6px 24px calc(16px + env(safe-area-inset-bottom)); }
+form.campo { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-height: 0;
+             border-radius: 18px; padding: 10px 10px 8px 12px; background: var(--painel); }
+form.campo textarea { height: 40px; max-height: 160px; padding: 8px 4px 4px; font-size: 14.5px; }
+.barra-comp { display: flex; align-items: center; gap: 4px; }
+.barra-comp .esp { flex: 1; }
+#btnAnexar { width: 34px; height: 34px; border-radius: 50%; }
+.modos { position: relative; }
+#btnModo { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 9px;
+           border: 0; background: none; color: var(--suave); font-size: 13px; }
+#btnModo:hover, #btnModo[aria-expanded="true"] { background: oklch(1 0 0 / .06); color: var(--tinta); }
+#btnModo svg { width: 15px; height: 15px; }
+#btnModo .seta { width: 13px; height: 13px; opacity: .6; }
+#modoIcone { display: inline-flex; color: var(--ambar); }
+#modoIcone.hermes { color: oklch(0.72 0.16 55); }
+#modoIcone.live { color: var(--ouvir); }
+.modos-menu { position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 30; width: 300px;
+              display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 14px;
+              background: oklch(0.21 0.01 70); border: 1px solid var(--linha); box-shadow: 0 16px 40px oklch(0 0 0 / .5); }
+.modos-menu[hidden] { display: none; }
+.modos-menu button { display: flex; align-items: flex-start; gap: 11px; width: 100%; padding: 9px 10px;
+                     text-align: left; border-radius: 10px; font-size: 13.5px; color: var(--tinta); }
+.modos-menu button svg { margin-top: 2px; }
+.modos-menu .nome { display: flex; flex-direction: column; gap: 2px; }
+.modos-menu .nome small { font-size: 12px; line-height: 1.35; color: var(--fraco); }
+.modos-menu button[aria-pressed="true"] { background: oklch(1 0 0 / .06); box-shadow: none; }
+.modos-menu button[data-modo="hermes"][aria-pressed="true"] { background: oklch(0.30 0.05 60 / .6); box-shadow: none; }
+.modos-menu button[aria-pressed="true"]::after { content: "✓"; margin-left: auto; color: var(--ambar); }
+.modos-menu button:disabled .nome small::after { content: " Indisponível agora."; color: var(--erro); }
+#btnParar { height: 32px; border-radius: 16px; padding: 0 12px; font-size: 13px; }
+#btnParar svg { width: 13px; height: 13px; }
+#btnMic { width: 34px; height: 34px; box-shadow: none; background: none; }
+#btnMic svg { width: 18px; height: 18px; }
+#btnMic:hover { background: oklch(1 0 0 / .06); box-shadow: none; }
+#btnMic.on { box-shadow: 0 0 0 3px oklch(0.82 0.15 75 / .16); }
+#btnMic.on::after { inset: -4px; }
+#btnEnviar { width: 34px; height: 34px; border-radius: 50%; background: var(--ambar); color: oklch(0.2 0.02 70); }
+#btnEnviar:hover { filter: brightness(1.08); background: var(--ambar); }
+#btnEnviar svg { width: 17px; height: 17px; }
+@media (max-width: 640px) {
+  .doca { padding: 6px 12px calc(12px + env(safe-area-inset-bottom)); }
+  .modos-menu { width: min(300px, calc(100vw - 40px)); }
+}
+
+/* ================================================================ projetos */
+.sec-proj { display: flex; align-items: center; }
+.sec-proj .mais { margin-left: auto; width: 22px; height: 22px; border-radius: 6px; border: 0; background: none;
+                  color: var(--fraco); font-size: 17px; line-height: 1; display: grid; place-items: center; }
+.sec-proj .mais:hover { color: var(--tinta); background: oklch(1 0 0 / .07); }
+.proj { border-radius: 8px; }
+.proj-cab { display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 10px; border-radius: 8px;
+            color: var(--suave); font-size: 13.5px; cursor: pointer; }
+.proj-cab:hover { background: var(--painel); color: var(--tinta); }
+.proj-cab svg { width: 16px; height: 16px; flex: none; }
+.proj-cab .n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.proj-cab .acoes-p { display: none; gap: 2px; }
+.proj-cab:hover .acoes-p, .proj.aberto .proj-cab .acoes-p { display: flex; }
+.proj-cab .acoes-p button { width: 24px; height: 24px; border: 0; border-radius: 6px; background: none;
+                            color: var(--fraco); display: grid; place-items: center; font-size: 15px; }
+.proj-cab .acoes-p button:hover { color: var(--tinta); background: oklch(1 0 0 / .08); }
+.proj-cab .acoes-p svg { width: 14px; height: 14px; }
+.proj.aberto > .proj-cab svg.pasta { color: var(--ambar); }
+.proj.atual > .proj-cab { color: var(--tinta); }
+.proj-convs { padding-left: 16px; }
+.proj-convs .conv-item { padding: 6px 10px; }
+.proj-convs .conv-item .q { display: none; }
+.proj-convs .conv-item .t { font-size: 13.5px; color: var(--suave); }
+.proj-convs .conv-item.atual .t, .proj-convs .conv-item:hover .t { color: var(--tinta); }
+.proj-convs .vazio { padding: 4px 10px 8px; font-size: 12.5px; }
+.proj.soltar > .proj-cab { background: oklch(0.82 0.15 75 / .12); box-shadow: inset 0 0 0 1px var(--ambar-esc); }
+.conv-item .mover { display: none; }
+.conv-item:hover .mover { display: inline-flex; }
+.titulo-conv .proj-nome { color: var(--fraco); }
+.titulo-conv .proj-nome::after { content: " / "; }
+#dlgProjeto { width: min(560px, calc(100vw - 32px)); }
+#dlgProjeto .dlg { gap: 12px; }
+#dlgProjeto input, #dlgProjeto textarea { background: var(--fundo); border: 1px solid var(--linha); border-radius: 9px;
+    padding: 9px 10px; font: 14px/1.45 var(--texto); color: var(--tinta); outline: 0; resize: vertical; }
+#dlgProjeto input:focus, #dlgProjeto textarea:focus { border-color: var(--ambar-esc); }
+#dlgProjeto .opc { color: var(--fraco); font-weight: 400; }
+#dlgProjeto .rot-resumo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#dlgProjeto .rot-resumo .mini-btn { margin-left: auto; }
+#dlgProjeto .acoes { align-items: center; }
+#dlgProjeto .acoes .esp { flex: 1; }
+#dlgProjeto .perigo:hover { color: var(--erro); border-color: var(--erro); }
+.proj-erro { margin: 0; color: var(--erro); font-size: 13px; }
+.botao.prim { background: var(--ambar); color: oklch(0.2 0.02 70); border-color: var(--ambar); }
+.botao.prim:hover { filter: brightness(1.07); color: oklch(0.2 0.02 70); }
+.menu-mover { position: fixed; z-index: 60; min-width: 200px; padding: 6px; border-radius: 12px;
+              background: oklch(0.21 0.01 70); border: 1px solid var(--linha); box-shadow: 0 16px 40px oklch(0 0 0 / .5); }
+.menu-mover .tit { font-size: 11.5px; color: var(--fraco); padding: 4px 8px 6px; }
+.menu-mover button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; border: 0; border-radius: 8px;
+                     background: none; color: var(--tinta); font-size: 13px; text-align: left; }
+.menu-mover button:hover { background: oklch(1 0 0 / .06); }
+.menu-mover button svg { width: 15px; height: 15px; color: var(--fraco); }
+.menu-mover button.atual::after { content: "✓"; margin-left: auto; color: var(--ambar); }
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app" id="app">
 
-  <main class="palco">
+  <nav class="trilho" aria-label="Seções">
+    <button type="button" class="tri" data-aba="conv" title="Conversas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H8l-5 3 1.2-4.2A8 8 0 1 1 21 12z"/></svg></button>
+    <button type="button" class="tri" data-aba="hoje" title="Hoje (tarefas e agenda)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+    <button type="button" class="tri" data-aba="ativ" title="Atividade (o que a especialista está fazendo)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg><span class="cont" id="contAtiv2"></span></button>
+    <button type="button" class="tri" data-aba="apr" title="Aprendizado (o que a Luna lembra)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg><span class="ponto" id="pontoApr" hidden></span></button>
+    <span class="tri-esp"></span>
+    <button type="button" class="tri" id="btnMini" title="Mini: só o globo, sempre por cima (2 cliques nele volta)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></button>
+    <button type="button" class="tri" id="btnAjustes" title="Ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </nav>
+
+  <aside class="lado" id="lado">
+    <div class="lado-cab"><b id="ladoTitulo">Luna</b>
+      <button class="icone fechar" id="btnFecharLado" title="Fechar">✕</button></div>
+    <div class="lista" id="listaRecentes">
+      <button type="button" class="nova-conv" id="btnNovaConv" title="Começar uma conversa nova">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Nova conversa</button>
+      <input type="search" id="buscaConv" placeholder="Buscar conversas" aria-label="Buscar conversas" autocomplete="off">
+      <div class="sec-lado sec-proj">Projetos
+        <button type="button" class="mais" id="btnNovoProjeto" title="Novo projeto" aria-label="Novo projeto">+</button></div>
+      <div id="listaProjetos"></div>
+      <div class="sec-lado">Recentes</div>
+      <div id="listaConversas"></div>
+    </div>
+    <div class="lista" id="listaAtiv" hidden>
+      <div class="vazio" id="vazioAtiv">Quando o Claude trabalha (sozinho no Auto ou sempre no Expert), cada
+        ferramenta aparece aqui enquanto roda — comandos, arquivos, buscas.</div>
+    </div>
+    <div class="lista" id="listaHoje" hidden></div>
+    <div class="lista" id="listaApr" hidden></div>
+    <footer id="rodape">—</footer>
+  </aside>
+
+  <main class="palco vazio" id="palco">
     <div class="topo">
-      <b>Luna</b>
+      <button class="icone" id="btnAtividade" aria-controls="lado" title="Menu">☰<span id="contAtiv" hidden>0</span></button>
+      <span class="titulo-conv" id="tituloConv">Nova conversa</span>
       <div class="status" role="status" aria-label="Status">
         <span class="st-item" id="pillConexao" title="Servidor da Luna (voz, transcrição)">servidor</span>
         <span class="st-item" id="pillHermes" title="IA especialista (via Hermes): modo Expert e tarefas no PC">Especialista</span>
@@ -670,20 +886,19 @@
       <div class="dir">
         <span class="so-largo" id="rotuloVoz" style="font-size:12.5px"></span>
         <button class="icone" id="btnAtualizar" hidden title="Há atualização pendente">Atualização <span class="ponto-att" aria-hidden="true"></span></button>
-        <button class="icone" id="btnAtividade" aria-controls="lado">Atividade <span id="contAtiv" class="kbd">0</span></button>
-        <button class="icone" id="btnMini" title="Só o globo, sempre por cima (2 cliques nele volta)">Mini</button>
-        <button class="icone" id="btnAjustes" title="Voz, velocidade e atalhos">Ajustes</button>
       </div>
     </div>
 
     <div class="centro">
-      <div class="orbe-caixa"><canvas id="orbe" aria-hidden="true"></canvas></div>
-      <div class="legenda" aria-live="polite">
-        <div id="estadoRotulo">desligado</div>
-        <p id="falaAtual" data-vazio="Ligue o microfone e fale, ou digite um comando abaixo."></p>
-        <ol id="fila" hidden></ol>
-        <div id="voceDisse"></div>
-        <div class="experimente" id="experimente" aria-label="Exemplos para experimentar">
+      <div class="cabeca">
+        <div class="orbe-caixa"><canvas id="orbe" aria-hidden="true"></canvas></div>
+        <div class="legenda" aria-live="polite">
+          <div id="estadoRotulo">desligado</div>
+          <h1 class="saudacao">Como posso ajudar?</h1>
+          <p id="falaAtual" data-vazio="Diga “Luna” ou digite abaixo."></p>
+          <ol id="fila" hidden></ol>
+          <div id="voceDisse"></div>
+          <div class="experimente" id="experimente" aria-label="Exemplos para experimentar">
           <small>Experimente dizer ou clicar:</small>
           <button type="button" data-pedido="Luna, que horas são?">Que horas são?</button>
           <button type="button" data-pedido="Luna, como está o tempo?">Como está o tempo?</button>
@@ -691,85 +906,61 @@
           <button type="button" data-pedido="Luna, quanto é 15% de 200?">15% de 200</button>
           <button type="button" data-pedido="Luna, o que você sabe fazer?">O que você sabe fazer?</button>
         </div>
+        </div>
       </div>
+      <div class="lista" id="listaConv"><div id="mensagens"></div></div>
     </div>
 
     <div class="doca">
-      <button id="btnMic" title="Ligar microfone (Espaço)" aria-pressed="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
-      </button>
-      <div class="seg" role="group" aria-label="Cérebro">
-        <button data-modo="auto" aria-pressed="true" title="Auto (padrão): comandos prontos e conversa rápida na hora; tarefas no PC e raciocínio vão sozinhos para o Claude">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 3l1.9 4.3L18 9l-4.1 1.7L12 15l-1.9-4.3L6 9l4.1-1.7z"/><path d="M18.5 15.5l.8 1.8 1.7.7-1.7.7-.8 1.8-.8-1.8-1.7-.7 1.7-.7z"/></svg>
-          <span>Auto</span>
-        </button>
-        <button data-modo="hermes" aria-pressed="false" title="Expert: tudo direto para a IA especialista (escolha em Ajustes → Inteligência), sem atalhos nem IA rápida. Mais lento, mais capaz.">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
-          <span>Expert</span>
-        </button>
-        <button data-modo="live" aria-pressed="false" title="Gemini áudio nativo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M4 10v4M8 6.5v11M12 3.5v17M16 6.5v11M20 10v4"/></svg>
-          <span>Live</span>
-        </button>
-      </div>
       <form class="campo" id="formTexto" autocomplete="off">
-        <svg class="lupa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M8 9h8M8 13h5"/><path d="M21 12a8 8 0 0 1-8 8H8l-5 3 1.2-4.2A8 8 0 1 1 21 12z"/></svg>
         <div id="anexos" aria-label="Imagens anexadas"></div>
-        <button type="button" id="btnAnexar" title="Anexar imagem, PDF ou texto (ou cole com Ctrl+V / arraste para cá)" aria-label="Anexar arquivo">
+        <textarea id="entrada" rows="1" placeholder="Pergunte ou peça algo à Luna…" aria-label="Mensagem"></textarea>
+        <div class="barra-comp">
+          <button type="button" id="btnAnexar" title="Anexar imagem, PDF ou texto (ou cole com Ctrl+V / arraste para cá)" aria-label="Anexar arquivo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/></svg>
         </button>
-        <input type="file" id="arquivo" accept="image/*,.pdf,.txt,.md,.csv,.json,.py,.js,.ts,.html,.css,.xml,.yaml,.yml,.log,.ini,.toml,.sql,.ps1,.bat" multiple hidden>
-        <textarea id="entrada" rows="1" placeholder="Pergunte, peça algo ou cole uma imagem…" aria-label="Mensagem"></textarea>
-        <span class="kbd">/</span>
-        <button type="submit" id="btnEnviar" title="Enviar" aria-label="Enviar">
+          <input type="file" id="arquivo" accept="image/*,.pdf,.txt,.md,.csv,.json,.py,.js,.ts,.html,.css,.xml,.yaml,.yml,.log,.ini,.toml,.sql,.ps1,.bat" multiple hidden>
+          <div class="modos">
+            <button type="button" id="btnModo" aria-haspopup="menu" aria-expanded="false" title="Modo da Luna">
+              <span id="modoIcone"></span><span id="modoNome">Auto</span>
+              <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="seg modos-menu" id="modosMenu" role="menu" aria-label="Modo" hidden>
+        <button type="button" role="menuitemradio" data-modo="auto" aria-pressed="true" title="Auto (padrão): comandos prontos e conversa rápida na hora; tarefas no PC e raciocínio vão sozinhos para o Claude">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3l1.9 4.3L18 9l-4.1 1.7L12 15l-1.9-4.3L6 9l4.1-1.7z"/><path d="M18.5 15.5l.8 1.8 1.7.7-1.7.7-.8 1.8-.8-1.8-1.7-.7 1.7-.7z"/></svg>
+          <span class="nome">Auto<small>Rápida no simples; manda para a especialista quando precisa.</small></span>
+        </button>
+        <button type="button" role="menuitemradio" data-modo="hermes" aria-pressed="false" title="Expert: tudo direto para a IA especialista (escolha em Ajustes → Inteligência), sem atalhos nem IA rápida. Mais lento, mais capaz.">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          <span class="nome">Expert<small>Tudo direto para a IA especialista. Mais lenta, mais capaz.</small></span>
+        </button>
+        <button type="button" role="menuitemradio" data-modo="live" aria-pressed="false" title="Gemini áudio nativo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 10v4M8 6.5v11M12 3.5v17M16 6.5v11M20 10v4"/></svg>
+          <span class="nome">Live<small>Conversa por áudio nativo do Gemini (precisa do microfone).</small></span>
+        </button>
+      </div>
+          </div>
+          <span class="esp"></span>
+          <button type="button" id="btnParar" title="Interromper (Esc)">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>
+            Parar
+          </button>
+          <button type="button" id="btnMic" title="Ligar microfone (Espaço)" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      </button>
+          <button type="submit" id="btnEnviar" title="Enviar" aria-label="Enviar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M4 12h14M13 6l6 6-6 6"/></svg>
         </button>
+        </div>
       </form>
-      <button id="btnParar" title="Interromper (Esc)">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>
-        Parar <span class="kbd">Esc</span>
-      </button>
     </div>
   </main>
-
-  <aside class="lado" id="lado">
-    <div class="abas" role="tablist">
-      <button role="tab" aria-selected="true" data-aba="conv">Conversa</button>
-      <button role="tab" aria-selected="false" data-aba="hoje">Hoje</button>
-      <button role="tab" aria-selected="false" data-aba="ativ">Atividade <span class="cont" id="contAtiv2">0</span></button>
-      <button role="tab" aria-selected="false" data-aba="apr">Aprendizado<span class="ponto" id="pontoApr" hidden></span></button>
-      <button class="icone fechar" id="btnFecharLado">Fechar</button>
-    </div>
-    <div class="lista" id="listaAtiv" hidden>
-      <div class="vazio" id="vazioAtiv">Quando o Claude trabalha (sozinho no Auto ou sempre no Expert), cada
-        ferramenta aparece aqui enquanto roda — comandos, arquivos, buscas.</div>
-    </div>
-    <div class="lista" id="listaConv">
-      <div class="conv-topo">
-        <span class="titulo" id="tituloConv">Nova conversa</span>
-        <button class="mini-btn" id="btnHistorico" title="Conversas anteriores">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>Histórico</button>
-        <button class="mini-btn" id="btnNovaConv" title="Começar uma conversa nova">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nova</button>
-      </div>
-      <div id="mensagens" style="display:contents"></div>
-    </div>
-    <div class="lista" id="listaHoje" hidden></div>
-    <div class="lista" id="listaApr" hidden></div>
-    <section id="painelConversas" hidden aria-label="Conversas anteriores">
-      <header><b>Conversas</b>
-        <button class="mini-btn" id="btnFecharHist">Fechar</button></header>
-      <div id="listaConversas"></div>
-    </section>
-    <footer id="rodape">—</footer>
-  </aside>
 </div>
 
 <dialog id="dlgAjustes" aria-labelledby="ajTitulo">
@@ -1063,6 +1254,29 @@ API_SERVER_KEY=&lt;invente uma senha longa&gt;</pre></li>
 </dialog>
 
 <dialog id="zoom"><img alt=""></dialog>
+<dialog id="dlgProjeto" aria-labelledby="projTitulo">
+  <form class="dlg" id="formProjeto" method="dialog">
+    <h3 id="projTitulo">Novo projeto</h3>
+    <label>Nome
+      <input id="projNome" maxlength="60" required placeholder="Ex.: Faculdade, Site da loja, Mudança"></label>
+    <label>Instruções
+      <textarea id="projInstr" rows="2" maxlength="4000"
+        placeholder="Como a Luna deve agir neste projeto. Ex.: sou aluno de Direito, 3º semestre; responda com base na lei brasileira."></textarea></label>
+    <label><span>Pasta no computador <span class="opc">(opcional)</span></span>
+      <input id="projPasta" placeholder="Ex.: D:\Projetos\site-loja"></label>
+    <label><span class="rot-resumo">O que já foi feito <span class="opc">— entra em toda conversa do projeto</span>
+        <button type="button" class="mini-btn" id="projSugerir" title="A Luna lê as conversas do projeto e sugere; você revisa antes de salvar">Sugerir pela Luna</button></span>
+      <textarea id="projResumo" rows="5" maxlength="4000"
+        placeholder="- decisões tomadas&#10;- o que está pendente"></textarea></label>
+    <p class="proj-erro" id="projErro" hidden></p>
+    <div class="acoes">
+      <button type="button" class="mini-btn perigo" id="projApagar" hidden>Apagar projeto</button>
+      <span class="esp"></span>
+      <button type="button" class="mini-btn" onclick="this.closest('dialog').close()">Cancelar</button>
+      <button type="submit" class="botao prim" id="projSalvar">Salvar</button>
+    </div>
+  </form>
+</dialog>
 <dialog id="dlgMic" aria-labelledby="micTitulo">
   <div class="dlg mic-dlg">
     <div class="mic-ic" aria-hidden="true">
@@ -1554,6 +1768,7 @@ function tratar(m) {
         s1.textContent = m.corrigido ? 'Você (corrigido): ' : 'Você: ';
         $voce.append(s1, document.createTextNode('“' + m.texto + '”'));
       }
+      if (!$msgs.children.length) carregarRecentesLogo();      // conversa nova ganha título
       if (m.corrigido && $msgs.lastElementChild?.dataset.quem === 'voce') {
         $msgs.lastElementChild.querySelector('.txt').textContent = m.texto;
       } else {
@@ -1587,7 +1802,10 @@ function tratar(m) {
     }
     case 'conversa':
       conversaId = m.id; localStorage.setItem('conversa', m.id);
+      projetoAtual = m.projeto || '';
       desenharConversa(m);
+      tituloComProjeto();
+      carregarRecentesLogo();
       break;
     case 'ferramenta': ferramenta(m); break;
     case 'chamada':
@@ -1855,7 +2073,7 @@ function ferramenta(m) {
     grupoAtual.appendChild(el);
     ferramentas.set(m.id || Math.random(), { el, tempo, t0: performance.now() });
     totalFerramentas++;
-    $('contAtiv').textContent = totalFerramentas; $('contAtiv2').textContent = totalFerramentas;
+    $('contAtiv').textContent = totalFerramentas; $('contAtiv2').textContent = totalFerramentas || '';
     mudarEstado('executando', 'executando · ' + (m.ferramenta || 'ferramenta'));
   } else {
     const f = ferramentas.get(m.id);
@@ -1900,7 +2118,7 @@ function conversa(quem, texto, fotos, historico, arqs) {
     }
     const t = document.createElement('div'); t.className = 'txt'; t.textContent = texto;
     d.appendChild(t); $msgs.appendChild(d);
-    if (quem === 'voce' && $('tituloConv').textContent === 'Nova conversa') $('tituloConv').textContent = texto.slice(0, 70);
+    if (quem === 'voce' && !$('tituloConv').dataset.titulo) { $('tituloConv').dataset.titulo = texto.slice(0, 70); tituloComProjeto(); }
   }
   if (!historico) $listaConv.scrollTop = $listaConv.scrollHeight;
   return $msgs.lastElementChild;
@@ -1976,9 +2194,7 @@ function mostrarProposta(m) {
   $msgs.appendChild(d); $listaConv.scrollTop = $listaConv.scrollHeight;
   propostasPendentes.set(m.id, m);
   $('pontoApr').hidden = false;
-  abrirAba('conv');
-  $lado.classList.add('aberto');
-  $fala.textContent = 'A Luna quer aprender algo. Aprove ou recuse no cartão ao lado.';
+  $fala.textContent = 'A Luna quer aprender algo. Aprove ou recuse no cartão da conversa.';
 }
 
 // Ao abrir a tela: mostra as propostas que chegaram enquanto estava fechada.
@@ -2110,6 +2326,7 @@ function acoesDaResposta(d) {
 function desenharConversa(c) {
   $msgs.replaceChildren();
   $('tituloConv').textContent = c.titulo || 'Nova conversa';
+  $('tituloConv').dataset.titulo = c.titulo || '';
   for (const m of c.mensagens || []) {
     rotaAtual = m.rota || 'rapido';
     const d = conversa(m.quem, m.texto, m.fotos, true, m.arquivos);
@@ -2132,19 +2349,41 @@ function quando(ts) {
   if (d.toDateString() === ontem.toDateString()) return 'Ontem';
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
-async function abrirHistorico() {
-  const $l = $('listaConversas');
-  $l.innerHTML = '<div class="vazio">Carregando…</div>';
-  $('painelConversas').hidden = false;
+let conversasCache = [], projetosCache = [], timerRecentes = 0, projetoAtual = '';
+const projAbertos = new Set(JSON.parse(localStorage.getItem('projAbertos') || '[]'));
+const PASTA_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+function carregarRecentesLogo() { clearTimeout(timerRecentes); timerRecentes = setTimeout(carregarRecentes, 1200); }
+async function carregarRecentes() {
   try {
-    const j = await (await fetch('/conversas')).json();
-    $l.replaceChildren();
-    if (!j.conversas.length) { $l.innerHTML = '<div class="vazio">Nenhuma conversa salva ainda.</div>'; return; }
+    const [c, p] = await Promise.all([fetch('/conversas').then(r => r.json()), fetch('/projetos').then(r => r.json())]);
+    conversasCache = c.conversas || []; projetosCache = p.projetos || [];
+  } catch (e) { conversasCache = []; }
+  desenharRecentes();
+}
+function desenharRecentes() {
+  const $l = $('listaConversas');
+  const busca = ($('buscaConv').value || '').trim().toLowerCase();
+  const casa = c => !busca || (c.titulo || '').toLowerCase().includes(busca);
+  const existe = new Set(projetosCache.map(p => p.id));
+  desenharProjetos(busca, casa);
+  const lista = conversasCache.filter(c => casa(c) && !existe.has(c.projeto));
+  $l.replaceChildren();
+  if (!lista.length) { $l.innerHTML = '<div class="vazio">' + (busca ? 'Nada encontrado.' : 'Nenhuma conversa solta.') + '</div>'; return; }
+  {
     let dia = '';
-    for (const c of j.conversas) {
+    for (const c of lista) {
       const q = quando(c.atualizada);
       if (q !== dia) { dia = q; const h = document.createElement('div'); h.className = 'conv-dia'; h.textContent = q; $l.appendChild(h); }
+      $l.appendChild(itemConversa(c));
+    }
+  }
+}
+function itemConversa(c) {
+  {
+    {
       const it = document.createElement('div'); it.className = 'conv-item' + (c.id === conversaId ? ' atual' : '');
+      it.draggable = true;
+      it.ondragstart = (e) => { e.dataTransfer.setData('text/luna-conversa', c.id); e.dataTransfer.effectAllowed = 'move'; };
       it.tabIndex = 0;
       const info = document.createElement('div');
       const t = document.createElement('div'); t.className = 't'; t.textContent = c.titulo;
@@ -2155,19 +2394,154 @@ async function abrirHistorico() {
         if (!confirm('Apagar “' + c.titulo + '”?')) return;
         await fetch('/conversas/' + c.id, { method: 'DELETE' });
         if (c.id === conversaId) enviar({ tipo: 'conversa_nova' });
-        abrirHistorico();
+        carregarRecentes();
       });
       ap.classList.add('apagar');
-      it.append(info, ap);
-      it.onclick = () => { enviar({ tipo: 'conversa_abrir', id: c.id }); $('painelConversas').hidden = true; };
+      const mv = botaoMini('Mover para projeto', PASTA_SVG.replace(/^<svg[^>]*>|<\/svg>$/g, ''), () => menuMover(c, mv));
+      mv.classList.add('mover');
+      const acoes = document.createElement('div'); acoes.style.display = 'flex'; acoes.append(mv, ap);
+      it.append(info, acoes);
+      it.title = c.titulo;
+      it.onclick = (ev) => {
+        if (ev.target.closest('.apagar, .mover')) return;
+        enviar({ tipo: 'conversa_abrir', id: c.id }); $lado.classList.remove('aberto');
+      };
       it.onkeydown = (e) => { if (e.key === 'Enter') it.click(); };
-      $l.appendChild(it);
+      return it;
     }
-  } catch (e) { $l.innerHTML = '<div class="vazio">Não consegui carregar as conversas.</div>'; }
+  }
 }
-$('btnHistorico').onclick = abrirHistorico;
-$('btnFecharHist').onclick = () => { $('painelConversas').hidden = true; };
-$('btnNovaConv').onclick = () => { enviar({ tipo: 'conversa_nova' }); $fala.textContent = ''; $voce.textContent = ''; };
+function desenharProjetos(busca, casa) {
+  const $p = $('listaProjetos');
+  $p.replaceChildren();
+  if (!projetosCache.length) {
+    $p.innerHTML = '<div class="vazio" style="padding:2px 10px 4px;font-size:12.5px">Agrupe conversas por assunto; cada projeto tem instruções e um resumo que a Luna usa.</div>';
+    return;
+  }
+  for (const p of [...projetosCache].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))) {
+    const convs = conversasCache.filter(c => c.projeto === p.id && casa(c));
+    if (busca && !convs.length && !p.nome.toLowerCase().includes(busca)) continue;
+    const aberto = projAbertos.has(p.id) || (busca && convs.length) || p.id === projetoAtual;
+    const box = el('div', 'proj' + (aberto ? ' aberto' : '') + (p.id === projetoAtual ? ' atual' : ''));
+    const cab = el('div', 'proj-cab');
+    cab.innerHTML = PASTA_SVG.replace('<svg ', '<svg class="pasta" ');
+    cab.append(el('span', 'n', p.nome));
+    const ac = el('span', 'acoes-p');
+    const bNova = el('button', '', '+'); bNova.type = 'button'; bNova.title = 'Nova conversa neste projeto';
+    bNova.onclick = (e) => { e.stopPropagation(); novaConversa(p.id); };
+    const bEd = el('button'); bEd.type = 'button'; bEd.title = 'Instruções e resumo do projeto';
+    bEd.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>';
+    bEd.onclick = (e) => { e.stopPropagation(); abrirProjeto(p); };
+    ac.append(bNova, bEd); cab.append(ac);
+    cab.title = p.nome + (p.instrucoes ? '\n' + p.instrucoes.slice(0, 160) : '');
+    cab.onclick = () => {
+      if (projAbertos.has(p.id)) projAbertos.delete(p.id); else projAbertos.add(p.id);
+      localStorage.setItem('projAbertos', JSON.stringify([...projAbertos])); desenharRecentes();
+    };
+    // Arrastar uma conversa para cima do projeto também move.
+    cab.ondragover = (e) => { if ([...e.dataTransfer.types].includes('text/luna-conversa')) { e.preventDefault(); box.classList.add('soltar'); } };
+    cab.ondragleave = () => box.classList.remove('soltar');
+    cab.ondrop = (e) => { e.preventDefault(); box.classList.remove('soltar'); moverConversa(e.dataTransfer.getData('text/luna-conversa'), p.id); };
+    box.append(cab);
+    if (aberto) {
+      const lista = el('div', 'proj-convs');
+      if (!convs.length) lista.append(el('div', 'vazio', 'Nenhuma conversa ainda.'));
+      for (const c of convs) lista.append(itemConversa(c));
+      box.append(lista);
+    }
+    $p.append(box);
+  }
+}
+async function moverConversa(cid, pid) {
+  if (!cid) return;
+  const r = await fetch('/conversas/' + cid + '/mover', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                         body: JSON.stringify({ projeto: pid }) });
+  if (!(await r.json()).ok) { erro('Não consegui mover (a conversa precisa ter pelo menos uma mensagem).'); return; }
+  if (cid === conversaId) { projetoAtual = pid; tituloComProjeto(); }
+  if (pid) { projAbertos.add(pid); localStorage.setItem('projAbertos', JSON.stringify([...projAbertos])); }
+  carregarRecentes();
+}
+function menuMover(c, ancora) {
+  document.querySelector('.menu-mover')?.remove();
+  const m = el('div', 'menu-mover'); m.append(el('div', 'tit', 'Mover para'));
+  const opc = (rotulo, pid) => {
+    const b = el('button', pid === (c.projeto || '') ? 'atual' : ''); b.type = 'button';
+    b.innerHTML = pid ? PASTA_SVG : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>';
+    b.append(document.createTextNode(rotulo));
+    b.onclick = (e) => { e.stopPropagation(); m.remove(); moverConversa(c.id, pid); };
+    m.append(b);
+  };
+  for (const p of projetosCache) opc(p.nome, p.id);
+  opc('Recentes (sem projeto)', '');
+  const novo = el('button'); novo.type = 'button'; novo.textContent = '+ Novo projeto…';
+  novo.onclick = (e) => { e.stopPropagation(); m.remove(); abrirProjeto(null, c.id); };
+  m.append(novo);
+  document.body.append(m);
+  const r = ancora.getBoundingClientRect();
+  m.style.left = Math.min(r.left, innerWidth - m.offsetWidth - 8) + 'px';
+  m.style.top = Math.min(r.bottom + 4, innerHeight - m.offsetHeight - 8) + 'px';
+  setTimeout(() => document.addEventListener('click', () => m.remove(), { once: true }), 0);
+}
+function tituloComProjeto() {
+  const p = projetosCache.find(x => x.id === projetoAtual);
+  const t = $('tituloConv'), nome = t.dataset.titulo || '';
+  t.replaceChildren();
+  if (p) t.append(el('span', 'proj-nome', p.nome));
+  t.append(document.createTextNode(nome || 'Nova conversa'));
+  t.dataset.titulo = nome;
+}
+function novaConversa(pid) {
+  enviar({ tipo: 'conversa_nova', projeto: pid || '' }); $fala.textContent = ''; $voce.textContent = '';
+  if (pid) { projAbertos.add(pid); localStorage.setItem('projAbertos', JSON.stringify([...projAbertos])); }
+  $lado.classList.remove('aberto'); $entrada.focus();
+}
+/* ------ janela do projeto: criar / editar; o resumo só muda quando você salva */
+let projEditando = null, projMoverDepois = '';
+function abrirProjeto(p, moverCid) {
+  projEditando = p; projMoverDepois = moverCid || '';
+  $('projTitulo').textContent = p ? 'Projeto: ' + p.nome : 'Novo projeto';
+  $('projNome').value = p?.nome || ''; $('projInstr').value = p?.instrucoes || '';
+  $('projPasta').value = p?.pasta || ''; $('projResumo').value = p?.resumo || '';
+  $('projApagar').hidden = !p; $('projSugerir').hidden = !p; $('projErro').hidden = true;
+  $('dlgProjeto').showModal(); $('projNome').focus();
+}
+$('btnNovoProjeto').onclick = () => abrirProjeto(null);
+$('formProjeto').onsubmit = async (e) => {
+  e.preventDefault();
+  const corpo = { id: projEditando?.id, nome: $('projNome').value, instrucoes: $('projInstr').value,
+                  pasta: $('projPasta').value, resumo: $('projResumo').value };
+  const r = await fetch('/projetos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+  const j = await r.json();
+  if (!r.ok) { $('projErro').textContent = j.erro || 'Não consegui salvar.'; $('projErro').hidden = false; return; }
+  $('dlgProjeto').close();
+  projAbertos.add(j.projeto.id); localStorage.setItem('projAbertos', JSON.stringify([...projAbertos]));
+  if (projMoverDepois) await moverConversa(projMoverDepois, j.projeto.id);
+  else if (!projEditando && !$msgs.children.length) novaConversa(j.projeto.id);
+  await carregarRecentes(); tituloComProjeto();
+};
+$('projApagar').onclick = async () => {
+  if (!projEditando || !confirm('Apagar o projeto “' + projEditando.nome + '”? As conversas dele voltam para Recentes.')) return;
+  await fetch('/projetos/' + projEditando.id, { method: 'DELETE' });
+  if (projetoAtual === projEditando.id) projetoAtual = '';
+  $('dlgProjeto').close(); await carregarRecentes(); tituloComProjeto();
+};
+$('projSugerir').onclick = async () => {
+  if (!projEditando) return;
+  const b = $('projSugerir'), antes = b.textContent;
+  b.disabled = true; b.textContent = 'Lendo as conversas…'; $('projErro').hidden = true;
+  try {
+    const r = await fetch('/projetos/' + projEditando.id + '/sugerir_resumo', { method: 'POST' });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.erro || 'falhou');
+    $('projResumo').value = j.resumo;
+    $('projErro').textContent = 'Sugestão da Luna: revise e clique em Salvar para valer.';
+    $('projErro').style.color = 'var(--suave)'; $('projErro').hidden = false;
+  } catch (err) {
+    $('projErro').textContent = 'Não consegui sugerir: ' + err.message; $('projErro').style.color = ''; $('projErro').hidden = false;
+  } finally { b.disabled = false; b.textContent = antes; }
+};
+$('buscaConv').oninput = desenharRecentes;
+$('btnNovaConv').onclick = () => novaConversa('');
 
 /* ================================================================ aba Hoje (Meu Hoje) */
 const propostasPendentes = new Map();
@@ -2538,7 +2912,18 @@ function marcarModo() {
     b.setAttribute('aria-pressed', String(b.dataset.modo === atual));
   });
   document.querySelector('.seg [data-modo="hermes"]').disabled = !hermesOnline;
+  const b = document.querySelector('.seg [data-modo="' + atual + '"]') || document.querySelector('.seg [data-modo="auto"]');
+  $('modoIcone').innerHTML = b.querySelector('svg').outerHTML;
+  $('modoIcone').className = b.dataset.modo;
+  $('modoNome').textContent = b.querySelector('.nome').firstChild.textContent.trim();
 }
+function menuModos(abrir) {
+  $('modosMenu').hidden = !abrir;
+  $('btnModo').setAttribute('aria-expanded', String(abrir));
+}
+$('btnModo').onclick = (e) => { e.stopPropagation(); menuModos($('modosMenu').hidden); };
+document.addEventListener('click', (e) => { if (!e.target.closest('.modos')) menuModos(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('modosMenu').hidden) { menuModos(false); e.stopPropagation(); } }, true);
 
 function escolherModo(modo) {
   if (!conectado) return;
@@ -3266,7 +3651,7 @@ function aplicarModeloClaude() {
 
 $mic.onclick = alternarMic;
 $parar.onclick = interromper;
-document.querySelectorAll('.seg button').forEach(b => b.onclick = () => escolherModo(b.dataset.modo));
+document.querySelectorAll('.seg button').forEach(b => b.onclick = () => { menuModos(false); escolherModo(b.dataset.modo); });
 // Ajustes: abas. A última aberta volta aberta; "ia" monta as conexões
 // (com teste de verdade) só quando alguém olha para ela.
 function abaAjustes(nome) {
@@ -3434,18 +3819,35 @@ $('btnLimpar').onclick = () => {
   $fala.textContent = ''; $voce.textContent = '';
 };
 
-const ABAS = { conv: 'listaConv', ativ: 'listaAtiv', hoje: 'listaHoje', apr: 'listaApr' };
+const ABAS = { conv: 'listaRecentes', ativ: 'listaAtiv', hoje: 'listaHoje', apr: 'listaApr' };
+const TITULOS_ABA = { conv: 'Luna', ativ: 'Atividade', hoje: 'Hoje', apr: 'Aprendizado' };
+const estreita = () => matchMedia('(max-width: 1000px)').matches;
 function abrirAba(nome) {
-  document.querySelectorAll('.abas [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x.dataset.aba === nome)));
+  document.querySelectorAll('.trilho [data-aba]').forEach(x => x.classList.toggle('on', x.dataset.aba === nome));
   for (const [k, id] of Object.entries(ABAS)) $(id).hidden = k !== nome;
-  $('painelConversas').hidden = true;
+  $('ladoTitulo').textContent = TITULOS_ABA[nome] || 'Luna';
+  $('app').classList.remove('recolhido');
   localStorage.setItem('aba', nome);
+  if (nome === 'conv') carregarRecentes();
   if (nome === 'hoje') carregarHoje();
   if (nome === 'apr') carregarAprendizado();
 }
-document.querySelectorAll('.abas [role=tab]').forEach(b => b.onclick = () => abrirAba(b.dataset.aba));
-$('btnAtividade').onclick = () => $lado.classList.add('aberto');
+// Clicar no ícone já aberto recolhe a barra (tela larga) ou fecha a gaveta (estreita).
+document.querySelectorAll('.trilho [data-aba]').forEach(b => b.onclick = () => {
+  const ativo = b.classList.contains('on');
+  if (estreita()) {
+    if (ativo && $lado.classList.contains('aberto')) { $lado.classList.remove('aberto'); return; }
+    abrirAba(b.dataset.aba); $lado.classList.add('aberto'); return;
+  }
+  if (ativo && !$('app').classList.contains('recolhido')) { $('app').classList.add('recolhido'); return; }
+  abrirAba(b.dataset.aba);
+});
+$('btnAtividade').onclick = () => $lado.classList.toggle('aberto');
 $('btnFecharLado').onclick = () => $lado.classList.remove('aberto');
+// Sem mensagens: globo grande no meio ("Como posso ajudar?"). Com mensagens:
+// globo pequeno em cima e a conversa ocupa o meio.
+new MutationObserver(() => $('palco').classList.toggle('vazio', !$msgs.children.length))
+  .observe($msgs, { childList: true });
 
 /* ================================================================ som de "pensando" */
 // No lugar de falar "Deixa eu pensar nisso": duas notas suaves (sino macio),
@@ -3486,7 +3888,7 @@ let palItens = [], palSel = 0, palConversas = [];
 function comandosBase() {
   const c = [
     ['Nova conversa', 'conversa', () => $('btnNovaConv').click()],
-    ['Histórico de conversas', 'conversa', () => { abrirAba('conv'); abrirHistorico(); }],
+    ['Histórico de conversas', 'conversa', () => { abrirAba('conv'); $lado.classList.add('aberto'); $('buscaConv').focus(); }],
     ['Modo Auto', 'modo', () => escolherModo('auto')],
     ['Modo Expert (tudo ao Claude)', 'modo', () => escolherModo('hermes')],
     [micLigado ? 'Desligar microfone' : 'Ligar microfone', 'voz', () => alternarMic()],

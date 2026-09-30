@@ -1,5 +1,20 @@
 # Mudanças
 
+## Tela nova no estilo chat e projetos
+
+- **Layout novo**: trilho de ícones à esquerda (Conversas, Hoje, Atividade, Aprendizado, Mini, Ajustes), conversas na
+  barra lateral com busca, e a conversa ocupando o meio. Sem conversa aberta, o globo da Luna aparece grande com
+  "Como posso ajudar?". Em janela estreita a barra vira gaveta.
+- **Barra do chat num cartão só**: texto em cima; anexo, modo, microfone e enviar embaixo. Os modos
+  **Auto / Expert / Live** viraram um seletor, com uma linha explicando cada um.
+- **Projetos**: pastas de conversas. Cada projeto tem **instruções** (como a Luna deve agir nele), uma **pasta do PC**
+  opcional e um **resumo do que já foi feito**, que entram em toda conversa do projeto, nas duas IAs. O botão
+  "Sugerir pela Luna" lê as conversas e propõe o resumo; ele só muda quando você salva. Mova conversas arrastando ou
+  pelo ícone de pasta.
+- **A especialista continua a mesma sessão do Hermes** em cada conversa (cabeçalho `X-Hermes-Session-Id`): ela lembra
+  o que já fez nos turnos anteriores, inclusive as ferramentas que usou, sem reenviar o histórico. Se o Hermes não
+  aceitar, a Luna volta a mandar o histórico como antes. Para desligar: `LUNA_HERMES_SESSAO=0`.
+
 ## Reiniciar pela tela não trava mais
 
 - Ao clicar em reiniciar (em *Atualização*), a tela ficava em "reiniciando…" para sempre, mesmo com a Luna já de
