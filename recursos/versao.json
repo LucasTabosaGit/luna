@@ -1,9 +1,9 @@
 {
- "versao": "2026.09.30.1106",
+ "versao": "2026.10.01.1405",
  "repo": "LucasTabosaGit/luna",
  "novidades": [
-  "Aba Aprendizado com sub-abas (Memória, Atalhos, Habilidades, Voz). O que espera você aparece em cartões com o",
-  "Divisão arrastável entre a barra lateral e o chat: arraste a linha (a largura fica salva); dois cliques voltam ao",
-  "Corrigido \"Hermes não encontrado\" ao aprovar uma lembrança: com o app do Hermes instalado, a Luna achava o atalho"
+  "Configurar o Hermes sozinha: no card do Hermes (Ajustes → Inteligência), o botão Configurar sozinha cria o",
+  "Modelos grátis do OpenRouter na IA rápida: escolhendo OpenRouter, aparece a lista \"Grátis agora\", lida do site",
+  "IA especialista grátis: nova opção Grátis pelo OpenRouter, para quem não tem assinatura. Nunca usa um modelo"
  ]
 }

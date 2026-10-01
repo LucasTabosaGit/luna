@@ -496,17 +496,21 @@ def _hoje_ler() -> dict:
     """ver_hoje + agenda dos próximos 7 dias, do plugin de rotina."""
     import datetime
 
+    import resumo_hoje
+
     rot = _rotina()
     hoje = datetime.date.today()
-    dia = json.loads(rot.chamar("ver_hoje") or "{}")
+    dia = resumo_hoje.normalizar_dia(json.loads(rot.chamar("ver_hoje") or "{}"))
     ag = json.loads(rot.chamar("listar_agenda", {
         "de": hoje.isoformat(), "ate": (hoje + datetime.timedelta(days=7)).isoformat()}) or "{}")
     dia["proximos"] = ag.get("agendamentos", [])
     # Em aberto fora do dia de hoje: para puxar para hoje com um clique.
-    no_dia = {t.get("id") for t in (dia.get("recorteDeHoje") or []) + (dia.get("feitasHoje") or [])}
+    no_dia = {t.get("id") for t in (dia.get("recorteDeHoje") or []) + (dia.get("feitasHoje") or [])
+              if t.get("id")}
     try:
         lt = json.loads(rot.chamar("listar_tarefas", {"status": "abertas", "limite": 30}) or "{}")
-        dia["abertas"] = [t for t in lt.get("tarefas", []) if t.get("id") not in no_dia]
+        abertas = resumo_hoje.normalizar_dia({"abertas": lt.get("tarefas", [])})["abertas"]
+        dia["abertas"] = [t for t in abertas if t.get("id") not in no_dia]
     except Exception:  # noqa: BLE001 - a aba funciona sem isso
         dia["abertas"] = []
     dia["conta"] = rot.status()          # leu o dia = login válido
@@ -576,20 +580,6 @@ async def saude():
     }
 
 
-def _hermes_online() -> bool:
-    """O API server do Hermes responde? (gateway pode ter caído)"""
-    import urllib.request
-
-    try:
-        req = urllib.request.Request(
-            config.HERMES_URL + "/models",
-            headers={"Authorization": "Bearer %s" % config.chave_hermes()})
-        urllib.request.urlopen(req, timeout=3).read()
-        return True
-    except Exception:  # noqa: BLE001
-        return False
-
-
 @app.post("/reiniciar")
 async def reiniciar():
     """Reinicia o próprio servidor: lança um substituto e sai.
@@ -621,6 +611,23 @@ async def reiniciar():
     # Sai depois de responder, para quem chamou receber o OK.
     asyncio.get_running_loop().call_later(1.0, os._exit, 0)
     return {"ok": True, "volta_em_s": 30, "pid": os.getpid()}
+
+
+@app.post("/hermes/auto")
+async def hermes_auto_rota():
+    """Liga a Luna ao Hermes sem a pessoa mexer em arquivo: perfil, senha
+    da API e gateway. As senhas ficam nos .env do Hermes; nada volta aqui."""
+    import hermes_auto
+    r = await asyncio.to_thread(hermes_auto.configurar)
+    _hermes_cache[0] = 0.0
+    return r
+
+
+@app.get("/gratis")
+async def modelos_gratis():
+    """Modelos grátis do momento no OpenRouter (lista pública, cache de 6 h)."""
+    import gratis
+    return {"modelos": await asyncio.to_thread(gratis.listar)}
 
 
 @app.get("/conexoes")

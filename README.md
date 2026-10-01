@@ -133,13 +133,16 @@ Permita o microfone e diga "**Luna**, …".
 
 ### Ligar a IA especialista (opcional)
 
-1. Instale o Hermes Agent e crie um perfil (ex.: `hermes profile create assistente`).
-2. No `.env` do perfil: `API_SERVER_ENABLED=true` e anote a `API_SERVER_KEY`.
-3. Rode `hermes gateway run`.
-4. Na Luna: Ajustes → Inteligência → *Hermes Agent*: endereço `http://127.0.0.1:8642/p/assistente/v1` e a chave.
-5. Em *IA especialista*, escolha:
+1. Instale o Hermes Agent: [hermes-agent.nousresearch.com](https://hermes-agent.nousresearch.com/).
+2. Na Luna: Ajustes → Inteligência → *Hermes Agent* → **Configurar sozinha**. Ela cria o perfil `assistente`, liga a
+   API do Hermes, gera as senhas e liga o Hermes. (Hermes em outro PC: use "Configurar à mão", com o endereço
+   `http://<pc>:8642/p/assistente/v1` e a `API_SERVER_KEY` do `.env` do perfil.)
+3. Em *IA especialista*, escolha:
    - **Minha assinatura**: `hermes -p assistente model` e escolha **Anthropic** (Claude) ou
      **ChatGPT or Codex Subscription** (ChatGPT Plus/Pro). Pode conectar os dois.
+   - **Grátis pelo OpenRouter**: para quem não tem assinatura. Pegue uma chave gratuita em
+     [openrouter.ai/keys](https://openrouter.ai/keys) e escolha um dos modelos grátis do momento. Tem limite de pedidos
+     por dia e costuma ser mais fraco em tarefas longas.
    - **Chave de API**: Anthropic, OpenAI, OpenRouter ou DeepSeek. Cole a chave e defina o limite por dia.
      A Luna guarda a chave no cofre do próprio Hermes.
 

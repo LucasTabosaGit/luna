@@ -916,6 +916,14 @@ button.ac:disabled { opacity: .55; }
 .apr-corpo .cartao .sub { font-size: 12.5px; line-height: 1.5; color: var(--fraco); }
 .apr-corpo .cartao .botao { align-self: flex-start; margin-top: 4px !important; }
 
+.hermes-auto { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 10px 0 4px; }
+.hermes-auto small { color: var(--suave); line-height: 1.5; }
+.hermes-auto .passos-auto:empty { display: none; }
+.hermes-auto .passos-auto { color: var(--tinta); }
+.hermes-manual { margin-top: 8px; }
+.hermes-manual summary { cursor: pointer; font-size: 12.5px; color: var(--suave); }
+.hermes-manual[open] summary { margin-bottom: 8px; }
+
 /* ================================================================ divisor arrastável da barra lateral */
 .app { position: relative; grid-template-columns: 52px var(--lado-w, 290px) minmax(0, 1fr); }
 .divisor { position: absolute; top: 0; bottom: 0; left: calc(52px + var(--lado-w, 290px) - 4px); width: 8px; z-index: 20;
@@ -1286,14 +1294,9 @@ body.redimensionando iframe, body.redimensionando canvas { pointer-events: none;
             (siga o instalador do site).</li>
           <li>Conecte a sua assinatura: <code>hermes setup</code> — siga o guia (ou pule e use uma chave de API no fim desta etapa)
             (<a href="https://hermes-agent.nousresearch.com/docs/getting-started/quickstart" target="_blank" rel="noopener">passo a passo</a>).</li>
-          <li>Crie um perfil só para a Luna: <code>hermes profile create assistente</code>
-            (a memória e as habilidades dela ficam separadas das suas).</li>
-          <li>Ligue a API do perfil: abra o <code>.env</code> dele (<code>hermes -p assistente config env-path</code> mostra onde)
-            e acrescente, inventando uma senha longa (16+ caracteres):
-            <pre>API_SERVER_ENABLED=true
-API_SERVER_KEY=&lt;invente uma senha longa&gt;</pre></li>
-          <li>Suba o Hermes: <code>hermes gateway run</code> (<a href="https://hermes-agent.nousresearch.com/docs/user-guide/features/api-server" target="_blank" rel="noopener">detalhes</a>).</li>
-          <li>Cole abaixo o endereço e a mesma senha, e depois escolha assinatura ou chave.</li>
+          <li>Clique em <b>Configurar sozinha</b> abaixo: a Luna cria o perfil dela no Hermes (a memória e as
+            habilidades dela ficam separadas das suas), gera a senha da API e liga o Hermes.</li>
+          <li>Depois escolha como a especialista vai pensar: assinatura, chave de API ou grátis pelo OpenRouter.</li>
         </ol>
       </div>
       <div class="conexoes" id="cxHermes"></div>
@@ -2691,7 +2694,8 @@ async function carregarHoje(forcar) {
   if (d.comecePor) { const cp = el('div', 'comece'); cp.append('Comece por ', el('b', '', d.comecePor)); c1.append(cp); }
   s1.append(c1); $hoje.append(s1);
   // Tarefas de hoje
-  const tarefas = [...(d.recorteDeHoje || []).map(t => ({ ...t, feita: false })), ...(d.feitasHoje || []).map(t => ({ ...t, feita: true }))];
+  const comoTarefa = (t) => (t && typeof t === 'object') ? t : { titulo: String(t ?? '') };
+  const tarefas = [...(d.recorteDeHoje || []).map(t => ({ ...comoTarefa(t), feita: false })), ...(d.feitasHoje || []).map(t => ({ ...comoTarefa(t), feita: true }))];
   const s2 = el('div', 'secao'), h2 = el('h4'), h2e = el('span', 'esq', 'Tarefas de hoje');
   if (tarefas.length) h2e.append(el('span', 'qtd', (d.feitasHoje || []).length + '/' + tarefas.length));
   const rec = botaoMini('Atualizar', '<path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/>', () => carregarHoje(true));
@@ -3145,6 +3149,7 @@ async function montarConexoes(alvo, testar, so) {
       l.append(c.rotulo, inp); campos.append(l);
     }
     const btn = card.querySelector('button'), msg = card.querySelector('.msg-cx');
+    if (id === 'hermes') montarHermesAuto(card, campos, btn, msg, alvo, so);
     btn.onclick = async () => {
       const valores = {};
       for (const inp of campos.querySelectorAll('input')) {
@@ -3172,6 +3177,41 @@ async function montarConexoes(alvo, testar, so) {
     caixa.append(card);
   }
   return dados;
+}
+
+// Hermes: um botão faz tudo (perfil, senha da API, gateway). Os campos de
+// endereço e senha ficam só para quem usa um Hermes em outro lugar.
+function montarHermesAuto(card, campos, btnManual, msg, alvo, so) {
+  const auto = el('div', 'hermes-auto');
+  const b = el('button', 'botao', 'Configurar sozinha');
+  b.type = 'button';
+  const dica = el('small', '', 'A Luna cria o perfil dela no Hermes, gera a senha da API e liga o Hermes. Você não precisa copiar nada.');
+  const passos = el('small', 'passos-auto');
+  auto.append(b, dica, passos);
+  const manual = el('details', 'hermes-manual');
+  manual.append(el('summary', '', 'Configurar à mão (Hermes em outro PC ou com outra senha)'));
+  campos.replaceWith(auto); auto.after(manual); manual.append(campos);
+  card.querySelector('.rodape-cx a').hidden = true;
+  // O "Salvar e testar" do rodapé só faz sentido com os campos à mão abertos.
+  btnManual.hidden = true;
+  manual.ontoggle = () => { btnManual.hidden = !manual.open; };
+  b.onclick = async () => {
+    b.disabled = true; msg.textContent = '';
+    passos.textContent = 'configurando… (se precisar ligar o Hermes, leva até 1 minuto)';
+    let d;
+    try { d = await (await fetch('/hermes/auto', { method: 'POST' })).json(); }
+    catch (e) { d = { ok: false, msg: 'falhou: ' + e.message, passos: [] }; }
+    await montarConexoes(alvo, false, so);
+    const novo = [...$(alvo).children].find(c => c.querySelector('.hermes-auto'));
+    if (!novo) return;
+    const st = novo.querySelector('.sit');
+    st.textContent = d.ok ? 'conectado' : d.msg; st.className = 'sit ' + (d.ok ? 'ok' : 'falha');
+    novo.querySelector('.passos-auto').textContent = d.ok
+      ? 'Pronto' + (d.passos && d.passos.length ? ': ' + d.passos.join(', ') + '.' : '. Já estava tudo certo.')
+      : d.msg;
+    checarHermes();
+    if (d.ok && $('dlgBoasVindas').open) carregarChecks();
+  };
 }
 
 // Ouvido: onde a fala vira texto. Lista de opções (não select): são poucas
@@ -3250,6 +3290,8 @@ function cardEspecialista(sv, alvo, so) {
     <div class="opcoes-stt" role="radiogroup"></div>
     <div class="esp-extra">
       <label class="campo" data-l="chave">Chave<input type="password" autocomplete="off" spellcheck="false"></label>
+      <label class="campo" data-l="gratis" hidden>Modelo grátis <small style="color:var(--suave)">(lista do OpenRouter, muda com o tempo)</small><select></select></label>
+      <small class="dica-gratis" style="color:var(--suave)" hidden></small>
       <label class="campo" data-l="limite">Limite de gasto por dia (R$) <small style="color:var(--suave)">— passou, a Luna para de chamar a especialista até amanhã (0 = sem limite)</small>
         <input type="number" min="0" max="1000" step="1" inputmode="decimal"></label>
     </div>
@@ -3274,6 +3316,10 @@ function cardEspecialista(sv, alvo, so) {
       ? 'Conectada: ' + assin.join(', ') + '. Se o uso for frequente, sai mais barata do que pagar pela API.'
       : 'Nenhuma conectada ainda. No terminal: hermes -p assistente model  e escolha a sua (Claude, ChatGPT Plus/Pro…). Se o uso for frequente, sai mais barata do que pagar pela API.',
     assin.length ? ['conectada ✓'] : []);
+  const orKey = sv.opcoes.find(x => x.id === 'openrouter');
+  radio('openrouter-gratis', 'Grátis pelo OpenRouter',
+    'Para quem não tem assinatura: usa um dos modelos grátis do momento, com a chave (gratuita) do OpenRouter. Tem limite de pedidos por dia e costuma ser mais fraco em tarefas longas.',
+    sv.gratis ? ['em uso ✓'] : ['sem custo']);
   for (const o of sv.opcoes) radio(o.id, 'Chave de API: ' + o.nome, o.dica + ' Pago por uso.', o.definido ? ['chave ✓'] : []);
   const marcado = grupo.querySelector(`input[value="${sv.escolhido || ''}"]`);
   if (marcado) marcado.checked = true;
@@ -3281,13 +3327,25 @@ function cardEspecialista(sv, alvo, so) {
   lim.value = sv.limite;
   const a = card.querySelector('a'), aviso = card.querySelector('.esp-aviso');
   const escolha = () => (grupo.querySelector('input:checked') || {}).value || '';
+  const selG = card.querySelector('[data-l="gratis"] select'), dicaG = card.querySelector('.dica-gratis');
+  const campoG = { value: sv.gratis || '', addEventListener() {} };   // montarGratis espera um "campo"
+  // Na opção grátis, a chave é a do OpenRouter.
+  const opcaoDe = id => id === 'openrouter-gratis' ? orKey : sv.opcoes.find(x => x.id === id);
   const mostrar = () => {
-    const id = escolha(), o = sv.opcoes.find(x => x.id === id);
+    const id = escolha(), o = opcaoDe(id), ehG = id === 'openrouter-gratis';
     card.querySelector('.esp-extra').hidden = !o;
+    card.querySelector('[data-l="gratis"]').hidden = !ehG;
+    card.querySelector('[data-l="limite"]').hidden = ehG;
+    if (ehG) montarGratis(selG, campoG, dicaG).then(() => {
+      if (!selG.value && selG._lista && selG._lista.length) { selG.value = selG._lista[0].id; selG.onchange(); }
+    });
+    else dicaG.hidden = true;
     a.hidden = !o; a.href = o ? o.link : '#';
     inp.value = '';
     inp.placeholder = o && o.definido ? 'salva (' + o.mostrar + ') — cole outra para trocar' : 'cole a chave aqui';
-    aviso.textContent = o
+    aviso.textContent = ehG
+      ? 'Sem custo. Modelos grátis entram e saem da lista; se o escolhido sair, a Luna usa outro grátis sozinha (nunca um pago). O teste ao salvar faz um pedido de verdade.'
+      : o
       ? 'Pago por pedido: tarefas longas no PC fazem várias chamadas e custam mais. Se o uso for frequente, a assinatura sai mais barata. O teste ao salvar faz um pedido de verdade.'
       : 'Qual modelo da assinatura atende (Claude, ChatGPT…) você escolhe em “Modelo da IA especialista”, no fim desta página.';
   };
@@ -3295,13 +3353,14 @@ function cardEspecialista(sv, alvo, so) {
   const btn = card.querySelector('button'), msg = card.querySelector('.msg-cx');
   btn.onclick = async () => {
     if (!sv.hermes) { msg.textContent = 'Conecte o Hermes primeiro (acima).'; return; }
-    const id = escolha(), o = sv.opcoes.find(x => x.id === id);
-    const valores = { ESPECIALISTA_API: id };
+    const id = escolha(), o = opcaoDe(id), ehG = id === 'openrouter-gratis';
+    const valores = { ESPECIALISTA_API: ehG ? 'openrouter' : id, ESPECIALISTA_GRATIS: ehG ? campoG.value : '' };
+    if (ehG && !campoG.value) { msg.textContent = 'Escolha um modelo grátis.'; return; }
     if (o) {
       const chave = inp.value.trim();
       if (!chave && !o.definido) { msg.textContent = 'Cole a chave primeiro.'; return; }
       if (chave) valores[o.var] = chave;
-      valores.ESPECIALISTA_LIMITE = String(lim.value === '' ? 5 : lim.value);
+      if (!ehG) valores.ESPECIALISTA_LIMITE = String(lim.value === '' ? 5 : lim.value);
     } else if (!assin.length) { msg.textContent = 'Conecte uma assinatura no Hermes primeiro (veja a dica).'; return; }
     btn.disabled = true; msg.textContent = 'testando (um pedido de verdade)…';
     try {
@@ -3330,6 +3389,8 @@ function cardCerebro(sv, alvo, so) {
       <label class="campo" data-l="chave">Chave da API<input type="password" data-f="chave" autocomplete="off" spellcheck="false"></label>
       <label class="campo" data-l="url">Endereço<input data-f="url" autocomplete="off" spellcheck="false" placeholder="https://.../v1"></label>
       <label class="campo" data-l="modelo">Modelo <small style="color:var(--suave)">(vazio = o recomendado)</small><input data-f="modelo" autocomplete="off" spellcheck="false"></label>
+      <label class="campo" data-l="gratis" hidden>Grátis agora <small style="color:var(--suave)">(lista do OpenRouter, muda com o tempo)</small><select data-f="gratis"></select></label>
+      <small class="dica-gratis" style="color:var(--suave)" hidden></small>
     </div>
     <div class="rodape-cx"><button type="button" class="botao">Salvar e testar</button>
     <a target="_blank" rel="noopener">onde pego a chave?</a><span class="msg-cx"></span></div>`;
@@ -3356,6 +3417,10 @@ function cardCerebro(sv, alvo, so) {
     f('chave').placeholder = o.definido ? 'salva (' + o.mostrar + ') — cole outra para trocar' : 'cole a chave aqui';
     f('modelo').placeholder = o.modelo_padrao || 'nome do modelo';
     if (trocou) f('modelo').value = '';
+    const ehOR = o.id === 'openrouter';
+    card.querySelector('[data-l="gratis"]').hidden = !ehOR;
+    if (ehOR) montarGratis(f('gratis'), f('modelo'), card.querySelector('.dica-gratis'));
+    else card.querySelector('.dica-gratis').hidden = true;
   };
   f('modelo').value = sv.modelo || '';
   f('url').value = sv.url || '';
@@ -3388,6 +3453,35 @@ function cardCerebro(sv, alvo, so) {
     } catch (e) { msg.textContent = 'falhou: ' + e.message; btn.disabled = false; }
   };
   return card;
+}
+
+// Modelos grátis do OpenRouter: escolher um preenche o campo "Modelo".
+// A lista vem do site (via /gratis), então some quando o modelo deixa de ser grátis.
+async function montarGratis(sel, campo, dica) {
+  const aviso = () => {
+    const id = campo.value.trim();
+    const g = (sel._lista || []).find(m => m.id === id);
+    sel.value = g ? id : '';
+    dica.hidden = !g;
+    if (!g) return;
+    const partes = ['Grátis, mas costuma ter limite de pedidos por minuto e por dia.'];
+    if (g.sai_em) partes.push('Fica grátis só até ' + g.sai_em.split('-').reverse().join('/') + '; depois troque de modelo.');
+    if (id.startsWith('stealth/')) partes.push('Modelo anônimo em teste: o fornecedor pode guardar as conversas.');
+    dica.textContent = partes.join(' ');
+  };
+  if (!sel._lista) {
+    sel.replaceChildren(new Option('carregando…', ''));
+    try { sel._lista = (await (await fetch('/gratis')).json()).modelos || []; }
+    catch { sel._lista = []; }
+    sel.replaceChildren(new Option(sel._lista.length ? '— escolher um grátis —' : 'sem lista agora (sem internet?)', ''));
+    for (const m of sel._lista) {
+      const sai = m.sai_em ? ' · sai em ' + m.sai_em.slice(8, 10) + '/' + m.sai_em.slice(5, 7) : '';
+      sel.append(new Option(m.nome + sai, m.id));
+    }
+    sel.onchange = () => { if (sel.value) campo.value = sel.value; aviso(); };
+    campo.addEventListener('input', aviso);
+  }
+  aviso();
 }
 
 /* ================================================================ primeiros passos */

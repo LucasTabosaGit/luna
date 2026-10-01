@@ -42,7 +42,7 @@ _VARS_CEREBRO = {"CEREBRO", "CEREBRO_MODELO", "CEREBRO_URL"} | {
     c["var"] for c in config.CEREBROS.values() if c["var"]}
 _VARS = ({c["var"] for s in SERVICOS.values() for c in s["campos"]} | _VARS_CEREBRO
          | {"STT"} | {s["var"] for s in config.STTS.values() if s["var"]}
-         | {"ESPECIALISTA_API", "ESPECIALISTA_LIMITE"}
+         | {"ESPECIALISTA_API", "ESPECIALISTA_LIMITE", "ESPECIALISTA_GRATIS"}
          | {e["var"] for e in config.ESPECIALISTAS_API.values()})
 _ROTULO_HERMES = "luna"      # nome da chave que a Luna põe no cofre do Hermes
 
@@ -195,7 +195,9 @@ def _status_especialista() -> dict:
             "papel": ("Entra só quando o pedido precisa agir no computador (arquivos, programas, "
                       "pesquisa longa) ou quando a IA rápida não dá conta. Roda pelo Hermes."),
             "hermes": hermes_ok, "assinaturas": assin, "modo": "api" if api else "assinatura",
-            "escolhido": api, "opcoes": opcoes, "limite": config.especialista_limite_brl(),
+            "escolhido": "openrouter-gratis" if config.especialista_gratis() else api,
+            "gratis": config.especialista_gratis(),
+            "opcoes": opcoes, "limite": config.especialista_limite_brl(),
             "configurado": hermes_ok and bool(assin or api)}
 
 
@@ -430,12 +432,16 @@ def salvar(valores: dict) -> dict:
         if var not in _VARS:
             raise ValueError("campo desconhecido: %s" % var)
         valor = (valor or "").strip().strip('"').strip("'")
-        if var in ("CEREBRO_MODELO", "ESPECIALISTA_API") and not valor:
+        if var in ("CEREBRO_MODELO", "ESPECIALISTA_API", "ESPECIALISTA_GRATIS") and not valor:
             _gravar_env(var, "")          # vazio = padrão (modelo da IA / só assinatura)
             os.environ.pop(var, None)
             continue
         if var == "ESPECIALISTA_API" and valor not in config.ESPECIALISTAS_API:
             raise ValueError("opção desconhecida: %s" % valor)
+        if var == "ESPECIALISTA_GRATIS":
+            import gratis
+            if not gratis.achar(valor):
+                raise ValueError("esse modelo não está grátis agora: %s" % valor[:60])
         if var == "ESPECIALISTA_LIMITE":
             try:
                 if not 0 <= float(valor.replace(",", ".")) <= 1000:

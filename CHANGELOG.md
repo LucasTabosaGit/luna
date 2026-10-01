@@ -1,5 +1,17 @@
 # Mudanças
 
+## Hermes em um clique e modelos grátis pelo OpenRouter
+
+- **Configurar o Hermes sozinha:** no card do Hermes (Ajustes → Inteligência), o botão **Configurar sozinha** cria o
+  perfil da Luna, liga a API do Hermes, gera as senhas e liga o Hermes. Não precisa mais editar o `.env` nem copiar
+  senha. Senhas que já existem nunca são trocadas. Os campos manuais continuam em "Configurar à mão".
+- **Modelos grátis do OpenRouter na IA rápida:** escolhendo OpenRouter, aparece a lista **"Grátis agora"**, lida do site
+  (renova a cada 6 h). Mostra a data de saída de modelos temporários e avisa quando o modelo é anônimo (o fornecedor pode
+  guardar as conversas).
+- **IA especialista grátis:** nova opção **Grátis pelo OpenRouter**, para quem não tem assinatura. Nunca usa um modelo
+  pago: se o escolhido deixar de ser grátis, a Luna troca por outro grátis. Tem limite de pedidos por dia e costuma ser
+  mais fraca em tarefas longas.
+
 ## Aprendizado reformado e barra lateral ajustável
 
 - **Aba Aprendizado** com sub-abas (Memória, Atalhos, Habilidades, Voz). O que espera você aparece em cartões com o

@@ -161,6 +161,12 @@ def especialista_api() -> str:
     return v if v in ESPECIALISTAS_API else ""
 
 
+def especialista_gratis() -> str:
+    """Modelo grátis do OpenRouter escolhido para a especialista ("" = não).
+    Só vale com a chave do OpenRouter conectada como especialista."""
+    return _env_valor("ESPECIALISTA_GRATIS") if especialista_api() == "openrouter" else ""
+
+
 def especialista_limite_brl() -> float:
     """Teto de gasto por dia da IA especialista paga por uso (R$). 0 = sem teto."""
     try:
@@ -173,7 +179,7 @@ def modelo_por_uso(ident: str) -> bool:
     """O modelo do Expert é cobrado por uso (chave de API)? Assinatura = não.
     Claude conta como pago só quando a Luna conectou a chave da Anthropic."""
     m = modelo_da_chave(ident)          # aceita "provedor|id" ou só o id
-    if not m or not m["provedor"]:
+    if not m or not m["provedor"] or m.get("gratis"):
         return False
     if m["provedor"] == "anthropic":
         return especialista_api() == "anthropic"
@@ -214,11 +220,23 @@ def modelos_expert() -> list[dict]:
     for m in HERMES_MODELOS:
         p = m["provedor"]
         ok = (not p or (p in ASSINATURAS or p == "anthropic") and p in logados
-              or p == api and p != "anthropic")
+              or p == api and p != "anthropic" and not especialista_gratis())
         if ok:
             saida.append({**m, "por_uso": modelo_por_uso(_chave_modelo(m)) if p else False,
                           "chave": _chave_modelo(m)})
+    if api == "openrouter":
+        import gratis
+        for g in gratis.listar():
+            m = _modelo_gratis(g)
+            saida.append({**m, "por_uso": False, "chave": _chave_modelo(m)})
     return saida
+
+
+def _modelo_gratis(g: dict) -> dict:
+    """Modelo grátis do OpenRouter no formato de HERMES_MODELOS."""
+    sai = (" · sai em %s/%s" % (g["sai_em"][8:10], g["sai_em"][5:7])) if g["sai_em"] else ""
+    return {"id": g["id"], "nome": g["nome"] + sai, "provedor": "openrouter",
+            "grupo": "OpenRouter (grátis agora)", "gratis": True}
 
 
 def _chave_modelo(m: dict) -> str:
@@ -234,7 +252,12 @@ def modelo_da_chave(chave: str) -> dict | None:
     prov, _, ident = chave.partition("|")
     if not _:                      # formato antigo: só o id (assume o 1º provedor)
         ident, prov = chave, ""
-    return next((m for m in HERMES_MODELOS if m["id"] == ident and (not prov or m["provedor"] == prov)), None)
+    m = next((m for m in HERMES_MODELOS if m["id"] == ident and (not prov or m["provedor"] == prov)), None)
+    if m is None and prov == "openrouter":
+        import gratis
+        g = gratis.achar(ident)
+        m = _modelo_gratis(g) if g else None
+    return m
 
 
 def provedor_modelo(ident: str) -> str:
@@ -260,6 +283,13 @@ def modelo_expert_efetivo(escolha: str) -> dict | None:
     if m and m["provedor"]:
         return m
     api = especialista_api()
+    if especialista_gratis() and not _tem_assinatura():
+        # Modo grátis: nunca cai num modelo pago. Se o escolhido deixou de
+        # ser grátis, usa o primeiro grátis da lista do momento.
+        import gratis
+        g = (gratis.achar(especialista_gratis()) or next(iter(gratis.listar()), None)
+             or {"id": especialista_gratis(), "nome": especialista_gratis(), "sai_em": ""})  # site fora: tenta o salvo
+        return _modelo_gratis(g)
     if api and not _tem_assinatura():
         ident = ESPECIALISTAS_API[api]["modelo"]
         return next((x for x in HERMES_MODELOS if x["id"] == ident and x["provedor"] == api), None)
@@ -346,7 +376,7 @@ CEREBROS = {
         "modelo": "deepseek/deepseek-v4.1-flash", "var": "OPENROUTER_API_KEY",
         "extra": {}, "preco": (0.035, 0.29),
         "link": "https://openrouter.ai/keys",
-        "dica": "Uma chave para centenas de modelos (troque o nome do modelo).",
+        "dica": "Uma chave para centenas de modelos, inclusive grátis (escolha abaixo).",
     },
     "assinatura": {
         "nome": "Minha assinatura (ChatGPT etc., via Hermes)", "url": "",

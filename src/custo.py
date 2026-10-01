@@ -52,6 +52,10 @@ def somar(usage) -> None:
                    + saida * PRECO["saida"]) / 1e6
     else:
         p_in, p_out = c["preco"]
+        if c["id"] == "openrouter":
+            import gratis
+            if gratis.eh_gratis(c["modelo"]) or c["modelo"].endswith(":free"):
+                p_in = p_out = 0.0
         usd = (entrada * p_in + saida * p_out) / 1e6
     hoje = agora.date().isoformat()
     with _trava:
