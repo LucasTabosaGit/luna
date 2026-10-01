@@ -9,7 +9,8 @@ Três tipos, do mais comum ao mais raro:
   versao     saiu versão nova da Luna no GitHub (só na versão pública:
              recursos/versao.json diz o repositório e a versão instalada).
              Com git: "Atualizar agora" (git pull + dependências + reinício).
-             Sem git (baixou o ZIP): link para baixar de novo.
+             Sem git (baixou o ZIP): "Atualizar agora" baixa o ZIP novo e
+             copia por cima, sem tocar nos dados (atualizacao_zip.py).
 
 Nada aqui muda código sozinho: tudo espera o clique da pessoa.
 """
@@ -123,24 +124,33 @@ def pendentes(web_da_tela: str = "", forcar: bool = False) -> dict:
     _checar_remoto(forcar)
     inst, rem = _instalada(), _remoto.get("versao") or {}
     if inst.get("versao") and rem.get("versao") and rem["versao"] > inst["versao"]:
-        com_git = (RAIZ / ".git").exists()
         itens.append({"tipo": "versao", "titulo": "Nova versão da Luna",
                       "detalhe": "Versão %s disponível (você tem a %s)." % (rem["versao"], inst["versao"]),
                       "novidades": rem.get("novidades", []),
-                      "acao": "atualizar" if com_git else "baixar",
-                      "botao": "Atualizar agora" if com_git else "Baixar a versão nova",
+                      "acao": "atualizar", "botao": "Atualizar agora",
                       "link": "https://github.com/%s" % inst["repo"]})
     return {"itens": itens, "web": wv, "instalada": inst.get("versao", ""),
             "atualizando": _atualizando["rodando"], "erro_remoto": _remoto["erro"]}
 
 
 def atualizar() -> dict:
-    """git pull + dependências. Só na versão pública com git. Síncrono (thread)."""
-    if not _instalada().get("repo") or not (RAIZ / ".git").exists():
-        return {"ok": False, "msg": "esta instalação não atualiza pelo git"}
+    """Versão pública: git pull (instalou com git) ou ZIP novo por cima
+    (baixou o ZIP). Depois a tela reinicia. Síncrono (thread)."""
+    inst = _instalada()
+    if not inst.get("repo"):
+        return {"ok": False, "msg": "esta instalação não atualiza sozinha"}
     if _atualizando["rodando"]:
         return {"ok": False, "msg": "já está atualizando"}
     _atualizando.update(rodando=True, log=[], ok=None)
+    if not (RAIZ / ".git").exists():
+        try:
+            import atualizacao_zip
+            r = atualizacao_zip.aplicar(RAIZ, inst["repo"], inst.get("versao", ""))
+            if r["ok"]:
+                _remoto["quando"] = 0.0
+            return r
+        finally:
+            _atualizando["rodando"] = False
     try:
         cod, out = _git("status", "--porcelain", "--untracked-files=no")
         if out.strip():

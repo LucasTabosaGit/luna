@@ -129,6 +129,10 @@ Na janela abre o guia **Primeiros passos**: confere Python, ffmpeg, placa de ví
 cada conexão — a IA principal, Claude via Hermes e Meu Hoje — com os links e o botão *Salvar e testar*.
 Ele fica em **Ajustes → Primeiros passos** (ou Ctrl+K). Para desligar: **Ajustes → Desligar a Luna**.
 
+**Atualizar:** quando sair versão nova, aparece o botão **Atualização** na barra de cima (ou em **Ajustes → Sistema →
+Atualizações → Verificar**). **Atualizar agora** baixa e aplica sozinho, tanto para quem instalou pelo ZIP quanto pelo
+Git. Chaves, conversas, memória e ajustes ficam como estão.
+
 Permita o microfone e diga "**Luna**, …".
 
 ### Ligar a IA especialista (opcional)

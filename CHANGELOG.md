@@ -1,5 +1,12 @@
 # Mudanças
 
+## Atualizar sem git
+
+- **Atualizar agora também para quem baixou o ZIP:** o botão baixa a versão nova do GitHub e troca os arquivos da Luna
+  sozinho. Chaves, conversas, memória, ajustes e atalhos ficam como estão. Antes de trocar, guarda uma cópia do que
+  muda em cache/atualizacao-backup.
+- **Novidades inteiras** na janela de atualização (antes cortavam no meio da frase).
+
 ## Hermes em um clique e modelos grátis pelo OpenRouter
 
 - **Configurar o Hermes sozinha:** no card do Hermes (Ajustes → Inteligência), o botão **Configurar sozinha** cria o

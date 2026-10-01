@@ -1,9 +1,8 @@
 {
- "versao": "2026.10.01.1405",
+ "versao": "2026.10.01.2022",
  "repo": "LucasTabosaGit/luna",
  "novidades": [
-  "Configurar o Hermes sozinha: no card do Hermes (Ajustes → Inteligência), o botão Configurar sozinha cria o",
-  "Modelos grátis do OpenRouter na IA rápida: escolhendo OpenRouter, aparece a lista \"Grátis agora\", lida do site",
-  "IA especialista grátis: nova opção Grátis pelo OpenRouter, para quem não tem assinatura. Nunca usa um modelo"
+  "Atualizar agora também para quem baixou o ZIP: o botão baixa a versão nova do GitHub e troca os arquivos da Luna sozinho. Chaves, conversas, memória, ajustes e atalhos ficam como estão. Antes de trocar, guarda uma cópia do que muda em cache/atualizacao-backup.",
+  "Novidades inteiras na janela de atualização (antes cortavam no meio da frase)."
  ]
 }
