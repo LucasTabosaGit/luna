@@ -997,6 +997,7 @@ class Sessao:
         # Interromper falando por cima ("barge-in"). `tocando` vem do
         # navegador: há áudio da resposta saindo na caixa de som agora.
         self.tocando = False
+        self.silencio_fim_s = config.SILENCIO_FIM_S   # Ajustes → Escuta → Pausa
         self.barge = True
         self.barge_resto = np.zeros(0, dtype=np.float32)
         self.barge_fala = 0          # amostras de fala recente
@@ -1106,7 +1107,7 @@ class Sessao:
             return None
 
         self.mudo_amostras += amostras
-        if self.mudo_amostras < config.SILENCIO_FIM_S * config.SAMPLE_RATE:
+        if self.mudo_amostras < self.silencio_fim_s * config.SAMPLE_RATE:
             return None
 
         audio = np.concatenate(self.buf)
@@ -2821,6 +2822,11 @@ async def ws_conversa(ws: WebSocket):
                     s.acordado_ate = 0.0
                     print("  [ativacao] conversa continua %s"
                           % ("ligada" if s.continua else "desligada"), flush=True)
+
+                elif acao == "pausa":
+                    s.silencio_fim_s = config.PAUSAS_FIM_S.get(str(cmd.get("valor")),
+                                                               config.SILENCIO_FIM_S)
+                    print("  [escuta] pausa para terminar: %.1f s" % s.silencio_fim_s, flush=True)
 
                 elif acao == "barge":
                     s.barge = bool(cmd.get("ligado", True))

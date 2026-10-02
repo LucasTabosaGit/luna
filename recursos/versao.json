@@ -1,8 +1,7 @@
 {
- "versao": "2026.10.01.2022",
+ "versao": "2026.10.01.2111",
  "repo": "LucasTabosaGit/luna",
  "novidades": [
-  "Atualizar agora também para quem baixou o ZIP: o botão baixa a versão nova do GitHub e troca os arquivos da Luna sozinho. Chaves, conversas, memória, ajustes e atalhos ficam como estão. Antes de trocar, guarda uma cópia do que muda em cache/atualizacao-backup.",
-  "Novidades inteiras na janela de atualização (antes cortavam no meio da frase)."
+  "Ajustes → Escuta → Pausa antes de responder: quanto tempo calado a Luna espera para achar que você terminou de falar. Rápida (0,6 s, como antes), Normal (1 s) ou Calma (1,6 s), para quem pensa enquanto fala e era cortado no meio da frase. Vale na hora, sem reiniciar."
  ]
 }

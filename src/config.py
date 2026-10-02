@@ -43,6 +43,9 @@ BLOCO = SAMPLE_RATE * BLOCO_MS // 1000
 # Fim de fala. 3 s (padrão do Hermes) deixa a conversa arrastada; 0,6 s
 # com VAD neural corta rápido sem engolir pausa entre palavras.
 SILENCIO_FIM_S = 0.6
+# Quem pensa enquanto fala ("Luna, abre o... hmm... Spotify") é cortado com
+# 0,6 s. A tela deixa escolher (Ajustes → Escuta); só estes valores valem.
+PAUSAS_FIM_S = {"rapida": 0.6, "normal": 1.0, "calma": 1.6}
 FALA_MIN_S = 0.25            # ignora estalo/tosse curta
 # Interromper a resposta falando por cima: quanto de fala firme precisa.
 # Menos que isso dispara com tosse/eco; mais, demora a calar.

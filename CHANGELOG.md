@@ -1,5 +1,11 @@
 # Mudanças
 
+## Pausa antes de responder
+
+- **Ajustes → Escuta → Pausa antes de responder:** quanto tempo calado a Luna espera para achar que você terminou de
+  falar. Rápida (0,6 s, como antes), Normal (1 s) ou Calma (1,6 s), para quem pensa enquanto fala e era cortado no meio
+  da frase. Vale na hora, sem reiniciar.
+
 ## Atualizar sem git
 
 - **Atualizar agora também para quem baixou o ZIP:** o botão baixa a versão nova do GitHub e troca os arquivos da Luna

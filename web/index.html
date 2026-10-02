@@ -1116,6 +1116,14 @@ body.redimensionando iframe, body.redimensionando canvas { pointer-events: none;
             <input type="checkbox" id="chkContinua">
             <span><b>Conversa contínua</b><small>Depois de uma resposta, aceita o próximo pedido sem dizer “Luna” por alguns segundos. Deixe desligado se a TV ou a caixa de som ficarem ativando ela.</small></span>
           </label>
+          <label class="aj-campo">Pausa antes de responder
+            <select id="selPausa">
+              <option value="rapida">Rápida (0,6 s): responde logo</option>
+              <option value="normal">Normal (1 s)</option>
+              <option value="calma">Calma (1,6 s): para quem pensa enquanto fala</option>
+            </select>
+          </label>
+          <p class="aj-nota">Quanto tempo calado ela espera para achar que você terminou. Se ela corta você no meio da frase, aumente.</p>
           <label class="chave">
             <input type="checkbox" id="chkBarge">
             <span><b>Interromper falando</b><small>Se você falar enquanto ela fala, ela se cala e escuta. Desligue se o som alto ficar cortando a resposta.</small></span>
@@ -1812,6 +1820,7 @@ function tratar(m) {
       else enviar({ tipo: 'cerebro', cerebro: 'auto' });
       enviar({ tipo: 'ativacao', ligada: ativacao });
       enviar({ tipo: 'barge', ligado: localStorage.getItem('barge') !== '0' });
+      enviar({ tipo: 'pausa', valor: localStorage.getItem('pausa') || 'rapida' });
       enviar({ tipo: 'continua', ligada: localStorage.getItem('continua') === '1' });
       if (ativacao && !micLigado) alternarMic();
       if (!micLigado) mudarEstado('desligado');
@@ -4058,6 +4067,11 @@ $('chkBarge').onchange = (e) => {
   barge = e.target.checked;
   localStorage.setItem('barge', barge ? '1' : '0');
   enviar({ tipo: 'barge', ligado: barge });
+};
+$('selPausa').value = localStorage.getItem('pausa') || 'rapida';
+$('selPausa').onchange = (e) => {
+  localStorage.setItem('pausa', e.target.value);
+  enviar({ tipo: 'pausa', valor: e.target.value });
 };
 $('chkContinua').checked = localStorage.getItem('continua') === '1';   // padrão: desligada
 $('chkContinua').onchange = (e) => {
